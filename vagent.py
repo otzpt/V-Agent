@@ -81,7 +81,7 @@ DEFAULT_CFG = {
     "streaming":         True,
     "font_size":         13,
     "ai_provider":       "backend",
-    "vagent_server_url": "https://v-agent.vercel.app",
+    "vagent_server_url": "https://vt-inference-relay.vercel.app",
     "groq_api_key":      "",
     "groq_model":        "llama-3.3-70b-versatile",
     "openrouter_api_key":"",
@@ -403,7 +403,7 @@ class LLMWorker(QThread):
                 self.error.emit(str(e))
 
     def _run_backend(self):
-        server_url = self._cfg.get("vagent_server_url", "https://v-agent.vercel.app").rstrip("/")
+        server_url = self._cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app").rstrip("/")
         model      = self._cfg.get("groq_model", "llama-3.3-70b-versatile")
         history    = [m for m in self._history[-10:] if m["role"] in ("user", "assistant")]
         # Remove last user message (sent separately)
@@ -1308,7 +1308,7 @@ class SettingsPanel(QWidget):
         self._sv_provider.setCurrentText(cfg.get("ai_provider", "backend"))
         row("AI Provider", self._sv_provider, "backend = no setup needed, keys secured on server")
 
-        self._sv_server_url = QLineEdit(cfg.get("vagent_server_url", "https://v-agent.vercel.app"))
+        self._sv_server_url = QLineEdit(cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"))
         row("Backend URL", self._sv_server_url, "Only change if self-hosting the backend")
 
         self._sv_ollama_url = QLineEdit(cfg.get("ollama_base_url", "http://localhost:11434"))
