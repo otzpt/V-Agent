@@ -1,0 +1,44 @@
+name: Build & Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+      - name: Create ZIP
+        run: |
+          mkdir -p dist/V-Agent-${{ env.VERSION }}
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='dist' \
+            --exclude='*.pyc' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            --exclude='config.json' \
+            . dist/V-Agent-${{ env.VERSION }}/
+          cd dist
+          zip -r V-Agent-${{ env.VERSION }}.zip V-Agent-${{ env.VERSION }}/
+          echo "ZIP size: $(du -sh V-Agent-${{ env.VERSION }}.zip | cut -f1)"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/V-Agent-${{ env.VERSION }}.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
