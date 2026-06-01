@@ -31,7 +31,7 @@ except ImportError:
     root.destroy()
     sys.exit(0)
 
-VERSION   = "1.0"
+VERSION   = "0.7.1"
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH  = os.path.join(BASE_DIR, "config.json")
 INPUT_DIR = os.path.join(BASE_DIR, "Input")
@@ -44,7 +44,8 @@ DEFAULT_CFG = {
     "streaming":          True,
     "font_size":          12,
     # Cloud AI
-    "ai_provider":        "local",   # local | groq | openrouter
+    "ai_provider":        "backend",  # backend (recomendado) | local | groq | openrouter
+    "vagent_server_url":  "https://v-agent.vercel.app",
     "groq_api_key":       "",
     "groq_model":         "llama-3.3-70b-versatile",
     "openrouter_api_key": "",
@@ -408,6 +409,7 @@ def load_cfg():
             pass
     for env_key, cfg_key in {
         "VAGENT_PROVIDER":    "ai_provider",
+        "VAGENT_SERVER_URL":  "vagent_server_url",
         "GROQ_API_KEY":       "groq_api_key",
         "GROQ_MODEL":         "groq_model",
         "OPENROUTER_API_KEY": "openrouter_api_key",
@@ -1608,12 +1610,54 @@ class AIPanel:
         self.app.root.after(0, self._on_done)
 
     def _llm_stream_sync(self):
-        """Route to local Ollama or cloud provider based on config."""
-        provider = self.app.cfg.get("ai_provider", "local")
-        if provider == "local":
+        """Route to backend, local Ollama or cloud provider based on config."""
+        provider = self.app.cfg.get("ai_provider", "backend")
+        if provider == "backend":
+            return self._llm_backend()
+        elif provider == "local":
             return self._llm_local()
         else:
             return self._llm_cloud(provider)
+
+    def _llm_backend(self):
+        """Envia mensagem para o backend Vercel (keys seguras lá, nunca aqui)."""
+        server_url = self.app.cfg.get("vagent_server_url", "https://v-agent.vercel.app").rstrip("/")
+        model      = self.app.cfg.get("groq_model", "llama-3.3-70b-versatile")
+        msgs       = self._hist[-20:]
+        # Última mensagem do utilizador
+        last_msg   = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
+        history    = [m for m in msgs[:-1] if m["role"] in ("user", "assistant")]
+        full       = []
+        try:
+            resp = requests.post(
+                f"{server_url}/chat",
+                json={"message": last_msg, "model": model, "history": history},
+                timeout=60,
+            )
+            if resp.status_code == 429:
+                self.app.root.after(0, lambda: self._chat_err("Limite de pedidos atingido (30/min). Tenta mais tarde."))
+                return None
+            if resp.status_code != 200:
+                self.app.root.after(0, lambda: self._chat_err(f"Erro do servidor ({resp.status_code}). Tenta novamente."))
+                return None
+            data    = resp.json()
+            content = data.get("content", "")
+            # Simular streaming token a token
+            for tok in content:
+                if self._cancel: break
+                full.append(tok)
+                t = tok
+                self.app.root.after(0, lambda t=t: self._stream_tok(t))
+        except requests.exceptions.ConnectionError:
+            self.app.root.after(0, lambda: self._chat_err("Sem ligação ao servidor. Verifica a internet."))
+            return None
+        except requests.exceptions.Timeout:
+            self.app.root.after(0, lambda: self._chat_err("Timeout — o servidor demorou demasiado."))
+            return None
+        except Exception as e:
+            self.app.root.after(0, lambda: self._chat_err("Erro de ligação. Tenta novamente."))
+            return None
+        return "".join(full)
 
     def _llm_local(self):
         base  = self.app.cfg.get("ollama_base_url", "http://localhost:11434")
