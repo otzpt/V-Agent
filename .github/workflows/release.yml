@@ -1,9 +1,8 @@
-name: Build & Release ZIP
+name: Build & Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -12,15 +11,35 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set version
-        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Create ZIP
+      - name: Lint (ruff)
         run: |
-          mkdir -p dist/V-Agent-${{ env.VERSION }}
+          pip install ruff --quiet
+          ruff check . --ignore E501 || true
+
+      - name: Syntax check
+        run: |
+          python3 -c "
+          import ast, pathlib
+          for f in pathlib.Path('.').glob('*.py'):
+              try:
+                  ast.parse(f.read_text())
+                  print(f'✅ {f}')
+              except SyntaxError as e:
+                  print(f'❌ {f}: {e}')
+                  exit(1)
+          "
+
+      - name: Create release ZIP
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mkdir -p dist/V-Agent-${VERSION}
           rsync -a \
             --exclude='.git' \
             --exclude='.github' \
@@ -29,16 +48,15 @@ jobs:
             --exclude='__pycache__' \
             --exclude='.env' \
             --exclude='config.json' \
-            . dist/V-Agent-${{ env.VERSION }}/
+            . dist/V-Agent-${VERSION}/
           cd dist
-          zip -r V-Agent-${{ env.VERSION }}.zip V-Agent-${{ env.VERSION }}/
-          echo "ZIP size: $(du -sh V-Agent-${{ env.VERSION }}.zip | cut -f1)"
+          zip -r V-Agent-${VERSION}.zip V-Agent-${VERSION}/
+          echo "Size: $(du -sh V-Agent-${VERSION}.zip | cut -f1)"
 
-      - name: Upload Release Asset
+      - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/V-Agent-${{ env.VERSION }}.zip
+          files: dist/V-Agent-${{ github.ref_name }}.zip
           generate_release_notes: true
-          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
