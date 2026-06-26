@@ -39,6 +39,10 @@
       "binaries/vagent-sidecar"
     ],
     "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
       "wix": {
         "language": "en-US",
         "template": "wix/main.wxs"
