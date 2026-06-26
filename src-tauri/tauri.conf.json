@@ -44,8 +44,7 @@
         "silent": true
       },
       "wix": {
-        "language": "en-US",
-        "license": "wix/License.rtf"
+        "language": "en-US"
       }
     }
   },

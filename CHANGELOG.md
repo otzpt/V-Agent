@@ -73,10 +73,9 @@
 - `arduino-cli` integration: list ports, compile sketch, upload to board
 
 ### Windows installer
-- MSI installer via WiX 3 with custom template
+- MSI installer via WiX 3 (Tauri default template)
 - Desktop and Start Menu shortcuts
 - Uninstall shortcut in Start Menu
-- GPL-3 license shown during install
 - "Launch V-Agent" checkbox on finish screen
 - Installs to `%PROGRAMFILES%\V-Agent`
 
