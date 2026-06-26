@@ -112,6 +112,20 @@ jobs:
       - name: Build Tauri app
         run: npm run tauri build
 
+      # ── Windows portable ZIP (exe + sidecar, sem instalação) ─────────
+      - name: Create Windows portable ZIP
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          mkdir -p portable
+          cp src-tauri/target/release/v-agent.exe portable/V-Agent.exe
+          cp "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}.exe" \
+             "portable/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}.exe"
+          cd portable
+          zip -r "../V-Agent-${TAG}-windows-portable.zip" .
+          cd ..
+
       # ── Upload artifacts ──────────────────────────────────────────────
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
@@ -122,6 +136,7 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+            V-Agent-*-windows-portable.zip
 
       - name: Upload Linux artifacts
         if: matrix.platform == 'ubuntu-latest'
@@ -167,13 +182,18 @@ jobs:
           ## V-Agent ${TAG}
 
           ### Downloads
-          | Platform | Installer |
-          |----------|-----------|
-          | Windows  | \`.msi\` (recommended) · \`.exe\` NSIS portable |
-          | Linux    | \`.deb\` (Ubuntu/Debian) · \`.AppImage\` (universal) |
-          | macOS    | \`.dmg\` |
+          | Platform | Ficheiro | Tipo |
+          |----------|----------|------|
+          | Windows  | \`.msi\` | Instalador (recomendado) |
+          | Windows  | \`-windows-portable.zip\` | Portátil — extrai e corre, sem instalar |
+          | Windows  | \`-setup.exe\` | NSIS installer alternativo |
+          | Linux    | \`.deb\` | Instalador (Ubuntu/Debian) |
+          | Linux    | \`.AppImage\` | Portátil universal |
+          | macOS    | \`.dmg\` | Instalador |
 
-          > **First run**: V-Agent will prompt for AI provider setup and Hackatime tracking (optional).
+          > **Portátil Windows**: extrai o ZIP para uma pasta ou pen drive e corre \`V-Agent.exe\` directamente. Requer WebView2 no sistema (presente em Windows 10/11 com Edge).
+
+          > **Primeiro arranque**: o V-Agent pede configuração do provider AI e Hackatime (opcional).
 
           Built automatically from tag \`${TAG}\`.
           EOF
