@@ -582,22 +582,28 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
       skipLibCheck:         true,
     });
 
-    // Collect markers from all models whenever they change
+    // Collect markers from all models whenever they change (debounced 500ms, max 50)
+    let markerTimer = null;
     const disposable = monaco.editor.onDidChangeMarkers(() => {
-      const raw = monaco.editor.getModelMarkers({}).filter((m) => m.severity >= SEV_WARNING);
-      setMarkers(
-        raw.map((m) => ({
-          monacoPath: m.resource.path,           // /C:/path/file.ts or /path/file.ts
-          filename:   m.resource.path.split("/").pop() || m.resource.path,
-          severity:   m.severity,
-          message:    m.message,
-          line:       m.startLineNumber,
-          col:        m.startColumn,
-        }))
-      );
+      clearTimeout(markerTimer);
+      markerTimer = setTimeout(() => {
+        const raw = monaco.editor.getModelMarkers({})
+          .filter((m) => m.severity >= SEV_WARNING)
+          .slice(0, 50);
+        setMarkers(
+          raw.map((m) => ({
+            monacoPath: m.resource.path,
+            filename:   m.resource.path.split("/").pop() || m.resource.path,
+            severity:   m.severity,
+            message:    m.message,
+            line:       m.startLineNumber,
+            col:        m.startColumn,
+          }))
+        );
+      }, 500);
     });
 
-    return () => disposable.dispose();
+    return () => { disposable.dispose(); clearTimeout(markerTimer); };
   }, [monaco]);
 
   // ── Execute pending line-jump after a tab switch ──────────────────────────────

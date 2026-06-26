@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 name: Release
 
 on:
@@ -6,12 +5,14 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 env:
-  # Must match the externalBin name in tauri.conf.json ("binaries/vagent-sidecar")
   SIDECAR_NAME: vagent-sidecar
 
 jobs:
-  # ── Per-platform build ───────────────────────────────────────────────────────
+  # ── Per-platform build ────────────────────────────────────────────────
   build:
     strategy:
       fail-fast: false
@@ -27,50 +28,30 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      # 1. Checkout ─────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Rust ─────────────────────────────────────────────────────────────────
+      # ── Rust ────────────────────────────────────────────────────────
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      # 3. Node 20 ──────────────────────────────────────────────────────────────
+      # ── Node 20 ─────────────────────────────────────────────────────
       - name: Install Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # 4. Python 3.11 + PyInstaller ────────────────────────────────────────────
+      # ── Python 3.11 ─────────────────────────────────────────────────
       - name: Install Python 3.11
-=======
-name: Build & Release
-
-on:
-  push:
-    tags: ['v*']
-
-permissions:
-  contents: write
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
->>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-<<<<<<< HEAD
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+      - name: Install Python dependencies
+        run: pip install pyinstaller requests python-dotenv
 
-      # 5. Linux system dependencies (required by Tauri / WebKit) ───────────────
+      # ── Linux system dependencies (WebKit / Tauri) ──────────────────
       - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-latest'
         run: |
@@ -86,7 +67,12 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev
 
-      # 6. Detect Rust host target triple (used for sidecar filename) ────────────
+      # ── WiX Toolset (Windows MSI) ────────────────────────────────────
+      - name: Install WiX Toolset
+        if: matrix.platform == 'windows-latest'
+        run: choco install wixtoolset --yes
+
+      # ── Rust host triple (needed for sidecar filename) ────────────────
       - name: Get Rust target triple
         id: triple
         shell: bash
@@ -94,14 +80,13 @@ jobs:
           TRIPLE=$(rustc --version --verbose | grep "^host:" | awk '{print $2}')
           echo "value=$TRIPLE" >> "$GITHUB_OUTPUT"
 
-      # 7. Build Python sidecar ─────────────────────────────────────────────────
-      - name: Build Python sidecar
+      # ── Build Python sidecar ──────────────────────────────────────────
+      - name: Build sidecar
         shell: bash
         working-directory: sidecar
         run: pyinstaller --onefile vagent_sidecar.py --name vagent_sidecar
 
-      # 8. Install sidecar into src-tauri/binaries/ with Tauri naming convention
-      #    Convention: <name>-<target-triple>[.exe]
+      # ── Copy sidecar to src-tauri/binaries/ ──────────────────────────
       - name: Install sidecar (Windows)
         if: matrix.platform == 'windows-latest'
         shell: bash
@@ -119,15 +104,15 @@ jobs:
           chmod +x \
              "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}"
 
-      # 9. npm install ───────────────────────────────────────────────────────────
+      # ── Frontend ──────────────────────────────────────────────────────
       - name: Install npm dependencies
         run: npm ci
 
-      # 10. Build Tauri app ──────────────────────────────────────────────────────
+      # ── Tauri build ───────────────────────────────────────────────────
       - name: Build Tauri app
         run: npm run tauri build
 
-      # 11. Upload platform artifacts ────────────────────────────────────────────
+      # ── Upload artifacts ──────────────────────────────────────────────
       - name: Upload Windows artifacts
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -156,12 +141,10 @@ jobs:
           if-no-files-found: warn
           path: src-tauri/target/release/bundle/dmg/*.dmg
 
-  # ── GitHub Release ───────────────────────────────────────────────────────────
+  # ── GitHub Release ────────────────────────────────────────────────────
   release:
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write   # required to create a release
 
     steps:
       - name: Checkout
@@ -171,71 +154,31 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
-          merge-multiple: true   # flatten sub-dirs into one flat directory
+          merge-multiple: true
 
-      - name: Create GitHub Release and upload assets
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-
-          # Collect every file that was downloaded
           FILES=$(find release-artifacts -type f | tr '\n' ' ')
+
+          cat > /tmp/release_notes.md << EOF
+          ## V-Agent ${TAG}
+
+          ### Downloads
+          | Platform | Installer |
+          |----------|-----------|
+          | Windows  | \`.msi\` (recommended) · \`.exe\` NSIS portable |
+          | Linux    | \`.deb\` (Ubuntu/Debian) · \`.AppImage\` (universal) |
+          | macOS    | \`.dmg\` |
+
+          > **First run**: V-Agent will prompt for AI provider setup and Hackatime tracking (optional).
+
+          Built automatically from tag \`${TAG}\`.
+          EOF
 
           gh release create "$TAG" \
             --title "V-Agent $TAG" \
-            --notes "## V-Agent $TAG
-
-          ### Downloads
-          | Platform | File |
-          |----------|------|
-          | 🪟 Windows | \`.msi\` installer · \`.exe\` portable |
-          | 🐧 Linux   | \`.deb\` package · \`.AppImage\`      |
-          | 🍎 macOS   | \`.dmg\` installer                    |
-
-          Built automatically from tag \`$TAG\`." \
+            --notes-file /tmp/release_notes.md \
             $FILES
-=======
-      - name: Lint (ruff)
-        run: |
-          pip install ruff --quiet
-          ruff check . --ignore E501 || true
-
-      - name: Syntax check
-        run: |
-          python3 -c "
-          import ast, pathlib
-          for f in pathlib.Path('.').glob('*.py'):
-              try:
-                  ast.parse(f.read_text())
-                  print(f'✅ {f}')
-              except SyntaxError as e:
-                  print(f'❌ {f}: {e}')
-                  exit(1)
-          "
-
-      - name: Create release ZIP
-        run: |
-          VERSION=${GITHUB_REF_NAME}
-          mkdir -p dist/V-Agent-${VERSION}
-          rsync -a \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='dist' \
-            --exclude='*.pyc' \
-            --exclude='__pycache__' \
-            --exclude='.env' \
-            --exclude='config.json' \
-            . dist/V-Agent-${VERSION}/
-          cd dist
-          zip -r V-Agent-${VERSION}.zip V-Agent-${VERSION}/
-          echo "Size: $(du -sh V-Agent-${VERSION}.zip | cut -f1)"
-
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/V-Agent-${{ github.ref_name }}.zip
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
->>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1

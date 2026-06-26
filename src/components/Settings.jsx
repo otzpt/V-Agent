@@ -317,9 +317,10 @@ function Switch({ on, onClick }) {
 // ── Main Settings overlay ──────────────────────────────────────────────────
 
 export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose, editorPrefs = {}, onEditorPref, hackatimeLastSent = null }) {
-  const [provider,       setProvider]       = useState("backend");
-  const [keys,           setKeys]           = useState({ groq: "", openrouter: "" });
-  const [ollamaModel,    setOllamaModel]    = useState("");
+  const [provider,        setProvider]        = useState("backend");
+  const [keys,            setKeys]            = useState({ groq: "", openrouter: "" });
+  const [ollamaModel,     setOllamaModel]     = useState("");
+  const [openrouterModel, setOpenrouterModel] = useState("anthropic/claude-haiku-4-5");
   const [hkEnabled,      setHkEnabled]      = useState(false);
   const [hkApiKey,       setHkApiKey]       = useState("");
   const [hkApiUrl,       setHkApiUrl]       = useState(DEFAULT_HACKATIME_URL);
@@ -337,6 +338,7 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
       if (cfg.groq_api_key)                   setKeys((prev) => ({ ...prev, groq: cfg.groq_api_key }));
       if (cfg.openrouter_api_key)             setKeys((prev) => ({ ...prev, openrouter: cfg.openrouter_api_key }));
       if (cfg.ollama_model)                   setOllamaModel(cfg.ollama_model);
+      if (cfg.openrouter_model)               setOpenrouterModel(cfg.openrouter_model);
       if (cfg.hackatime_enabled !== undefined)    setHkEnabled(!!cfg.hackatime_enabled);
       if (cfg.hackatime_api_key)                  setHkApiKey(cfg.hackatime_api_key);
       if (cfg.hackatime_api_url)                  setHkApiUrl(cfg.hackatime_api_url);
@@ -369,7 +371,8 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
         ai_provider: provider,
         ...(keys.groq       ? { groq_api_key:       keys.groq.trim()       } : {}),
         ...(keys.openrouter ? { openrouter_api_key:  keys.openrouter.trim() } : {}),
-        ...(ollamaModel     ? { ollama_model:         ollamaModel           } : {}),
+        ...(ollamaModel       ? { ollama_model:      ollamaModel             } : {}),
+        ...(openrouterModel   ? { openrouter_model:  openrouterModel.trim() } : {}),
         hackatime_enabled:    hkEnabled,
         hackatime_api_key:    hkApiKey.trim(),
         hackatime_api_url:    hkApiUrl.trim() || DEFAULT_HACKATIME_URL,
@@ -418,6 +421,26 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
                 <input type="password" style={ss.input} placeholder="sk-..."
                   value={keys[provider] || ""}
                   onChange={(e) => setKeys((prev) => ({ ...prev, [provider]: e.target.value }))} />
+                {provider === "openrouter" && (
+                  <>
+                    <label style={{ ...ss.label, marginTop: 10 }}>Model</label>
+                    <input
+                      style={ss.input}
+                      placeholder="anthropic/claude-haiku-4-5"
+                      value={openrouterModel}
+                      onChange={(e) => setOpenrouterModel(e.target.value)}
+                      list="va-or-models"
+                    />
+                    <datalist id="va-or-models">
+                      <option value="anthropic/claude-haiku-4-5" />
+                      <option value="anthropic/claude-sonnet-4-5" />
+                      <option value="google/gemini-flash-1.5" />
+                      <option value="meta-llama/llama-3.1-8b-instruct" />
+                      <option value="mistralai/mistral-7b-instruct:free" />
+                      <option value="google/gemini-2.0-flash-exp:free" />
+                    </datalist>
+                  </>
+                )}
               </div>
             )}
           </div>

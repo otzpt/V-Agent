@@ -2,6 +2,7 @@
 .env
 .env.local
 config.json
+!config.example.json
 *.key
 *.pem
 
@@ -43,3 +44,6 @@ logs/
 
 # ZIP
 *.zip
+
+# Legacy compiled binaries
+bin/

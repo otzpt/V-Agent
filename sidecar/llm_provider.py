@@ -32,6 +32,8 @@ ALLOWED_OPENROUTER_FREE_MODELS = [
     "mistralai/mistral-7b-instruct:free",
 ]
 
+DEFAULT_OPENROUTER_MODEL = "anthropic/claude-haiku-4-5"
+
 # ── Base interface ─────────────────────────────────────────────────────────────
 
 class LLMProvider(ABC):
@@ -55,6 +57,9 @@ class LLMProvider(ABC):
 
 class LLMError(Exception):
     """Raised by providers on non-recoverable errors."""
+
+class LLMRateLimitError(LLMError):
+    """Raised specifically on HTTP 429 rate-limit responses."""
 
 # ── Backend provider (Vercel — keys server-side, zero exposure) ───────────────
 
@@ -137,7 +142,7 @@ class OllamaProvider(LLMProvider):
                     "options": {"temperature": temperature, "num_ctx": 32768},
                 },
                 stream=True,
-                timeout=180,
+                timeout=30,
             )
             resp.raise_for_status()
         except requests.exceptions.ConnectionError:
@@ -204,7 +209,7 @@ class GroqProvider(LLMProvider):
         if resp.status_code == 401:
             raise LLMError("Invalid Groq API key.")
         if resp.status_code == 429:
-            raise LLMError("Groq rate limit reached. Try again later.")
+            raise LLMRateLimitError("Groq rate limit reached.")
         if resp.status_code != 200:
             raise LLMError(f"Groq API error ({resp.status_code}).")
 
@@ -236,11 +241,7 @@ class OpenRouterProvider(LLMProvider):
     def __init__(self, api_key: str, model: str, system_prompt: str = ""):
         self._key          = api_key
         self.system_prompt = system_prompt
-        # Force :free suffix to avoid accidental charges
-        if model and not model.endswith(":free"):
-            logger.warning("OpenRouter model '%s' is not free. Falling back.", model)
-            model = ALLOWED_OPENROUTER_FREE_MODELS[0]
-        self.model = model or ALLOWED_OPENROUTER_FREE_MODELS[0]
+        self.model = model or DEFAULT_OPENROUTER_MODEL
 
     def is_available(self) -> bool:
         return bool(self._key and self._key.startswith("sk-or-"))
@@ -328,16 +329,21 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             system_prompt=system_prompt,
         )
         if not p.is_available():
-            logger.warning("Ollama not available — falling back to backend.")
-            return BackendProvider(
-                server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-                model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
+            raise LLMError(
+                "Ollama not running. Start it with: ollama serve\n"
+                "Or switch provider in Settings."
             )
         return p
 
     if provider_name == "groq":
         key = cfg.get("groq_api_key", "").strip()
         if not key:
+            # Fallback chain: Groq → OpenRouter → backend
+            or_key = cfg.get("openrouter_api_key", "").strip()
+            if or_key:
+                logger.warning("No Groq key — falling back to OpenRouter.")
+                or_model = cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
+                return OpenRouterProvider(or_key, or_model, system_prompt)
             logger.warning("No Groq key — falling back to backend.")
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
@@ -354,7 +360,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
             )
-        model = cfg.get("model") or cfg.get("openrouter_model") or ALLOWED_OPENROUTER_FREE_MODELS[0]
+        model = cfg.get("model") or cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
         return OpenRouterProvider(key, model, system_prompt)
 
     # Unknown provider — safe fallback

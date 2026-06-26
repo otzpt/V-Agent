@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  V-Agent custom WiX 3 installer template for Tauri 2.
+  Tauri renders Handlebars {{variables}} before passing to the WiX compiler.
+  Available variables (Tauri 2 bundler):
+    {{product_name}}, {{version}}, {{manufacturer}}, {{upgrade_code}},
+    {{app_exe_name}}, {{app_exe_source}}, {{icon_path}},
+    {{language_id}}, {{language}}, {{binary_id}}
+  Tauri also compiles a companion .wxs with the bundled file ComponentGroup
+  whose Id is: {{binary_id}}Files (e.g. "V_AgentFiles").
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Product
+    Id="*"
+    Name="{{product_name}}"
+    Version="{{version}}"
+    Manufacturer="{{manufacturer}}"
+    Language="{{language_id}}"
+    Codepage="1252"
+    UpgradeCode="{{upgrade_code}}">
+
+    <Package
+      InstallerVersion="450"
+      Compressed="yes"
+      InstallScope="perMachine" />
+
+    <MajorUpgrade
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="A newer version of {{product_name}} is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ── Icon ───────────────────────────────────────────────────────── -->
+    <Icon Id="ProductICO" SourceFile="{{icon_path}}" />
+    <Property Id="ARPPRODUCTICON"    Value="ProductICO" />
+    <Property Id="ARPHELPLINK"       Value="https://github.com/otzpt/V-Agent" />
+    <Property Id="ARPURLINFOABOUT"   Value="https://github.com/otzpt/V-Agent" />
+    <Property Id="ARPNOREPAIR"       Value="1" />
+
+    <!-- ── Install directory ─────────────────────────────────────────── -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONFOLDER" Name="{{product_name}}" />
+      </Directory>
+      <Directory Id="DesktopFolder"      Name="Desktop" />
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="AppStartMenuDir"  Name="{{product_name}}" />
+      </Directory>
+    </Directory>
+
+    <!-- ── Shortcuts ─────────────────────────────────────────────────── -->
+    <DirectoryRef Id="AppStartMenuDir">
+      <Component Id="StartMenuShortcuts" Guid="*">
+        <Shortcut Id="StartMenuLaunch"
+          Name="{{product_name}}"
+          Description="Local-first AI coding agent"
+          Target="[APPLICATIONFOLDER]{{app_exe_name}}"
+          WorkingDirectory="APPLICATIONFOLDER"
+          Icon="ProductICO" />
+        <Shortcut Id="StartMenuUninstall"
+          Name="Uninstall {{product_name}}"
+          Target="[System64Folder]msiexec.exe"
+          Arguments="/x [ProductCode]" />
+        <RemoveFolder Id="RemoveStartMenuDir" On="uninstall" />
+        <RegistryValue Root="HKCU"
+          Key="Software\{{manufacturer}}\{{product_name}}"
+          Name="StartMenuShortcut" Type="integer" Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="*">
+        <Shortcut Id="DesktopLaunch"
+          Name="{{product_name}}"
+          Description="Local-first AI coding agent"
+          Target="[APPLICATIONFOLDER]{{app_exe_name}}"
+          WorkingDirectory="APPLICATIONFOLDER"
+          Icon="ProductICO" />
+        <RegistryValue Root="HKCU"
+          Key="Software\{{manufacturer}}\{{product_name}}"
+          Name="DesktopShortcut" Type="integer" Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- ── Main feature ──────────────────────────────────────────────── -->
+    <Feature Id="MainApplication" Title="{{product_name}}" Level="1">
+      <!-- Tauri generates {{binary_id}}Files ComponentGroup for bundled files -->
+      <ComponentGroupRef Id="{{binary_id}}Files" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- ── UI ────────────────────────────────────────────────────────── -->
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="wix\License.rtf" />
+
+    <!-- ── Launch after install checkbox ────────────────────────────── -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+      Value="Launch {{product_name}}" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <CustomAction Id="LaunchApp"
+      FileKey="{{binary_id}}Exe"
+      ExeCommand=""
+      Execute="immediate"
+      Impersonate="yes"
+      Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="LaunchApp" After="InstallFinalize">
+        WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed
+      </Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+</Wix>

@@ -1,0 +1,11 @@
+{
+  "theme": "github-dark",
+  "ai_provider": "backend",
+  "groq_api_key": "",
+  "openrouter_api_key": "",
+  "openrouter_model": "anthropic/claude-haiku-4-5",
+  "hackatime_api_key": "",
+  "hackatime_api_url": "https://hackatime.hackclub.com/api/hackatime/v1/users/current/heartbeats",
+  "editor_font": "JetBrains Mono",
+  "editor_font_size": 13
+}

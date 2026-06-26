@@ -382,8 +382,9 @@ function isAncestorPath(dir, target) {
 // ── Tree node ────────────────────────────────────────────────────────────────
 
 const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
-  const [expanded, setExpanded] = useState(false);
-  const [children, setChildren] = useState(null);
+  const [expanded,      setExpanded]      = useState(false);
+  const [children,      setChildren]      = useState(null);
+  const [refreshError,  setRefreshError]  = useState(false);
   const rowRef = useRef(null);
 
   const isCreateTarget = entry.is_dir && creating?.parentPath && samePath(creating.parentPath, entry.path);
@@ -419,12 +420,14 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 
   // Called when something inside this dir changes and we need to re-read it.
   const refreshSelf = useCallback(async () => {
+    setRefreshError(false);
     try {
       const items = await listDir(entry.path);
       setChildren(items);
       setExpanded(true);
     } catch {
       setChildren([]);
+      setRefreshError(true);
     }
   }, [entry.path]);
 
@@ -500,6 +503,13 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
           {entry.name}
         </span>
         <GitDot xy={gitStatusMap?.[entry.path]} />
+        {refreshError && (
+          <button
+            style={{ ...styles.rootRemove, color: "var(--err)", marginLeft: "auto" }}
+            title="Refresh failed — click to retry"
+            onClick={(e) => { e.stopPropagation(); refreshSelf(); }}
+          >↺</button>
+        )}
       </div>
       {expanded && (
         <>
@@ -537,16 +547,18 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 // ── Root folder node (collapsible, removable) ─────────────────────────────────
 
 function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
-  const [expanded, setExpanded] = useState(true);
-  const [children, setChildren] = useState(null);
-  const [hover, setHover]       = useState(false);
+  const [expanded,   setExpanded]   = useState(true);
+  const [children,   setChildren]   = useState(null);
+  const [hover,      setHover]      = useState(false);
+  const [loadError,  setLoadError]  = useState(false);
 
   const name = rootDir.split(/[/\\]/).filter(Boolean).pop() || rootDir;
   const isCreateTarget = creating?.parentPath && samePath(creating.parentPath, rootDir);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try { setChildren(await listDir(rootDir)); }
-    catch { setChildren([]); }
+    catch { setChildren([]); setLoadError(true); }
   }, [rootDir]);
 
   // Load once on mount (root shown expanded by default)
@@ -587,14 +599,19 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, 
       >
         <span style={styles.caret}>{expanded ? "▾" : "▸"}</span>
         <span style={styles.rootName}>{name}</span>
-        {hover && (
+        {loadError && (
+          <button
+            style={{ ...styles.rootRemove, color: "var(--err)" }}
+            title="Load failed — click to retry"
+            onClick={(e) => { e.stopPropagation(); load(); }}
+          >↺</button>
+        )}
+        {hover && !loadError && (
           <button
             style={styles.rootRemove}
             title="Remove folder from workspace"
             onClick={(e) => { e.stopPropagation(); onRemove(rootDir); }}
-          >
-            ×
-          </button>
+          >×</button>
         )}
       </div>
       {expanded && (

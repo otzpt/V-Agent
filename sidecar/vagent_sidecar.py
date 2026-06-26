@@ -27,7 +27,7 @@ import json
 import threading
 from pathlib import Path
 
-from llm_provider import build_provider, LLMError
+from llm_provider import build_provider, LLMError, LLMRateLimitError
 
 # ── Output (thread-safe) ───────────────────────────────────────────────────────
 
@@ -293,6 +293,13 @@ def run_agent(req):
         return
 
     convo = list(messages)
+
+    # Auto-trim history when it grows too large: keep last 5 + a note about what was dropped
+    if len(convo) > 20:
+        kept = convo[-5:]
+        dropped = len(convo) - 5
+        convo = [{"role": "user", "content": f"[{dropped} earlier messages trimmed to manage context length]"}] + kept
+
     call_seq = 0
     max_steps = 6 if use_tools else 1
 
@@ -305,6 +312,22 @@ def run_agent(req):
         try:
             for tok in provider.stream(convo, cancel_flag=cancelled):
                 acc += tok
+        except LLMRateLimitError:
+            # Groq rate limited: try OpenRouter automatically
+            or_key = config.get("openrouter_api_key", "").strip()
+            if or_key:
+                emit({"type": "info", "id": rid, "text": "Groq rate limited — switched to OpenRouter"})
+                or_cfg = {**config, "ai_provider": "openrouter"}
+                try:
+                    or_provider = build_provider(or_cfg, system)
+                    for tok in or_provider.stream(convo, cancel_flag=cancelled):
+                        acc += tok
+                except LLMError as e2:
+                    emit({"type": "error", "id": rid, "error": str(e2)})
+                    break
+            else:
+                emit({"type": "error", "id": rid, "error": "Groq rate limited. Add an OpenRouter key in Settings to auto-switch."})
+                break
         except LLMError as e:
             emit({"type": "error", "id": rid, "error": str(e)})
             break

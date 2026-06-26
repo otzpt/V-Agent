@@ -163,10 +163,17 @@ const agentToggleStyle = {
   whiteSpace: "nowrap",
 };
 
+// Strip lines where the entire line is wrapped in ** or __ (e.g. "**Title**")
+// Models like Qwen use these as prose headers; they look bad without a renderer.
+function stripExcessiveBold(text) {
+  return text.replace(/^(\*{2}|_{2})([^*_\n]+?)(\*{2}|_{2})\s*$/gm, "$2");
+}
+
 // Minimal, dependency-free markdown renderer focused on what an AI returns:
 // fenced code blocks ```lang ... ```, inline `code`, and plain paragraphs.
 
-function renderContent(text) {
+function renderContent(rawText) {
+  const text = stripExcessiveBold(rawText);
   const parts = [];
   const fence = /```(\w+)?\n?([\s\S]*?)```/g;
   let last = 0;
@@ -440,9 +447,10 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
   const [inputFocused, setInputFocused] = useState(false);
   const [planMode, setPlanMode] = useState(false);
   const [agentMode, setAgentMode] = useState(true);  // tools on/off
-  const scrollRef     = useRef(null);
-  const pinnedRef     = useRef(true);  // true = follow new messages; false = user scrolled up
-  const currentReqRef = useRef(null);  // active agent request id
+  const scrollRef          = useRef(null);
+  const pinnedRef          = useRef(true);
+  const currentReqRef      = useRef(null);
+  const lastContextFileRef = useRef(null);  // last file path included in system prompt
   const isChat = mode === "chat";
 
   // ── Agent channel: start the persistent sidecar + route its events ──────────
@@ -546,6 +554,8 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
       case "clear":
         setMessages([]);
         setInput("");
+        lastContextFileRef.current = null;
+        agentSend({ type: "clear_session" }).catch(() => {});
         return true;
       case "model":
         setShowModelPicker(true);
@@ -625,7 +635,12 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     const reqId = `r${Date.now()}`;
     currentReqRef.current = reqId;
     const config = { ai_provider: sessionProvider, ...(sessionModel ? { model: sessionModel } : {}) };
-    const sys = contextPrompt(rootDirs[0] || null, openFile);
+    // Include open file content only on first message or when the file changes
+    const histLen = messages.filter((m) => m.role === "user" || m.role === "assistant").length;
+    const fileChanged = openFile?.path !== lastContextFileRef.current;
+    const includeFile = histLen === 0 || fileChanged;
+    if (includeFile) lastContextFileRef.current = openFile?.path ?? null;
+    const sys = contextPrompt(rootDirs[0] || null, includeFile ? openFile : null);
 
     try {
       await agentStart();

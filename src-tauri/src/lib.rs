@@ -384,14 +384,14 @@ async fn send_heartbeat(
     project:   String,
     language:  String,
     is_write:  bool,
-    api_key:   String,    // kept for frontend compat; wakatime-cli reads ~/.wakatime.cfg
-    api_url:   String,    // kept for frontend compat
+    api_key:   String,
+    api_url:   String,
     lines:     Option<u32>,
     lineno:    Option<u32>,
     cursorpos: Option<u32>,
     branch:    Option<String>,
 ) -> Result<(), String> {
-    let _ = (api_key, api_url, lines, branch); // auth/config handled by wakatime-cli
+    let _ = (lines, branch);
 
     let cli = find_wakatime_cli().await?;
 
@@ -412,6 +412,8 @@ async fn send_heartbeat(
         "--project",     &project,
         "--language",    &language,
     ]);
+    if !api_key.is_empty() { cmd.args(["--key",     &api_key]); }
+    if !api_url.is_empty() { cmd.args(["--api-url", &api_url]); }
     if is_write                        { cmd.arg("--write"); }
     if let Some(ref l) = lineno_str    { cmd.args(["--lineno",    l]); }
     if let Some(ref c) = cursorpos_str { cmd.args(["--cursorpos", c]); }

@@ -1,211 +1,139 @@
-<<<<<<< HEAD
-# V-Agent v0.9
+# V-Agent
 
-Local-first AI coding agent. Tauri (Rust) shell + React UI + Monaco editor + xterm.js, with the existing Python LLM backend running as a sidecar.
+> Local-first AI coding agent. No cloud lock-in, no bloat.
 
-> **This is a scaffold / starting point.** It has not been run end-to-end. Expect to debug the first launch — that's normal for a Tauri + sidecar project. See "Known first-run issues" below.
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│  Tauri window (native webview)               │
-│  ┌────────────────────────────────────────┐  │
-│  │  React UI                               │  │
-│  │  • Monaco editor  • xterm terminal      │  │
-│  │  • file tree      • AI chat panel       │  │
-│  └────────────────────────────────────────┘  │
-│                  │ invoke()                    │
-│                  ▼                             │
-│  Rust commands (src-tauri/src/lib.rs)         │
-│  • read_file / write_file / list_dir          │
-│  • ai_chat → spawns Python sidecar             │
-└──────────────────┬──────────────────────────┘
-                   │ stdin/stdout JSON
-                   ▼
-   Python sidecar (sidecar/vagent_sidecar.py)
-   wraps llm_provider.py  →  backend/Ollama/Groq/OpenRouter
-```
-
-The UI never talks to the LLM directly. It calls the Rust `ai_chat` command, which spawns the Python sidecar, writes a JSON request to its stdin, and streams JSON token lines back as `ai-token` events.
-
----
-
-## Prerequisites (Linux)
-
-```bash
-# 1. Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-
-# 2. Tauri system deps (Debian/Ubuntu/Mint)
-sudo apt update
-sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
-  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-
-# 3. Node deps
-npm install
-=======
-# V-Agent v0.8.0
-
-> The zero-bloat alternative to cloud-based AI agents. Cross-platform, secure, Ollama optional.
-
-🔗 **Repo:** [github.com/otzpt/V-Agent](https://github.com/otzpt/V-Agent)
-
----
-
-## What is V-Agent?
-
-V-Agent is a local-first AI coding assistant with a modern Qt6 GUI (PySide6). It supports multiple LLM providers — a self-hosted backend, Ollama (local), Groq, and OpenRouter — with graceful fallback between them. Your API keys never leave your machine.
+[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/otzpt/V-Agent/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/otzpt/V-Agent/releases)
 
 ---
 
 ## Features
 
-- **Cross-platform** — Windows and Linux (pathlib everywhere, no hardcoded paths)
-- **PySide6 Qt6 GUI** — Dark/light themes with CSS-variable design tokens, HiDPI support
-- **Multi-provider LLM** — Backend → Ollama → OpenRouter (free tier enforced), with automatic fallback
-- **Tabbed IDE** — Syntax highlighting for 15+ languages, file tree, tabbed editor
-- **Agentic AI** — read/write/edit/ls/run/search tools built in
-- **Terminal panel** — Safe command execution with allowlist
-- **Secure key storage** — API keys written only to `.env` via `write_env_key`, never to `config.json`
-- **Config in AppData** — Not stored next to the script
-- **Automator** — File watcher (watchdog optional, falls back to polling)
-- **Installers** — `install.sh` (Linux, with distro detection + desktop entry) and `install.ps1` (Windows, with PATH + shortcut)
-- **GitHub Actions** — Lint, syntax check, and auto ZIP on tag push
+- **Monaco editor** — the same engine powering VS Code, with syntax highlighting for 30+ languages, tabs, and save
+- **Real PTY terminal** — multi-tab, full shell, not an echo stub
+- **AI agent** — tool-calling loop with `read_file`, `write_file` (diff preview with Accept/Reject), `search`, `run`
+- **Git panel** — status, stage, commit, push/pull, inline diff viewer
+- **Live HTML preview** — real-time render with Visual Inspector
+- **Extension store** — installable Python-based extensions
+- **Hackatime integration** — automatic coding time tracking
+- **8 themes** — GitHub Dark (default), GitHub Light, Monokai, Dracula, Nord, Solarized, One Dark, Ayu
+- **Onboarding wizard** — guided first-run setup
+- **Command palette** — `Ctrl+Shift+P`
+- **Search in files** — `Ctrl+Shift+F` with regex support
+- **Arduino support** — compile and upload from the editor
+- **Offline capable** — Ollama provider works with no internet
 
 ---
 
-## LLM Providers
+## Download
 
-| Provider | Requires | Notes |
-|---|---|---|
-| Backend | Vercel deployment | Default, rate-limited, keys server-side |
-| Ollama | Local install | Optional, auto-detected |
-| OpenRouter | API key in `.env` | Free tier models only |
-| Groq | API key in `.env` | Free tier models |
+Get the latest installer from [GitHub Releases](https://github.com/otzpt/V-Agent/releases).
+
+| Platform | File |
+|----------|------|
+| Windows  | `V-Agent_x.x.x_x64_en-US.msi` |
+| Linux    | `v-agent_x.x.x_amd64.deb` · `v-agent_x.x.x_amd64.AppImage` |
+| macOS    | `V-Agent_x.x.x_x64.dmg` |
 
 ---
 
 ## Quick Start
 
-### Windows
-```powershell
-.\installer\install.ps1
-```
-
-### Linux
-```bash
-chmod +x installer/install.sh && ./installer/install.sh
->>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
-```
+1. Download the installer for your platform
+2. Run V-Agent
+3. Complete the onboarding wizard (choose AI provider, optionally set up Hackatime)
+4. Open a folder with **File → Open Folder**
+5. Ask the AI to help with your code
 
 ---
 
-<<<<<<< HEAD
-## Build the Python sidecar (required before `tauri dev`)
+## AI Providers
 
-The app spawns a compiled sidecar binary, so you must build it first:
+| Provider | Setup | Notes |
+|----------|-------|-------|
+| V-Agent Cloud | None (default) | Rate-limited shared backend |
+| Groq | Free API key at [console.groq.com](https://console.groq.com) | Fast, free tier |
+| OpenRouter | API key at [openrouter.ai](https://openrouter.ai) | Many models including free tier |
+| Ollama | [Install Ollama](https://ollama.ai) locally | Fully offline, no API key |
 
-```bash
-bash sidecar/build.sh
-```
+Configure in **Settings** (`Ctrl+,`) → AI Provider.
 
-This uses PyInstaller to produce `src-tauri/binaries/vagent-sidecar-<target-triple>`.
+Auto-fallback: if Groq hits rate limits, V-Agent switches to OpenRouter automatically (if key is set).
 
 ---
 
-## Run
+## Build from Source
+
+### Prerequisites
+
+- [Rust](https://rustup.rs) (stable)
+- [Node.js](https://nodejs.org) 20+
+- [Python](https://python.org) 3.11+
+- Linux only: `libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev`
+
+### Steps
 
 ```bash
+# 1. Clone
+git clone https://github.com/otzpt/V-Agent
+cd V-Agent
+
+# 2. Install Python deps
+pip install pyinstaller requests python-dotenv
+
+# 3. Build the Python sidecar
+cd sidecar
+pyinstaller --onefile vagent_sidecar.py --name vagent_sidecar
+cd ..
+
+# 4. Copy sidecar to binaries/ (adjust triple for your platform)
+# Linux x86_64:
+mkdir -p src-tauri/binaries
+cp sidecar/dist/vagent_sidecar src-tauri/binaries/vagent-sidecar-x86_64-unknown-linux-gnu
+chmod +x src-tauri/binaries/vagent-sidecar-x86_64-unknown-linux-gnu
+
+# Windows x86_64 (in PowerShell):
+# copy sidecar\dist\vagent_sidecar.exe src-tauri\binaries\vagent-sidecar-x86_64-pc-windows-msvc.exe
+
+# 5. Install npm deps
+npm install
+
+# 6. Dev mode
 npm run tauri dev
-```
 
-First compile of the Rust side takes a few minutes. Subsequent runs are fast.
-
----
-
-## Build installers
-
-```bash
+# 7. Production build (creates installer in src-tauri/target/release/bundle/)
 npm run tauri build
 ```
 
-Produces a `.deb` / `.AppImage` on Linux, `.msi` / `.exe` on Windows (when built on Windows).
-
 ---
 
-## Known first-run issues (debug these together)
-
-1. **Sidecar not found** — `ai_chat` fails if `src-tauri/binaries/vagent-sidecar-<triple>` doesn't exist or the triple is wrong. Check `rustc -Vv | grep host` matches the filename suffix.
-2. **Capability/permission errors** — if the console says a command is not allowed, the permission is missing in `src-tauri/capabilities/default.json`.
-3. **Plugin version mismatch** — the `@tauri-apps/plugin-*` npm versions must match the Rust crate versions in `Cargo.toml`.
-4. **WebKit blank window on Linux** — usually a missing `libwebkit2gtk` dependency (see prerequisites).
-5. **Monaco not loading** — `@monaco-editor/react` loads Monaco from a CDN by default; offline use needs the `loader` configured to a local copy (a later task).
-
----
-
-## What's stubbed / TODO
-
-- **Terminal** is echo-mode only. Real shell needs a Rust PTY command (next part).
-- **Provider switching / settings UI** not built yet — defaults to the backend provider.
-- **Agentic file tools** (the AI reading/writing files itself) not wired yet.
-- **Monaco offline loader**, theme persistence, tab management — future parts.
-
----
-
-## Project layout
+## Project Structure
 
 ```
-package.json            → npm scripts + deps
-vite.config.js          → Vite dev server (port 1420)
-index.html              → React entry
 src/
-  main.jsx
-  App.jsx               → grid layout, theme state
-  styles.css            → void/nebula theme tokens (dark + light)
-  lib/tauri.js          → invoke() wrappers
+  App.jsx                   main layout, theme, Hackatime loader
   components/
-    ActivityBar.jsx
-    FileTree.jsx
-    EditorPane.jsx      → Monaco
-    Terminal.jsx        → xterm (echo stub)
-    AIPanel.jsx         → streaming chat + markdown rendering
+    AIPanel.jsx             AI chat with streaming + tool diffs
+    EditorPane.jsx          Monaco editor, tabs, LSP markers, heartbeats
+    FileTree.jsx            file system tree with refresh
+    Terminal.jsx            xterm.js PTY terminal
+    Settings.jsx            provider + key configuration overlay
+    Onboarding.jsx          first-run wizard
+    GitPanel.jsx            git status, stage, commit, diff
+    HtmlPreview.jsx         live HTML preview + inspector
+    ExtensionStore.jsx      extension marketplace
 src-tauri/
-  Cargo.toml
-  tauri.conf.json
-  build.rs
-  capabilities/default.json
-  src/
-    main.rs
-    lib.rs             → commands + sidecar bridge
+  src/lib.rs                Rust commands (FS, git, PTY, heartbeat, search)
+  tauri.conf.json           app + bundle config
+  wix/main.wxs              Windows MSI installer template
 sidecar/
-  vagent_sidecar.py    → stdin/stdout JSON loop
-  llm_provider.py      → (your v0.8 provider, unchanged)
-  requirements.txt
-  build.sh             → PyInstaller → binaries/
+  vagent_sidecar.py         JSON stdio agent loop
+  llm_provider.py           Groq / OpenRouter / Ollama / backend abstraction
 ```
-=======
-## Security
-
-API keys are stored exclusively in `.env` (never `config.json`). The `.env` file is git-ignored. The backend runs on Vercel with rate limiting (30 req/min per IP) and a model whitelist. See `SECURITY.md` for full policy.
 
 ---
 
-## Requirements
+## License
 
-| Component | Minimum |
-|---|---|
-| Python | 3.8+ |
-| OS | Windows 10/11 or Linux |
-| RAM | 8 GB |
-| VRAM | 4 GB (Ollama only) |
-
----
-
-## About
-
-Built as a personal project to learn Python, PySide6, and AI integration — without cloud lock-in.
->>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
+GNU General Public License v3.0 — see [LICENSE](LICENSE).
