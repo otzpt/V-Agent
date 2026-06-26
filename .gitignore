@@ -1,98 +1,45 @@
-<<<<<<< HEAD
-# dependencies
+# Security
+.env
+.env.local
+config.json
+*.key
+*.pem
+
+# Dependencies
 node_modules/
 dist/
+build/
 
-# tauri / rust
+# Tauri / Rust
 src-tauri/target/
 src-tauri/gen/
 src-tauri/binaries/
 
-# python sidecar build
+# Python sidecar
+sidecar/build/
+sidecar/dist/
 sidecar/build_out/
 sidecar/build_tmp/
 sidecar/__pycache__/
 sidecar/*.spec
-.env
-
-# os
-.DS_Store
-Thumbs.db
-
-# editor
-.vscode/
-.idea/
-=======
-# ──────────────────────────────────────────────────────────────
-# V-Agent — .gitignore
-# ──────────────────────────────────────────────────────────────
-
-# 🔒 SEGURANÇA — Nunca commitar
-.env
-.env.local
-.env.*.local
-config.json
-*.key
-*.pem
-secrets.txt
-secrets/
-
-# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.pytest_cache/
-.mypy_cache/
-
-# Ambientes virtuais
 .venv/
 venv/
-env/
-ENV/
-.virtualenv/
-
-# Build & dist
-*.egg-info/
-dist/
-build/
-*.egg
-MANIFEST
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.sublime-project
-*.sublime-workspace
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
 
 # Logs
 *.log
 logs/
-npm-debug.log*
 
-# Testing
-.coverage
-htmlcov/
-.tox/
-coverage.xml
-*.cover
-
-# Vercel
-.vercel/
-
-# Distribuição local (o ZIP é gerado pelo GitHub Release)
+# ZIP
 *.zip
->>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
