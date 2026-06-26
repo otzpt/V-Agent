@@ -122,9 +122,7 @@ jobs:
           cp src-tauri/target/release/v-agent.exe portable/V-Agent.exe
           cp "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}.exe" \
              "portable/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}.exe"
-          cd portable
-          zip -r "../V-Agent-${TAG}-windows-portable.zip" .
-          cd ..
+          7z a "V-Agent-${TAG}-windows-portable.zip" "./portable/*"
 
       # ── Upload artifacts ──────────────────────────────────────────────
       - name: Upload Windows artifacts
