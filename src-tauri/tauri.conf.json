@@ -45,7 +45,7 @@
       },
       "wix": {
         "language": "en-US",
-        "template": "wix/main.wxs"
+        "license": "wix/License.rtf"
       }
     }
   },
