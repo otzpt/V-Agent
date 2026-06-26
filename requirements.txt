@@ -1,0 +1,14 @@
+# V-Agent 0.8.0 — Python dependencies
+# Install: pip install -r requirements.txt
+
+# GUI (Qt6, LGPL — free for commercial use)
+PySide6>=6.6.0
+
+# HTTP client
+requests>=2.31.0
+
+# .env loader
+python-dotenv>=1.0.0
+
+# Optional: faster file watching for Automator
+# watchdog>=3.0.0

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: Release
 
 on:
@@ -43,10 +44,29 @@ jobs:
 
       # 4. Python 3.11 + PyInstaller ────────────────────────────────────────────
       - name: Install Python 3.11
+=======
+name: Build & Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+>>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+<<<<<<< HEAD
       - name: Install PyInstaller
         run: pip install pyinstaller
 
@@ -175,3 +195,47 @@ jobs:
 
           Built automatically from tag \`$TAG\`." \
             $FILES
+=======
+      - name: Lint (ruff)
+        run: |
+          pip install ruff --quiet
+          ruff check . --ignore E501 || true
+
+      - name: Syntax check
+        run: |
+          python3 -c "
+          import ast, pathlib
+          for f in pathlib.Path('.').glob('*.py'):
+              try:
+                  ast.parse(f.read_text())
+                  print(f'✅ {f}')
+              except SyntaxError as e:
+                  print(f'❌ {f}: {e}')
+                  exit(1)
+          "
+
+      - name: Create release ZIP
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mkdir -p dist/V-Agent-${VERSION}
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='dist' \
+            --exclude='*.pyc' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            --exclude='config.json' \
+            . dist/V-Agent-${VERSION}/
+          cd dist
+          zip -r V-Agent-${VERSION}.zip V-Agent-${VERSION}/
+          echo "Size: $(du -sh V-Agent-${VERSION}.zip | cut -f1)"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/V-Agent-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+>>>>>>> 2d0b6d95de4e0d14f1d4316753b832ac983366e1
