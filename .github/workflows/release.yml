@@ -1,0 +1,177 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  # Must match the externalBin name in tauri.conf.json ("binaries/vagent-sidecar")
+  SIDECAR_NAME: vagent-sidecar
+
+jobs:
+  # ── Per-platform build ───────────────────────────────────────────────────────
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            artifact: windows
+          - platform: ubuntu-latest
+            artifact: linux
+          - platform: macos-latest
+            artifact: macos
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      # 1. Checkout ─────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Rust ─────────────────────────────────────────────────────────────────
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      # 3. Node 20 ──────────────────────────────────────────────────────────────
+      - name: Install Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 4. Python 3.11 + PyInstaller ────────────────────────────────────────────
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      # 5. Linux system dependencies (required by Tauri / WebKit) ───────────────
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      # 6. Detect Rust host target triple (used for sidecar filename) ────────────
+      - name: Get Rust target triple
+        id: triple
+        shell: bash
+        run: |
+          TRIPLE=$(rustc --version --verbose | grep "^host:" | awk '{print $2}')
+          echo "value=$TRIPLE" >> "$GITHUB_OUTPUT"
+
+      # 7. Build Python sidecar ─────────────────────────────────────────────────
+      - name: Build Python sidecar
+        shell: bash
+        working-directory: sidecar
+        run: pyinstaller --onefile vagent_sidecar.py --name vagent_sidecar
+
+      # 8. Install sidecar into src-tauri/binaries/ with Tauri naming convention
+      #    Convention: <name>-<target-triple>[.exe]
+      - name: Install sidecar (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cp "sidecar/dist/vagent_sidecar.exe" \
+             "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}.exe"
+
+      - name: Install sidecar (Unix)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          mkdir -p src-tauri/binaries
+          cp "sidecar/dist/vagent_sidecar" \
+             "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}"
+          chmod +x \
+             "src-tauri/binaries/${{ env.SIDECAR_NAME }}-${{ steps.triple.outputs.value }}"
+
+      # 9. npm install ───────────────────────────────────────────────────────────
+      - name: Install npm dependencies
+        run: npm ci
+
+      # 10. Build Tauri app ──────────────────────────────────────────────────────
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      # 11. Upload platform artifacts ────────────────────────────────────────────
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: warn
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: warn
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: warn
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+
+  # ── GitHub Release ───────────────────────────────────────────────────────────
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create a release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true   # flatten sub-dirs into one flat directory
+
+      - name: Create GitHub Release and upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+
+          # Collect every file that was downloaded
+          FILES=$(find release-artifacts -type f | tr '\n' ' ')
+
+          gh release create "$TAG" \
+            --title "V-Agent $TAG" \
+            --notes "## V-Agent $TAG
+
+          ### Downloads
+          | Platform | File |
+          |----------|------|
+          | 🪟 Windows | \`.msi\` installer · \`.exe\` portable |
+          | 🐧 Linux   | \`.deb\` package · \`.AppImage\`      |
+          | 🍎 macOS   | \`.dmg\` installer                    |
+
+          Built automatically from tag \`$TAG\`." \
+            $FILES

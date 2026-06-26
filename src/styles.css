@@ -1,0 +1,316 @@
+/* ── V-Agent — Aether theme ───────────────────────────────────────────────────
+   Deep obsidian dark with rich indigo-violet accent.
+   Light variant via [data-theme="light"].
+   All UI colours are CSS variables — no hardcoded hex in components.        */
+
+:root {
+  --font-ui:   "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ── Aether dark (default) — deep obsidian + indigo-violet ── */
+  --bg-0:      #080812;   /* void            — app bg                        */
+  --bg-1:      #0e0e1c;   /* panels          — sidebar, AI, terminal         */
+  --bg-2:      #141428;   /* raised          — inputs, cards, modals         */
+  --bg-3:      #1c1c36;   /* hover / active  — interactive highlight         */
+  --border:    #22223e;   /* structure lines                                 */
+  --text-0:    #e8e8f4;   /* primary                                         */
+  --text-1:    #8080aa;   /* secondary                                       */
+  --text-2:    #484870;   /* tertiary / hints                                */
+  --accent:    #7c6ef8;   /* indigo-violet — vivid, premium                 */
+  --accent-dim:#28215a;   /* dimmed accent for badge backgrounds             */
+  --ok:        #4de8a0;
+  --warn:      #f5c040;
+  --err:       #f06060;
+
+  /* ── Design tokens (theme-independent) ── */
+  --r-xs:    4px;
+  --r-sm:    7px;
+  --r-md:    10px;
+  --r-lg:    14px;
+  --r-xl:    20px;
+  --r-full:  9999px;
+  --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur:     130ms;
+  --dur-lg:  220ms;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.50);
+  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.60);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.75);
+  --ring:      0 0 0 2px var(--bg-0), 0 0 0 4px var(--accent);
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+
+[data-theme="light"] {
+  --bg-0:      #f2f2f0;
+  --bg-1:      #ffffff;
+  --bg-2:      #eaeae7;
+  --bg-3:      #e0e0dc;
+  --border:    #d2d2cc;
+  --text-0:    #18181e;
+  --text-1:    #50506a;
+  --text-2:    #85859e;
+  --accent:    #5b4df0;
+  --accent-dim:#d0cdf8;
+  --ok:        #1a9e70;
+  --warn:      #c07010;
+  --err:       #d03020;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.18);
+}
+
+/* ── Extra themes ────────────────────────────────────────────────────────── */
+
+[data-theme="dracula"] {
+  --bg-0:#282a36; --bg-1:#2d2f3d; --bg-2:#343746; --bg-3:#44475a;
+  --border:#44475a; --text-0:#f8f8f2; --text-1:#bdc0d0; --text-2:#6272a4;
+  --accent:#bd93f9; --accent-dim:#443a5e; --ok:#50fa7b; --warn:#ffb86c; --err:#ff5555;
+}
+
+[data-theme="one-dark"] {
+  --bg-0:#282c34; --bg-1:#2f343d; --bg-2:#353b45; --bg-3:#3e4451;
+  --border:#3e4451; --text-0:#d7dae0; --text-1:#abb2bf; --text-2:#5c6370;
+  --accent:#61afef; --accent-dim:#2f4a63; --ok:#98c379; --warn:#e5c07b; --err:#e06c75;
+}
+
+[data-theme="nord"] {
+  --bg-0:#2e3440; --bg-1:#343b4a; --bg-2:#3b4252; --bg-3:#434c5e;
+  --border:#434c5e; --text-0:#eceff4; --text-1:#d8dee9; --text-2:#7b88a1;
+  --accent:#88c0d0; --accent-dim:#3b4f5e; --ok:#a3be8c; --warn:#ebcb8b; --err:#bf616a;
+}
+
+[data-theme="catppuccin"] {
+  --bg-0:#181825; --bg-1:#1e1e2e; --bg-2:#313244; --bg-3:#45475a;
+  --border:#313244; --text-0:#cdd6f4; --text-1:#a6adc8; --text-2:#6c7086;
+  --accent:#cba6f7; --accent-dim:#3e3a5a; --ok:#a6e3a1; --warn:#f9e2af; --err:#f38ba8;
+}
+
+[data-theme="github-dark"] {
+  --bg-0:#0d1117; --bg-1:#131922; --bg-2:#161b22; --bg-3:#21262d;
+  --border:#30363d; --text-0:#c9d1d9; --text-1:#b1bac4; --text-2:#8b949e;
+  --accent:#58a6ff; --accent-dim:#1f3a5f; --ok:#3fb950; --warn:#d29922; --err:#f85149;
+}
+
+[data-theme="solarized"] {
+  --bg-0:#002b36; --bg-1:#073642; --bg-2:#0a3a47; --bg-3:#0e4452;
+  --border:#0e4452; --text-0:#93a1a1; --text-1:#839496; --text-2:#586e75;
+  --accent:#268bd2; --accent-dim:#0d4a6b; --ok:#859900; --warn:#b58900; --err:#dc322f;
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── User select: chrome is not selectable, content is ─────────────────────
+   Monaco's hidden <textarea> is covered by the textarea rule below.         */
+
+.activity-bar,
+.file-tree-item,
+.tab,
+.window-header,
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ── Base elements ────────────────────────────────────────────────────────── */
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+input, textarea {
+  font-family: inherit;
+  background: none;
+  border: none;
+  outline: none;
+  color: inherit;
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+::placeholder { color: var(--text-2); opacity: 0.75; }
+
+/* ── Text selection ──────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--accent-dim);
+  color: var(--text-0);
+}
+
+/* ── Focus ring — keyboard navigation ────────────────────────────────────── */
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-xs);
+}
+
+/* ── Scrollbars — thin, neutral, accent on hover ─────────────────────────── */
+
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: var(--bg-3);
+  border-radius: var(--r-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-2);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* xterm.js terminal scrollbar */
+.xterm-viewport::-webkit-scrollbar        { width: 7px; }
+.xterm-viewport::-webkit-scrollbar-track  { background: transparent; }
+.xterm-viewport::-webkit-scrollbar-thumb  {
+  background: var(--bg-3);
+  border-radius: var(--r-full);
+}
+.xterm-viewport::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
+
+/* ── Activity bar button ─────────────────────────────────────────────────── */
+
+.va-btn {
+  border-radius: var(--r-md);
+  position: relative;
+}
+.va-btn:hover  { background: var(--bg-3); }
+.va-btn:active { transform: scale(0.90); }
+
+.va-btn-active {
+  background: var(--bg-3);
+  box-shadow: inset 3px 0 0 0 var(--accent);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+
+/* ── Shared animations ────────────────────────────────────────────────────── */
+
+@keyframes va-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes va-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes va-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes va-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes va-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Status bar (bottom) ─────────────────────────────────────────────────── */
+
+.va-status-bar {
+  background: var(--accent);
+  color: rgba(255, 255, 255, 0.90);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  flex-shrink: 0;
+  user-select: none;
+  z-index: 100;
+}
+
+.va-status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  height: 100%;
+  cursor: default;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  transition: background 100ms ease;
+}
+
+.va-status-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Welcome screen (editor empty state) ─────────────────────────────────── */
+
+.va-welcome-kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

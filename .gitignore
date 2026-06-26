@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+dist/
+
+# tauri / rust
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/
+
+# python sidecar build
+sidecar/build_out/
+sidecar/build_tmp/
+sidecar/__pycache__/
+sidecar/*.spec
+.env
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
