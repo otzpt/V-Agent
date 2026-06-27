@@ -180,18 +180,18 @@ jobs:
           ## V-Agent ${TAG}
 
           ### Downloads
-          | Platform | Ficheiro | Tipo |
-          |----------|----------|------|
-          | Windows  | \`.msi\` | Instalador (recomendado) |
-          | Windows  | \`-windows-portable.zip\` | Portátil — extrai e corre, sem instalar |
-          | Windows  | \`-setup.exe\` | NSIS installer alternativo |
-          | Linux    | \`.deb\` | Instalador (Ubuntu/Debian) |
-          | Linux    | \`.AppImage\` | Portátil universal |
-          | macOS    | \`.dmg\` | Instalador |
+          | Platform | File | Type |
+          |----------|------|------|
+          | Windows  | \`.msi\` | Installer (recommended) |
+          | Windows  | \`-windows-portable.zip\` | Portable — extract and run, no install needed |
+          | Windows  | \`-setup.exe\` | NSIS alternative installer |
+          | Linux    | \`.deb\` | Installer (Ubuntu/Debian) |
+          | Linux    | \`.AppImage\` | Universal portable |
+          | macOS    | \`.dmg\` | Installer |
 
-          > **Portátil Windows**: extrai o ZIP para uma pasta ou pen drive e corre \`V-Agent.exe\` directamente. Requer WebView2 no sistema (presente em Windows 10/11 com Edge).
+          > **Windows Portable**: extract the ZIP to any folder or USB drive and run \`V-Agent.exe\` directly. Requires WebView2 (present on Windows 10/11 with Edge).
 
-          > **Primeiro arranque**: o V-Agent pede configuração do provider AI e Hackatime (opcional).
+          > **First launch**: V-Agent will prompt you to configure your AI provider and Hackatime (optional).
 
           Built automatically from tag \`${TAG}\`.
           EOF
