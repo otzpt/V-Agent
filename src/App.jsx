@@ -15,7 +15,19 @@ import CommandPalette from "./components/CommandPalette.jsx";
 import Notifications from "./components/Notifications.jsx";
 import StatusBar from "./components/StatusBar.jsx";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readFile, getConfig, saveConfig, readVagentConfig, runTask, createFile, gitCurrentBranch } from "./lib/tauri.js";
+import { readFile, getConfig, saveConfig, readVagentConfig, runTask, createFile, gitCurrentBranch, openExternal } from "./lib/tauri.js";
+
+const CURRENT_VERSION = "0.9.0";
+
+function semverGt(a, b) {
+  const pa = a.replace(/^v/, "").split(".").map(Number);
+  const pb = b.replace(/^v/, "").split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) > (pb[i] ?? 0)) return true;
+    if ((pa[i] ?? 0) < (pb[i] ?? 0)) return false;
+  }
+  return false;
+}
 
 // ── Reduced-motion check (module-level, stable) ───────────────────────────────
 const PRM =
@@ -673,6 +685,23 @@ export default function App() {
       .catch(() => setGitBranch(null));
   }, [gitRoot]);
 
+  // ── Update check ─────────────────────────────────────────────────────────────
+  const [updateBanner, setUpdateBanner] = useState(null); // null | { version, url }
+  useEffect(() => {
+    fetch("https://api.github.com/repos/otzpt/V-Agent/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const latest = data?.tag_name;
+        const url    = data?.html_url;
+        if (latest && url && semverGt(latest, CURRENT_VERSION)) {
+          setUpdateBanner({ version: latest, url });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // ── Status bar state ─────────────────────────────────────────────────────────
   const [cursorPos,     setCursorPos]       = useState(null);
   const [statusProvider, setStatusProvider] = useState("backend");
@@ -797,6 +826,30 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-0)" }}>
+    {updateBanner && (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+        padding: "5px 12px", background: "var(--accent)", color: "#fff", fontSize: 13,
+        flexShrink: 0,
+      }}>
+        <span>Update available: <strong>{updateBanner.version}</strong></span>
+        <button
+          onClick={() => openExternal(updateBanner.url).catch(() => {})}
+          style={{
+            background: "rgba(255,255,255,0.2)", border: "none", color: "#fff",
+            borderRadius: 4, padding: "2px 10px", cursor: "pointer", fontSize: 12,
+          }}
+        >Download</button>
+        <button
+          onClick={() => setUpdateBanner(null)}
+          style={{
+            background: "none", border: "none", color: "#fff",
+            cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px",
+          }}
+          aria-label="Dismiss"
+        >×</button>
+      </div>
+    )}
     <div
       style={{
         flex: 1,
