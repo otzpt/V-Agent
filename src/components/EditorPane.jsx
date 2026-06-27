@@ -527,13 +527,6 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
     sendHBRef.current(false);
   }, [activeFile?.path]);
 
-  // Periodic idle heartbeat every 2 minutes (fallback for when typing stops)
-  useEffect(() => {
-    if (!hackatimeConfig?.enabled) return;
-    const id = setInterval(() => sendHBRef.current(false), 120_000);
-    return () => clearInterval(id);
-  }, [hackatimeConfig?.enabled]);
-
   // ── Monaco instance: configure diagnostics + subscribe to markers ────────────
   const monaco = useMonaco();
 
