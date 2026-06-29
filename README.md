@@ -1,10 +1,15 @@
-# V-Agent
+<p align="center">
+  <img src="src-tauri/icons/icon.svg" width="120" alt="V-Agent logo"/>
+</p>
 
-> Local-first AI coding agent. No cloud lock-in, no bloat.
+<h1 align="center">V-Agent</h1>
+<p align="center"><em>Local-first AI coding agent. No cloud lock-in, no bloat.</em></p>
 
-[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/otzpt/V-Agent/releases)
-[![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com/otzpt/V-Agent/releases)
+<p align="center">
+  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/version-0.9.0-7cf26e?style=flat-square" alt="Version"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-7cf26e?style=flat-square" alt="License"/></a>
+  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-555?style=flat-square" alt="Platform"/></a>
+</p>
 
 ---
 

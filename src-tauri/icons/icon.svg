@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-sm" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="bg-grad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#0d1a0b"/>
+      <stop offset="100%" stop-color="#08080a"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="88" fill="#08080a"/>
+  <rect width="512" height="512" rx="88" fill="url(#bg-grad)"/>
+
+  <!-- Diamond outer glow -->
+  <polygon points="256,72 440,256 256,440 72,256"
+           fill="none" stroke="#7cf26e" stroke-width="4"
+           opacity="0.45" filter="url(#glow)"/>
+
+  <!-- Diamond stroke -->
+  <polygon points="256,72 440,256 256,440 72,256"
+           fill="none" stroke="#7cf26e" stroke-width="11"
+           stroke-linejoin="miter"/>
+
+  <!-- Corner accent dots -->
+  <circle cx="256" cy="72"  r="6" fill="#7cf26e" filter="url(#glow-sm)"/>
+  <circle cx="440" cy="256" r="6" fill="#7cf26e" filter="url(#glow-sm)"/>
+  <circle cx="256" cy="440" r="6" fill="#7cf26e" filter="url(#glow-sm)"/>
+  <circle cx="72"  cy="256" r="6" fill="#7cf26e" filter="url(#glow-sm)"/>
+
+  <!-- V lettermark -->
+  <path d="M 183,154 L 211,154 L 256,298 L 301,154 L 329,154 L 256,322 Z"
+        fill="#f4f1ea"/>
+
+  <!-- Cursor dot below V -->
+  <circle cx="256" cy="358" r="9" fill="#7cf26e" opacity="0.9" filter="url(#glow-sm)"/>
+</svg>
