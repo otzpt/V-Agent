@@ -6,7 +6,7 @@
 <p align="center"><em>Local-first AI coding agent. No cloud lock-in, no bloat.</em></p>
 
 <p align="center">
-  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/version-0.9.0-7cf26e?style=flat-square" alt="Version"/></a>
+  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/version-0.9.1--alpha-f5a623?style=flat-square" alt="Version"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-7cf26e?style=flat-square" alt="License"/></a>
   <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-555?style=flat-square" alt="Platform"/></a>
 </p>
@@ -28,6 +28,14 @@
 - **Search in files** — `Ctrl+Shift+F` with regex support
 - **Arduino support** — compile and upload from the editor
 - **Offline capable** — Ollama provider works with no internet
+
+---
+
+## Note on "Jarvis mode" (v0.9.1 alpha)
+
+V-Agent v0.9.1 includes an experimental **Jarvis mode** — persistent cross-session memory, autonomous agent loop, MCP tool support, and RAG context. This is a **testing ground**, not the main feature of V-Agent.
+
+The real, standalone Jarvis/AI assistant project is **[ECHOVOID](https://github.com/otzpt/ECHOVOID)** — a separate voice + text AI assistant (Siri/Jarvis-style). The features prototyped here will migrate there. Don't treat the Jarvis code in V-Agent as production-ready; it exists to validate the sidecar architecture before it lands in ECHOVOID.
 
 ---
 
@@ -133,8 +141,13 @@ src-tauri/
   tauri.conf.json           app + bundle config
   wix/main.wxs              Windows MSI installer template
 sidecar/
-  vagent_sidecar.py         JSON stdio agent loop
-  llm_provider.py           Groq / OpenRouter / Ollama / backend abstraction
+  vagent_sidecar.py         JSON stdio agent loop (multi-session, MCP, RAG)
+  llm_provider.py           Groq / OpenRouter / Ollama / Anthropic abstraction
+  agent_loop.py             tool-calling loop (normal + autonomous mode)
+  context_manager.py        token estimation + auto-compact
+  rag.py                    keyword-based file index + retrieval
+  model_router.py           heuristic model selection
+  memory.py                 cross-session memory (Jarvis — see note above)
 ```
 
 ---
