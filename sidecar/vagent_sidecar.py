@@ -1,37 +1,50 @@
 """
-vagent_sidecar.py — V-Agent Python sidecar
+vagent_sidecar.py — V-Agent Python sidecar  (v0.9.1)
 
-Two protocols on the same binary:
+Protocol (newline-delimited JSON on stdin/stdout):
 
-1. Legacy single-shot (request has NO "type"):
-       {"messages": [...], "config": {...}, "system_prompt": "..."}
-   → streams {"token": ...} lines, ends with {"done": true}.
+  Legacy single-shot (no "type" field):
+    {"messages": [...], "config": {...}, "system_prompt": "..."}
+    → streams {"token": ...} lines, ends with {"done": true}
 
-2. Persistent agent (request has "type"), used by the bidirectional bridge:
-       {"type":"chat","id":..,"messages":[..],"config":{..},"cwd":..,
-        "system_prompt":..,"agent":true,"plan":false}
-       {"type":"cancel","id":..}
-       {"type":"load_session"} / {"type":"clear_session"}
-   → streams events: token / tool_call / tool_result / propose_write /
-     propose_command / info / error / done  (each with the request "id").
+  Persistent agent:
+    {"type":"chat",            "id":"..", "session_id":"..", "messages":[..],
+     "config":{..}, "cwd":"..", "system_prompt":"..", "agent":true, "plan":false}
+    {"type":"cancel",          "id":".."}
+    {"type":"load_session",    "session_id":".."}
+    {"type":"clear_session",   "session_id":".."}
+    {"type":"compact_session", "session_id":".."}
+    {"type":"get_context",     "session_id":"..", "model":".."}
 
-Read-only tools (read_file, list_dir, search_in_files) run here. write_file and
-run_command are surfaced to the UI as proposals (never auto-applied). Tool calls
-use a provider-agnostic XML protocol, so every existing provider works unchanged.
+  Emitted events:
+    token / tool_call / tool_result / propose_write / propose_command /
+    info / error / done / session / context
 """
 
 import sys
 import os
-import re
 import json
 import threading
 from pathlib import Path
 
-from llm_provider import build_provider, LLMError, LLMRateLimitError
+from llm_provider  import build_provider, LLMError, LLMRateLimitError
+from agent_loop    import AgentLoop
+from context_manager import (
+    needs_compact, llm_compact, simple_compact, token_report,
+)
+from model_router  import route as model_route
+from rag           import get_rag_context
+from memory        import (
+    load_memory, save_memory, clear_memory as clear_mem,
+    memory_to_prompt, update_memory_async,
+)
 
-# ── Output (thread-safe) ───────────────────────────────────────────────────────
+# ── Output (thread-safe) ──────────────────────────────────────────────────────
 
 _emit_lock = threading.Lock()
+
+# Module-level memory cache (loaded once at startup, mutated as facts arrive)
+_MEMORY: dict = {}
 
 
 def emit(obj: dict) -> None:
@@ -40,7 +53,7 @@ def emit(obj: dict) -> None:
         sys.stdout.flush()
 
 
-# ── Session persistence ────────────────────────────────────────────────────────
+# ── Config / paths ────────────────────────────────────────────────────────────
 
 def config_dir() -> Path:
     if os.name == "nt":
@@ -48,82 +61,128 @@ def config_dir() -> Path:
     return Path(os.environ.get("HOME", ".")) / ".config" / "VAgent"
 
 
-SESSION_PATH = config_dir() / "session.json"
+def _sessions_dir() -> Path:
+    d = config_dir() / "sessions"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
-def load_session() -> list:
+def _session_path(session_id: str) -> Path:
+    safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in session_id)
+    return _sessions_dir() / f"{safe}.json"
+
+
+# ── Session persistence ───────────────────────────────────────────────────────
+
+def load_session(session_id: str = "default") -> list:
     try:
-        return json.loads(SESSION_PATH.read_text(encoding="utf-8"))
+        return json.loads(_session_path(session_id).read_text(encoding="utf-8"))
     except Exception:
         return []
 
 
-def save_session(messages: list) -> None:
+def save_session(messages: list, session_id: str = "default") -> None:
     try:
-        config_dir().mkdir(parents=True, exist_ok=True)
-        SESSION_PATH.write_text(json.dumps(messages[-60:]), encoding="utf-8")
+        _session_path(session_id).write_text(
+            json.dumps(messages[-60:], ensure_ascii=False), encoding="utf-8"
+        )
     except Exception:
         pass
 
 
-# ── Persisted credentials/config ────────────────────────────────────────────────
-# The frontend only sends {ai_provider, model} per request — never API keys. Keys
-# live in config.json (written by onboarding) and/or .env (written by Settings).
-# Load them here so Groq/OpenRouter/Ollama actually receive their credentials
-# instead of silently falling back to the backend provider.
+def clear_session(session_id: str = "default") -> None:
+    save_session([], session_id)
+
+
+# ── Persisted config (API keys live in config.json / .env) ───────────────────
 
 def _persisted_config() -> dict:
     data: dict = {}
     try:
-        cfg_path = config_dir() / "config.json"
-        loaded = json.loads(cfg_path.read_text(encoding="utf-8"))
+        raw = (config_dir() / "config.json").read_text(encoding="utf-8")
+        loaded = json.loads(raw)
         if isinstance(loaded, dict):
             data.update(loaded)
     except Exception:
         pass
     try:
-        env_path = config_dir() / ".env"
-        env: dict = {}
-        for line in env_path.read_text(encoding="utf-8").splitlines():
+        env_text = (config_dir() / ".env").read_text(encoding="utf-8")
+        for line in env_text.splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, v = line.split("=", 1)
-            env[k.strip()] = v.strip()
-        if env.get("GROQ_API_KEY"):
-            data["groq_api_key"] = env["GROQ_API_KEY"]
-        if env.get("OPENROUTER_API_KEY"):
-            data["openrouter_api_key"] = env["OPENROUTER_API_KEY"]
-        if env.get("OLLAMA_MODEL"):
-            data.setdefault("model", env["OLLAMA_MODEL"])
+            env_key = k.strip()
+            env_val = v.strip()
+            mapping = {
+                "GROQ_API_KEY":        "groq_api_key",
+                "OPENROUTER_API_KEY":  "openrouter_api_key",
+                "ANTHROPIC_API_KEY":   "anthropic_api_key",
+                "OLLAMA_MODEL":        "model",
+            }
+            if env_key in mapping:
+                data.setdefault(mapping[env_key], env_val)
     except Exception:
         pass
     return data
 
 
 def merged_config(req_cfg: dict) -> dict:
-    """Request config wins; persisted keys/model fill in the gaps."""
     merged = _persisted_config()
     merged.update(req_cfg or {})
     return merged
 
 
-# ── Extension system ──────────────────────────────────────────────────────────
-# Extensions live in config_dir()/extensions/<id>/main.py and expose
-# a register(vagent) function. vagent.add_tool() adds callable tools to
-# the agentic loop. Errors in individual extensions are logged and skipped.
+# ── MCP integration ───────────────────────────────────────────────────────────
+# Loaded once at startup from config.json mcp_servers field.
 
-EXTENSION_TOOLS: dict = {}   # tool_name → fn(cwd, args) → str
-EXTENSION_DOCS:  list = []   # extra tool doc lines appended to TOOLS_DOC
+MCP_SERVERS:   dict = {}    # {"servername": {"url": str, "tools": list, "enabled": bool}}
+MCP_TOOLS_DOC: str  = ""    # extra lines appended to TOOLS_DOC for MCP tools
+
+
+def _load_mcp_servers() -> None:
+    global MCP_SERVERS, MCP_TOOLS_DOC
+    try:
+        cfg = _persisted_config()
+        servers = cfg.get("mcp_servers", [])
+        if not isinstance(servers, list):
+            return
+        import requests
+        doc_lines: list[str] = []
+        for srv in servers:
+            name    = srv.get("name", "").strip()
+            url     = srv.get("url", "").strip().rstrip("/")
+            enabled = srv.get("enabled", True)
+            if not name or not url or not enabled:
+                continue
+            try:
+                resp  = requests.get(f"{url}/tools", timeout=5)
+                tools = resp.json() if resp.status_code == 200 else []
+            except Exception:
+                tools = []
+            MCP_SERVERS[name] = {"url": url, "tools": tools, "enabled": True}
+            for t in tools:
+                tname = t.get("name", "")
+                tdesc = t.get("description", "")
+                if tname:
+                    qname = f"mcp__{name}__{tname}"
+                    doc_lines.append(
+                        f'<tool_call>{{"tool": "{qname}", "args": {{}}}}</tool_call>'
+                        f"\n{tdesc or f'MCP tool from server {name}'}"
+                    )
+        MCP_TOOLS_DOC = "\n".join(doc_lines)
+    except Exception:
+        pass
+
+
+# ── Extension system ──────────────────────────────────────────────────────────
+
+EXTENSION_TOOLS: dict = {}
+EXTENSION_DOCS:  list = []
 
 
 class VagentContext:
-    """API surface passed to extension register() functions."""
-
     def add_tool(self, name: str, fn, description: str = "") -> None:
-        """Register a tool callable from the agentic loop.
-        fn signature: fn(cwd: str, args: dict) -> str
-        """
         EXTENSION_TOOLS[name] = fn
         if description:
             EXTENSION_DOCS.append(
@@ -132,13 +191,10 @@ class VagentContext:
 
 
 def load_extensions() -> None:
-    """Discover and load all extensions installed under config_dir()/extensions/."""
     import importlib.util
-
     ext_dir = config_dir() / "extensions"
     if not ext_dir.exists():
         return
-
     ctx = VagentContext()
     for path in sorted(ext_dir.iterdir()):
         if not path.is_dir():
@@ -146,41 +202,42 @@ def load_extensions() -> None:
         main_py = path / "main.py"
         if not main_py.exists():
             continue
-        ext_id = path.name
         try:
             spec = importlib.util.spec_from_file_location(
-                f"vagent_ext_{ext_id}", main_py
+                f"vagent_ext_{path.name}", main_py
             )
             if spec is None or spec.loader is None:
                 continue
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)  # type: ignore[union-attr]
+            spec.loader.exec_module(module)   # type: ignore[union-attr]
             if hasattr(module, "register") and callable(module.register):
                 module.register(ctx)
         except Exception as exc:
-            print(
-                f"[sidecar] extension '{ext_id}' failed to load: {exc}",
-                file=sys.stderr,
-            )
+            print(f"[sidecar] extension '{path.name}' error: {exc}", file=sys.stderr)
 
 
-# ── Tools (read-only ones execute locally) ─────────────────────────────────────
+# ── Built-in read-only tools ──────────────────────────────────────────────────
 
-SKIP_DIRS = {".git", "node_modules", "__pycache__", "target", "dist", "build", ".venv", "venv"}
+SKIP_DIRS = {
+    ".git", "node_modules", "__pycache__", "target",
+    "dist", "build", ".venv", "venv",
+}
 
 
 def _resolve(cwd: str, rel: str) -> Path:
     return (Path(cwd) / rel).resolve()
 
 
-def tool_read_file(cwd, args):
+def tool_read_file(cwd: str, args: dict) -> str:
     try:
-        return _resolve(cwd, args.get("path", "")).read_text(encoding="utf-8", errors="replace")[:12000]
+        return _resolve(cwd, args.get("path", "")).read_text(
+            encoding="utf-8", errors="replace"
+        )[:12_000]
     except Exception as e:
         return f"ERROR: {e}"
 
 
-def tool_list_dir(cwd, args):
+def tool_list_dir(cwd: str, args: dict) -> str:
     try:
         p = _resolve(cwd, args.get("path", "."))
         names = []
@@ -193,7 +250,7 @@ def tool_list_dir(cwd, args):
         return f"ERROR: {e}"
 
 
-def tool_search(cwd, args):
+def tool_search(cwd: str, args: dict) -> str:
     query = args.get("query", "")
     if not query:
         return "ERROR: empty query"
@@ -217,6 +274,21 @@ def tool_search(cwd, args):
     return "\n".join(out) if out else "(no matches)"
 
 
+LOCAL_TOOLS = {
+    "read_file":        tool_read_file,
+    "list_dir":         tool_list_dir,
+    "search_in_files":  tool_search,
+}
+
+# ── System prompt / tools doc ─────────────────────────────────────────────────
+
+IDENTITY = (
+    "You are V-Agent, a focused and practical AI assistant embedded in a local code editor. "
+    "You remember the user across sessions and build on past context. "
+    "Be direct, concise, and action-oriented — propose edits immediately rather than asking "
+    "clarifying questions. Refer to yourself as V-Agent when relevant."
+)
+
 TOOLS_DOC = """You have tools. Use them proactively.
 
 CRITICAL RULE: When the user asks to create, write, edit, or modify a file — always use write_file immediately. Never just show code in a code block without also proposing write_file. If the user wants a file created, create it.
@@ -235,171 +307,137 @@ Rules:
 - DEFAULT BEHAVIOR: If the user mentions a file by name and wants code written, use write_file. Do not ask for permission to write — just propose it.
 - Only skip write_file if the user explicitly says 'just show me the code' or 'don't create a file'."""
 
-TOOL_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
+
+def _build_system(base: str, use_tools: bool, plan: bool, rag_ctx: str, mem_ctx: str = "") -> str:
+    parts = [IDENTITY]
+    if mem_ctx:
+        parts.append(mem_ctx)
+    if base:
+        parts.append(base)
+    if plan:
+        parts.append("PLAN MODE: Provide a concise step-by-step plan only. Do NOT use tools or write code.")
+    elif use_tools:
+        extra_docs = []
+        if EXTENSION_DOCS:
+            extra_docs.append("Extension tools:\n" + "\n".join(EXTENSION_DOCS))
+        if MCP_TOOLS_DOC:
+            extra_docs.append("MCP tools:\n" + MCP_TOOLS_DOC)
+        parts.append(TOOLS_DOC)
+        parts.extend(extra_docs)
+    if rag_ctx:
+        parts.append(rag_ctx)
+    return "\n\n".join(p for p in parts if p)
 
 
-def parse_tool_calls(text):
-    calls = []
-    for m in TOOL_RE.finditer(text):
-        try:
-            obj = json.loads(m.group(1))
-            if isinstance(obj, dict) and obj.get("tool"):
-                calls.append(obj)
-        except Exception:
-            continue
-    return calls
+# ── Cancel table ──────────────────────────────────────────────────────────────
+
+_cancel: dict[str, bool] = {}
 
 
-def strip_tool_calls(text):
-    return TOOL_RE.sub("", text).strip()
+# ── Main agent handler ────────────────────────────────────────────────────────
 
-
-# ── Agentic loop ───────────────────────────────────────────────────────────────
-
-_cancel = {}  # request id -> bool
-
-
-def run_agent(req):
-    rid = req.get("id")
-    messages = req.get("messages", [])
-    config = merged_config(req.get("config", {}))
-    cwd = req.get("cwd") or os.getcwd()
-    base_system = req.get("system_prompt", "") or ""
-    agent = bool(req.get("agent", True))
-    plan = bool(req.get("plan", False))
+def run_agent(req: dict) -> None:
+    rid        = req.get("id")
+    session_id = req.get("session_id", "default") or "default"
+    messages   = req.get("messages", [])
+    config     = merged_config(req.get("config", {}))
+    cwd        = req.get("cwd") or os.getcwd()
+    base_sys   = req.get("system_prompt", "") or ""
+    agent      = bool(req.get("agent", True))
+    plan       = bool(req.get("plan", False))
+    autonomous = bool(req.get("autonomous", False))
 
     _cancel[rid] = False
 
-    def cancelled():
-        return _cancel.get(rid, False)
+    def cancelled() -> bool:
+        return bool(_cancel.get(rid, False))
 
-    if plan:
-        system = (base_system + "\n\nPLAN MODE: Provide a concise step-by-step plan only. Do NOT use tools or write code.").strip()
-        use_tools = False
-    elif agent:
-        extra = ("\n\nExtension tools:\n" + "\n".join(EXTENSION_DOCS)) if EXTENSION_DOCS else ""
-        system = (base_system + "\n\n" + TOOLS_DOC + extra).strip()
-        use_tools = True
-    else:
-        system = base_system
-        use_tools = False
+    # ── Model routing ─────────────────────────────────────────────────────────
+    last_msg = next(
+        (m["content"] for m in reversed(messages) if m.get("role") == "user"), ""
+    )
+    config, task_type = model_route(last_msg, messages, config)
+    model = config.get("model", "")
 
+    # ── RAG context ───────────────────────────────────────────────────────────
+    rag_ctx = ""
+    if cwd and agent and not plan and last_msg:
+        try:
+            rag_ctx = get_rag_context(last_msg, cwd, config_dir())
+        except Exception:
+            pass
+
+    # ── Memory context ────────────────────────────────────────────────────────
+    mem_ctx = memory_to_prompt(_MEMORY) if _MEMORY else ""
+
+    use_tools = agent and not plan
+    system    = _build_system(base_sys, use_tools, plan, rag_ctx, mem_ctx)
+
+    # ── Provider ──────────────────────────────────────────────────────────────
     try:
         provider = build_provider(config, system)
     except Exception as e:
         emit({"type": "error", "id": rid, "error": f"provider: {e}"})
-        emit({"type": "done", "id": rid})
+        emit({"type": "done",  "id": rid})
         _cancel.pop(rid, None)
         return
 
-    convo = list(messages)
-
-    # Auto-trim history when it grows too large: keep last 5 + a note about what was dropped
-    if len(convo) > 20:
-        kept = convo[-5:]
-        dropped = len(convo) - 5
-        convo = [{"role": "user", "content": f"[{dropped} earlier messages trimmed to manage context length]"}] + kept
-
-    call_seq = 0
-    max_steps = 6 if use_tools else 1
-
-    for _step in range(max_steps):
-        if cancelled():
-            break
-
-        # Collect the full turn so we can detect tool calls before showing text.
-        acc = ""
+    # Build fallback provider (OpenRouter) for rate-limit recovery
+    fallback = None
+    or_key   = config.get("openrouter_api_key", "").strip()
+    if or_key and config.get("ai_provider") == "groq":
         try:
-            for tok in provider.stream(convo, cancel_flag=cancelled):
-                acc += tok
-        except LLMRateLimitError:
-            # Groq rate limited: try OpenRouter automatically
-            or_key = config.get("openrouter_api_key", "").strip()
-            if or_key:
-                emit({"type": "info", "id": rid, "text": "Groq rate limited — switched to OpenRouter"})
-                or_cfg = {**config, "ai_provider": "openrouter"}
-                try:
-                    or_provider = build_provider(or_cfg, system)
-                    for tok in or_provider.stream(convo, cancel_flag=cancelled):
-                        acc += tok
-                except LLMError as e2:
-                    emit({"type": "error", "id": rid, "error": str(e2)})
-                    break
-            else:
-                emit({"type": "error", "id": rid, "error": "Groq rate limited. Add an OpenRouter key in Settings to auto-switch."})
-                break
-        except LLMError as e:
-            emit({"type": "error", "id": rid, "error": str(e)})
-            break
-        except Exception as e:
-            emit({"type": "error", "id": rid, "error": f"sidecar: {e}"})
-            break
+            fallback = build_provider(
+                {**config, "ai_provider": "openrouter"}, system
+            )
+        except Exception:
+            pass
 
-        calls = parse_tool_calls(acc) if use_tools else []
+    # ── History trim / auto-compact ───────────────────────────────────────────
+    convo = list(messages)
+    if needs_compact(convo, model):
+        try:
+            convo = llm_compact(convo, provider)
+            emit({"type": "info", "id": rid,
+                  "text": "Context compacted automatically to stay within token limit."})
+        except Exception:
+            compacted, n = simple_compact(convo)
+            convo = compacted
+            if n:
+                emit({"type": "info", "id": rid,
+                      "text": f"{n} earlier messages compacted to manage context length."})
+    elif len(convo) > 20:
+        kept     = convo[-5:]
+        dropped  = len(convo) - 5
+        convo    = [{"role": "user",
+                     "content": f"[{dropped} earlier messages trimmed to manage context]"}] + kept
 
-        if not calls:
-            final = strip_tool_calls(acc) if agent else acc   # drop any stray tool XML
-            for i in range(0, len(final), 24):       # stream the final answer
-                if cancelled():
-                    break
-                emit({"type": "token", "id": rid, "text": final[i:i + 24]})
-            convo.append({"role": "assistant", "content": final})
-            break
+    # ── Agent loop ────────────────────────────────────────────────────────────
+    loop  = AgentLoop(
+        session_id      = session_id,
+        provider        = provider,
+        emit_fn         = lambda ev: emit({**ev}),
+        local_tools     = LOCAL_TOOLS,
+        extension_tools = EXTENSION_TOOLS,
+        mcp_servers     = MCP_SERVERS,
+    )
+    convo = loop.run(rid, convo, cwd, use_tools, cancelled, fallback,
+                     autonomous=autonomous)
 
-        convo.append({"role": "assistant", "content": acc})
-        results = []
-        for call in calls:
-            if cancelled():
-                break
-            call_seq += 1
-            cid = f"{rid}-{call_seq}"
-            tool = call.get("tool")
-            args = call.get("args", {}) or {}
-            emit({"type": "tool_call", "id": rid, "call_id": cid, "tool": tool, "args": args})
-
-            if tool == "read_file":
-                res = tool_read_file(cwd, args)
-            elif tool == "list_dir":
-                res = tool_list_dir(cwd, args)
-            elif tool == "search_in_files":
-                res = tool_search(cwd, args)
-            elif tool == "write_file":
-                original = ""
-                try:
-                    original = _resolve(cwd, args.get("path", "")).read_text(encoding="utf-8", errors="replace")[:20000]
-                except Exception:
-                    original = ""
-                emit({"type": "propose_write", "id": rid, "call_id": cid,
-                      "path": args.get("path", ""), "content": args.get("content", ""), "original": original})
-                res = "Proposed to the user for approval (Accept/Reject)."
-            elif tool == "run_command":
-                emit({"type": "propose_command", "id": rid, "call_id": cid, "command": args.get("command", "")})
-                res = "Command proposed to the user for approval."
-            elif tool in EXTENSION_TOOLS:
-                try:
-                    res = EXTENSION_TOOLS[tool](cwd, args)
-                except Exception as exc:
-                    res = f"ERROR in extension tool '{tool}': {exc}"
-            else:
-                res = f"ERROR: unknown tool '{tool}'"
-
-            emit({"type": "tool_result", "id": rid, "call_id": cid, "tool": tool, "result": res[:4000]})
-            results.append(f"[{tool}] {res}")
-
-        convo.append({"role": "user", "content": "Tool results:\n" + "\n\n".join(results)})
-    else:
-        emit({"type": "info", "id": rid, "text": "Reached the tool-step limit; answering with what I have."})
-
-    save_session(convo)
+    save_session(convo, session_id)
     _cancel.pop(rid, None)
     emit({"type": "done", "id": rid})
 
+    # Update memory asynchronously after the session completes
+    if _MEMORY and _MEMORY.get("remember_me", True):
+        update_memory_async(_MEMORY, convo, provider, config_dir(), cwd)
 
-# ── Legacy single-shot path ────────────────────────────────────────────────────
 
-def handle_legacy(req):
-    messages = req.get("messages", [])
-    config = merged_config(req.get("config", {}))
+# ── Legacy single-shot ────────────────────────────────────────────────────────
+
+def handle_legacy(req: dict) -> None:
+    messages      = req.get("messages", [])
+    config        = merged_config(req.get("config", {}))
     system_prompt = req.get("system_prompt", "")
     if not messages:
         emit({"error": "no messages provided"})
@@ -413,32 +451,84 @@ def handle_legacy(req):
     except LLMError as e:
         emit({"error": str(e)})
         emit({"done": True})
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         emit({"error": f"sidecar error: {e}"})
         emit({"done": True})
 
 
-# ── Dispatch ───────────────────────────────────────────────────────────────────
+# ── Dispatch ──────────────────────────────────────────────────────────────────
 
-def dispatch(req):
-    t = req.get("type")
+def dispatch(req: dict) -> None:
+    t          = req.get("type")
+    session_id = req.get("session_id", "default") or "default"
+
     if t is None:
         handle_legacy(req)
+
     elif t == "chat":
         threading.Thread(target=run_agent, args=(req,), daemon=True).start()
+
     elif t == "cancel":
         _cancel[req.get("id")] = True
+
     elif t == "load_session":
-        emit({"type": "session", "messages": load_session()})
+        msgs = load_session(session_id)
+        emit({"type": "session", "session_id": session_id, "messages": msgs})
+
     elif t == "clear_session":
-        save_session([])
-        emit({"type": "session", "messages": []})
+        clear_session(session_id)
+        emit({"type": "session", "session_id": session_id, "messages": []})
+
+    elif t == "compact_session":
+        msgs = load_session(session_id)
+        compacted, n = simple_compact(msgs)
+        save_session(compacted, session_id)
+        emit({
+            "type":       "session",
+            "session_id": session_id,
+            "messages":   compacted,
+            "compacted":  n,
+        })
+
+    elif t == "get_context":
+        model = req.get("model", "")
+        msgs  = load_session(session_id)
+        report = token_report(msgs, model)
+        emit({
+            "type":       "context",
+            "session_id": session_id,
+            "messages":   msgs,
+            **report,
+        })
+
+    elif t == "get_memory":
+        emit({"type": "memory_data", "data": dict(_MEMORY)})
+
+    elif t == "clear_memory":
+        _MEMORY.clear()
+        _MEMORY.update(load_memory(config_dir()))
+        clear_mem(config_dir())
+        emit({"type": "memory_data", "data": dict(_MEMORY)})
+
+    elif t == "update_memory_prefs":
+        prefs = req.get("preferences", {})
+        remember = req.get("remember_me")
+        if isinstance(prefs, dict):
+            _MEMORY.setdefault("user_preferences", {}).update(prefs)
+        if remember is not None:
+            _MEMORY["remember_me"] = bool(remember)
+        save_memory(_MEMORY, config_dir())
+        emit({"type": "memory_data", "data": dict(_MEMORY)})
+
     else:
         emit({"type": "error", "error": f"unknown request type '{t}'"})
 
 
-def main():
+def main() -> None:
+    global _MEMORY
+    _MEMORY = load_memory(config_dir())
     load_extensions()
+    _load_mcp_servers()
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -450,7 +540,7 @@ def main():
             continue
         try:
             dispatch(req)
-        except Exception as e:  # noqa: BLE001 — never crash the loop
+        except Exception as e:
             emit({"type": "error", "error": f"dispatch: {e}"})
 
 

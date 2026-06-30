@@ -24,6 +24,9 @@ export default function Terminal({ onReady }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Shared handler ref so both init() and cleanup use the same function.
+    let runCmdHandler = null;
+
     const term = new XTerm({
       fontFamily: "JetBrains Mono, Consolas, monospace",
       fontSize: 12,
@@ -60,6 +63,10 @@ export default function Terminal({ onReady }) {
         unlistenRef.current = await onPtyOutput((event) => {
           if (event.payload.id === sessionIdRef.current) {
             term.write(event.payload.data);
+            // Bridge: let AIPanel observe output when in /terminal mode
+            window.dispatchEvent(new CustomEvent("vagent-terminal-output", {
+              detail: { data: event.payload.data },
+            }));
           }
         });
       }
@@ -94,6 +101,15 @@ export default function Terminal({ onReady }) {
           const id = sessionIdRef.current;
           if (id) ptyWrite(id, data).catch(() => {});
         });
+
+        // Listen for commands dispatched by AIPanel in /terminal mode
+        runCmdHandler = (e) => {
+          const id = sessionIdRef.current;
+          if (id && e.detail?.command) {
+            ptyWrite(id, e.detail.command + "\r").catch(() => {});
+          }
+        };
+        window.addEventListener("vagent-run-in-terminal", runCmdHandler);
       } catch (e) {
         term.writeln(`\r\n\x1b[31mFailed to start terminal: ${e}\x1b[0m`);
       }
@@ -116,6 +132,7 @@ export default function Terminal({ onReady }) {
 
     return () => {
       window.removeEventListener("resize", refit);
+      if (runCmdHandler) window.removeEventListener("vagent-run-in-terminal", runCmdHandler);
       ro.disconnect();
       if (unlistenRef.current)   { unlistenRef.current();   unlistenRef.current   = null; }
       if (unlistenClRef.current) { unlistenClRef.current(); unlistenClRef.current = null; }

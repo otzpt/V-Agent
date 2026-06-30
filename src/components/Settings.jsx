@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { writeEnvKey, getSystemInfo, getConfig, saveConfig, sendHeartbeat, openExternal } from "../lib/tauri.js";
+import { writeEnvKey, getSystemInfo, getConfig, saveConfig, sendHeartbeat, openExternal, mcpCheckServer, mcpListTools, getVagentMemory, clearVagentMemory } from "../lib/tauri.js";
 
 const DEFAULT_HACKATIME_URL = "https://hackatime.hackclub.com/api/hackatime/v1/users/current/heartbeats";
 const HACKATIME_SETUP_URL = "https://hackatime.hackclub.com/my/wakatime_setup";
@@ -95,7 +95,24 @@ const PROVIDERS = [
   { id: "backend",    label: "Backend (built-in)", needsKey: false },
   { id: "groq",       label: "Groq",               needsKey: true  },
   { id: "openrouter", label: "OpenRouter",          needsKey: true  },
+  { id: "anthropic",  label: "Anthropic",           needsKey: true  },
   { id: "ollama",     label: "Ollama (local)",      needsKey: false },
+];
+
+const OPENROUTER_MODELS = [
+  { value: "anthropic/claude-haiku-4-5",              label: "Claude Haiku 4.5"       },
+  { value: "anthropic/claude-sonnet-4-5",             label: "Claude Sonnet 4.5"      },
+  { value: "google/gemini-flash-1.5",                 label: "Gemini Flash 1.5"       },
+  { value: "google/gemini-2.0-flash-exp:free",        label: "Gemini 2.0 Flash (free)"},
+  { value: "meta-llama/llama-3.1-8b-instruct:free",   label: "Llama 3.1 8B (free)"   },
+  { value: "mistralai/mistral-7b-instruct:free",      label: "Mistral 7B (free)"      },
+  { value: "deepseek/deepseek-r1:free",               label: "DeepSeek R1 (free)"     },
+];
+
+const ANTHROPIC_MODELS = [
+  { value: "claude-haiku-4-5",  label: "Claude Haiku 4.5 (fast)"   },
+  { value: "claude-sonnet-4-5", label: "Claude Sonnet 4.5 (smart)"  },
+  { value: "claude-opus-4-8",   label: "Claude Opus 4.8 (best)"     },
 ];
 
 function maxParamsForVram(vramMb) {
@@ -314,13 +331,170 @@ function Switch({ on, onClick }) {
   );
 }
 
+// ── MCP Servers section ───────────────────────────────────────────────────────
+
+function McpSection({ servers, onChange }) {
+  const [checking, setChecking] = useState({});   // {name: "ok"|"err"|"…"}
+  const [newName,  setNewName]  = useState("");
+  const [newUrl,   setNewUrl]   = useState("");
+
+  const checkAll = useCallback(async (list) => {
+    const next = {};
+    await Promise.all(list.map(async (s) => {
+      if (!s.enabled || !s.url) return;
+      next[s.name] = "…";
+      setChecking((p) => ({ ...p, [s.name]: "…" }));
+      const ok = await mcpCheckServer(s.url).catch(() => false);
+      setChecking((p) => ({ ...p, [s.name]: ok ? "ok" : "err" }));
+    }));
+  }, []);
+
+  useEffect(() => { checkAll(servers); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  const add = () => {
+    const name = newName.trim();
+    const url  = newUrl.trim();
+    if (!name || !url) return;
+    if (servers.some((s) => s.name === name)) return;
+    const next = [...servers, { name, url, enabled: true }];
+    onChange(next);
+    setNewName("");
+    setNewUrl("");
+    checkAll([{ name, url, enabled: true }]);
+  };
+
+  const toggle = (name) => {
+    onChange(servers.map((s) => s.name === name ? { ...s, enabled: !s.enabled } : s));
+  };
+
+  const remove = (name) => {
+    onChange(servers.filter((s) => s.name !== name));
+    setChecking((p) => { const n = { ...p }; delete n[name]; return n; });
+  };
+
+  const dot = (name) => {
+    const st = checking[name];
+    const color = st === "ok" ? "var(--ok)" : st === "err" ? "var(--err)" : "var(--text-2)";
+    return <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />;
+  };
+
+  return (
+    <div style={ss.section}>
+      <div style={ss.sectionTitle}>MCP Servers</div>
+      {servers.length === 0 && (
+        <div style={ss.dimText}>No MCP servers configured. Add one below.</div>
+      )}
+      {servers.map((s) => (
+        <div key={s.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          {dot(s.name)}
+          <span style={{ flex: 1, fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--text-0)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {s.name} <span style={{ color: "var(--text-2)", fontSize: 11 }}>{s.url}</span>
+          </span>
+          <Switch on={s.enabled} onClick={() => toggle(s.name)} />
+          <button style={{ ...ss.testBtn, padding: "3px 8px", fontSize: 11 }} onClick={() => remove(s.name)}>✕</button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+        <input style={{ ...ss.input, flex: "0 0 110px" }} placeholder="name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+        <input style={{ ...ss.input, flex: 1 }} placeholder="http://localhost:3000" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+        <button style={{ ...ss.testBtn, whiteSpace: "nowrap" }} onClick={add}>+ Add</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Memory & Personalization section ─────────────────────────────────────────
+
+function MemorySection({ rememberMe, onRememberMe }) {
+  const [memory,   setMemory]   = useState(null);   // null = loading
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    getVagentMemory().then(setMemory).catch(() => setMemory({}));
+  }, []);
+
+  const handleClear = async () => {
+    setClearing(true);
+    await clearVagentMemory().catch(() => {});
+    setMemory({ user_preferences: {}, known_projects: [], learned_facts: [], remember_me: true });
+    setClearing(false);
+  };
+
+  const facts = memory?.learned_facts || [];
+  const projs = memory?.known_projects || [];
+
+  return (
+    <div style={ss.section}>
+      <div style={ss.sectionTitle}>Memory &amp; Personalization</div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <span style={{ fontSize: 13, color: "var(--text-1)", fontFamily: "var(--font-ui)" }}>
+          Remember me across sessions
+          <span style={{ display: "block", fontSize: 11, color: "var(--text-2)", marginTop: 2 }}>
+            V-Agent learns your preferences and project context over time
+          </span>
+        </span>
+        <Switch on={rememberMe} onClick={() => onRememberMe(!rememberMe)} />
+      </div>
+
+      {memory === null ? (
+        <div style={ss.dimText}>Loading memory…</div>
+      ) : (
+        <>
+          {projs.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, color: "var(--text-2)", marginBottom: 6, fontFamily: "var(--font-ui)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Known projects ({projs.length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
+                {[...projs].sort((a, b) => (b.last_worked || 0) - (a.last_worked || 0)).slice(0, 5).map((p) => (
+                  <div key={p.path} style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-1)", background: "var(--bg-2)", borderRadius: 6, padding: "4px 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.name}
+                    <span style={{ color: "var(--text-2)", fontSize: 10, marginLeft: 8 }}>{p.path}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {facts.length > 0 ? (
+            <>
+              <div style={{ fontSize: 11, color: "var(--text-2)", marginBottom: 6, fontFamily: "var(--font-ui)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Learned facts ({facts.length})
+              </div>
+              <ul style={{ margin: "0 0 12px", padding: "0 0 0 18px", display: "flex", flexDirection: "column", gap: 4 }}>
+                {facts.slice(-8).map((f, i) => (
+                  <li key={i} style={{ fontSize: 12, color: "var(--text-1)", fontFamily: "var(--font-ui)" }}>{f}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div style={{ ...ss.dimText, marginBottom: 12 }}>No facts learned yet — start chatting!</div>
+          )}
+
+          <button
+            style={{ ...ss.testBtn, color: "var(--err)", borderColor: "var(--err)", opacity: clearing ? 0.5 : 1 }}
+            onClick={handleClear}
+            disabled={clearing}
+          >
+            {clearing ? "Clearing…" : "Clear memory"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Settings overlay ──────────────────────────────────────────────────
 
 export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose, editorPrefs = {}, onEditorPref, hackatimeLastSent = null }) {
   const [provider,        setProvider]        = useState("backend");
-  const [keys,            setKeys]            = useState({ groq: "", openrouter: "" });
+  const [keys,            setKeys]            = useState({ groq: "", openrouter: "", anthropic: "" });
   const [ollamaModel,     setOllamaModel]     = useState("");
   const [openrouterModel, setOpenrouterModel] = useState("anthropic/claude-haiku-4-5");
+  const [anthropicModel,  setAnthropicModel]  = useState("claude-haiku-4-5");
+  const [mcpServers,      setMcpServers]      = useState([]);
+  const [rememberMe,     setRememberMe]     = useState(true);
   const [hkEnabled,      setHkEnabled]      = useState(false);
   const [hkApiKey,       setHkApiKey]       = useState("");
   const [hkApiUrl,       setHkApiUrl]       = useState(DEFAULT_HACKATIME_URL);
@@ -337,8 +511,12 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
       if (cfg.ai_provider)                    setProvider(cfg.ai_provider);
       if (cfg.groq_api_key)                   setKeys((prev) => ({ ...prev, groq: cfg.groq_api_key }));
       if (cfg.openrouter_api_key)             setKeys((prev) => ({ ...prev, openrouter: cfg.openrouter_api_key }));
+      if (cfg.anthropic_api_key)              setKeys((prev) => ({ ...prev, anthropic: cfg.anthropic_api_key }));
       if (cfg.ollama_model)                   setOllamaModel(cfg.ollama_model);
       if (cfg.openrouter_model)               setOpenrouterModel(cfg.openrouter_model);
+      if (cfg.anthropic_model)                setAnthropicModel(cfg.anthropic_model);
+      if (Array.isArray(cfg.mcp_servers))     setMcpServers(cfg.mcp_servers);
+      if (cfg.remember_me !== undefined)           setRememberMe(!!cfg.remember_me);
       if (cfg.hackatime_enabled !== undefined)    setHkEnabled(!!cfg.hackatime_enabled);
       if (cfg.hackatime_api_key)                  setHkApiKey(cfg.hackatime_api_key);
       if (cfg.hackatime_api_url)                  setHkApiUrl(cfg.hackatime_api_url);
@@ -360,9 +538,10 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
     try {
       // AI provider
       await writeEnvKey("AI_PROVIDER", provider);
-      if (keys.groq)       await writeEnvKey("GROQ_API_KEY", keys.groq);
-      if (keys.openrouter) await writeEnvKey("OPENROUTER_API_KEY", keys.openrouter);
-      if (ollamaModel)     await writeEnvKey("OLLAMA_MODEL", ollamaModel);
+      if (keys.groq)       await writeEnvKey("GROQ_API_KEY",       keys.groq);
+      if (keys.openrouter) await writeEnvKey("OPENROUTER_API_KEY",  keys.openrouter);
+      if (keys.anthropic)  await writeEnvKey("ANTHROPIC_API_KEY",   keys.anthropic);
+      if (ollamaModel)     await writeEnvKey("OLLAMA_MODEL",         ollamaModel);
 
       // Merge everything into config.json — keys live here so sidecar can always read them
       const existing = await getConfig().catch(() => ({}));
@@ -371,8 +550,12 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
         ai_provider: provider,
         ...(keys.groq       ? { groq_api_key:       keys.groq.trim()       } : {}),
         ...(keys.openrouter ? { openrouter_api_key:  keys.openrouter.trim() } : {}),
-        ...(ollamaModel       ? { ollama_model:      ollamaModel             } : {}),
-        ...(openrouterModel   ? { openrouter_model:  openrouterModel.trim() } : {}),
+        ...(keys.anthropic  ? { anthropic_api_key:   keys.anthropic.trim()  } : {}),
+        ...(ollamaModel     ? { ollama_model:        ollamaModel            } : {}),
+        ...(openrouterModel ? { openrouter_model:    openrouterModel.trim() } : {}),
+        ...(anthropicModel  ? { anthropic_model:     anthropicModel         } : {}),
+        mcp_servers:          mcpServers,
+        remember_me:          rememberMe,
         hackatime_enabled:    hkEnabled,
         hackatime_api_key:    hkApiKey.trim(),
         hackatime_api_url:    hkApiUrl.trim() || DEFAULT_HACKATIME_URL,
@@ -384,7 +567,7 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
     } catch (e) {
       setSaveMsg(`Error: ${e}`);
     }
-  }, [provider, keys, ollamaModel, hkEnabled, hkApiKey, hkApiUrl, hkWritesOnly]);
+  }, [provider, keys, ollamaModel, openrouterModel, anthropicModel, mcpServers, rememberMe, hkEnabled, hkApiKey, hkApiUrl, hkWritesOnly]);
 
   const current = PROVIDERS.find((p) => p.id === provider);
 
@@ -417,28 +600,50 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
             </div>
             {current?.needsKey && (
               <div style={ss.keyRow}>
-                <label style={ss.label}>{provider === "groq" ? "Groq" : "OpenRouter"} API Key</label>
-                <input type="password" style={ss.input} placeholder="sk-..."
+                <label style={ss.label}>
+                  {provider === "groq" ? "Groq" : provider === "anthropic" ? "Anthropic" : "OpenRouter"} API Key
+                </label>
+                <input type="password" style={ss.input}
+                  placeholder={provider === "anthropic" ? "sk-ant-..." : "sk-..."}
                   value={keys[provider] || ""}
                   onChange={(e) => setKeys((prev) => ({ ...prev, [provider]: e.target.value }))} />
+
                 {provider === "openrouter" && (
                   <>
                     <label style={{ ...ss.label, marginTop: 10 }}>Model</label>
+                    <select
+                      style={{ ...ss.input, cursor: "pointer" }}
+                      value={OPENROUTER_MODELS.some((m) => m.value === openrouterModel) ? openrouterModel : "__custom__"}
+                      onChange={(e) => e.target.value !== "__custom__" && setOpenrouterModel(e.target.value)}
+                    >
+                      {OPENROUTER_MODELS.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                      {!OPENROUTER_MODELS.some((m) => m.value === openrouterModel) && (
+                        <option value="__custom__">{openrouterModel || "custom…"}</option>
+                      )}
+                    </select>
                     <input
-                      style={ss.input}
-                      placeholder="anthropic/claude-haiku-4-5"
+                      style={{ ...ss.input, marginTop: 6 }}
+                      placeholder="or type a custom model ID…"
                       value={openrouterModel}
                       onChange={(e) => setOpenrouterModel(e.target.value)}
-                      list="va-or-models"
                     />
-                    <datalist id="va-or-models">
-                      <option value="anthropic/claude-haiku-4-5" />
-                      <option value="anthropic/claude-sonnet-4-5" />
-                      <option value="google/gemini-flash-1.5" />
-                      <option value="meta-llama/llama-3.1-8b-instruct" />
-                      <option value="mistralai/mistral-7b-instruct:free" />
-                      <option value="google/gemini-2.0-flash-exp:free" />
-                    </datalist>
+                  </>
+                )}
+
+                {provider === "anthropic" && (
+                  <>
+                    <label style={{ ...ss.label, marginTop: 10 }}>Model</label>
+                    <select
+                      style={{ ...ss.input, cursor: "pointer" }}
+                      value={anthropicModel}
+                      onChange={(e) => setAnthropicModel(e.target.value)}
+                    >
+                      {ANTHROPIC_MODELS.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
                   </>
                 )}
               </div>
@@ -448,6 +653,12 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
           {provider === "ollama" && (
             <OllamaSection activeModel={ollamaModel} onSelectModel={setOllamaModel} />
           )}
+
+          {/* Memory & Personalization */}
+          <MemorySection rememberMe={rememberMe} onRememberMe={setRememberMe} />
+
+          {/* MCP Servers */}
+          <McpSection servers={mcpServers} onChange={setMcpServers} />
 
           {/* Hackatime */}
           <HackatimeSection

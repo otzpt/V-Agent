@@ -33,6 +33,13 @@ ALLOWED_OPENROUTER_FREE_MODELS = [
 ]
 
 DEFAULT_OPENROUTER_MODEL = "anthropic/claude-haiku-4-5"
+DEFAULT_ANTHROPIC_MODEL  = "claude-haiku-4-5"
+
+ALLOWED_ANTHROPIC_MODELS = [
+    "claude-haiku-4-5",
+    "claude-sonnet-4-5",
+    "claude-opus-4-8",
+]
 
 # ── Base interface ─────────────────────────────────────────────────────────────
 
@@ -301,6 +308,100 @@ class OpenRouterProvider(LLMProvider):
             except (json.JSONDecodeError, KeyError, IndexError):
                 continue
 
+# ── Anthropic direct provider ─────────────────────────────────────────────────
+
+class AnthropicProvider(LLMProvider):
+    name     = "anthropic"
+    BASE_URL = "https://api.anthropic.com/v1/messages"
+    VERSION  = "2023-06-01"
+
+    def __init__(self, api_key: str, model: str, system_prompt: str = ""):
+        self._key          = api_key
+        self.model         = model if model in ALLOWED_ANTHROPIC_MODELS else DEFAULT_ANTHROPIC_MODEL
+        self.system_prompt = system_prompt
+
+    def is_available(self) -> bool:
+        return bool(self._key and self._key.startswith("sk-ant-"))
+
+    def stream(self, messages, cancel_flag=None, temperature=0.15, max_tokens=4096):
+        if not self.is_available():
+            raise LLMError("No Anthropic API key. Add it in Settings.")
+
+        # Anthropic requires alternating user/assistant turns; consolidate runs.
+        clean: list[dict] = []
+        for m in messages[-20:]:
+            role    = m.get("role", "user")
+            content = m.get("content", "")
+            if role not in ("user", "assistant"):
+                role = "user"
+            if clean and clean[-1]["role"] == role:
+                clean[-1]["content"] += "\n" + content
+            else:
+                clean.append({"role": role, "content": content})
+        # Must start with user
+        if clean and clean[0]["role"] == "assistant":
+            clean = clean[1:]
+        if not clean:
+            clean = [{"role": "user", "content": "(empty)"}]
+
+        body: dict = {
+            "model":       self.model,
+            "max_tokens":  max_tokens,
+            "messages":    clean,
+            "stream":      True,
+            "temperature": temperature,
+        }
+        if self.system_prompt:
+            body["system"] = self.system_prompt
+
+        try:
+            resp = requests.post(
+                self.BASE_URL,
+                headers={
+                    "x-api-key":         self._key,
+                    "anthropic-version": self.VERSION,
+                    "content-type":      "application/json",
+                },
+                json=body,
+                stream=True,
+                timeout=180,
+            )
+        except requests.exceptions.ConnectionError:
+            raise LLMError("Cannot reach Anthropic API. Check internet.")
+        except requests.exceptions.Timeout:
+            raise LLMError("Anthropic request timed out.")
+
+        if resp.status_code == 401:
+            raise LLMError("Invalid Anthropic API key.")
+        if resp.status_code == 429:
+            raise LLMRateLimitError("Anthropic rate limit reached.")
+        if resp.status_code != 200:
+            raise LLMError(f"Anthropic API error ({resp.status_code}).")
+
+        for raw in resp.iter_lines():
+            if cancel_flag and cancel_flag():
+                return
+            if not raw:
+                continue
+            line = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+            if not line.startswith("data: "):
+                continue
+            data = line[6:]
+            if data in ("[DONE]", ""):
+                continue
+            try:
+                obj   = json.loads(data)
+                etype = obj.get("type", "")
+                if etype == "content_block_delta":
+                    tok = obj.get("delta", {}).get("text", "")
+                    if tok:
+                        yield tok
+                elif etype == "message_stop":
+                    break
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+
 # ── Provider factory ───────────────────────────────────────────────────────────
 
 def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
@@ -362,6 +463,17 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             )
         model = cfg.get("model") or cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
         return OpenRouterProvider(key, model, system_prompt)
+
+    if provider_name == "anthropic":
+        key = cfg.get("anthropic_api_key", "").strip()
+        if not key:
+            logger.warning("No Anthropic key — falling back to backend.")
+            return BackendProvider(
+                server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
+                model="llama-3.3-70b-versatile",
+            )
+        model = cfg.get("model") or cfg.get("anthropic_model") or DEFAULT_ANTHROPIC_MODEL
+        return AnthropicProvider(key, model, system_prompt)
 
     # Unknown provider — safe fallback
     logger.error("Unknown provider '%s' — using backend.", provider_name)

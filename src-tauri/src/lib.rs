@@ -174,6 +174,19 @@ fn save_config(json: String) -> Result<(), String> {
     fs::write(dir.join("config.json"), json).map_err(|e| format!("save_config: {e}"))
 }
 
+#[tauri::command]
+fn get_vagent_memory() -> Option<String> {
+    fs::read_to_string(config_dir().join("memory.json")).ok()
+}
+
+#[tauri::command]
+fn clear_vagent_memory() -> bool {
+    let dir  = config_dir();
+    let _    = fs::create_dir_all(&dir);
+    let empty = r#"{"user_preferences":{"language":"pt-PT","code_style":"","explain_level":""},"known_projects":[],"learned_facts":[],"remember_me":true}"#;
+    fs::write(dir.join("memory.json"), empty).is_ok()
+}
+
 #[derive(Serialize)]
 struct SystemInfo {
     total_ram_mb: u64,
@@ -418,7 +431,27 @@ async fn send_heartbeat(
     if let Some(ref l) = lineno_str    { cmd.args(["--lineno",    l]); }
     if let Some(ref c) = cursorpos_str { cmd.args(["--cursorpos", c]); }
 
+    // Debug: print the full command being sent to wakatime-cli
+    {
+        let masked_key = if api_key.len() >= 8 {
+            format!("{}...", &api_key[..8])
+        } else {
+            "***".to_string()
+        };
+        let args_display: Vec<String> = cmd.get_args()
+            .map(|a| {
+                let s = a.to_string_lossy().to_string();
+                if s == api_key && !api_key.is_empty() { masked_key.clone() } else { s }
+            })
+            .collect();
+        eprintln!("[send_heartbeat] cli={cli} args=[{}]", args_display.join(", "));
+    }
+
     let out = cmd.output().map_err(|e| format!("wakatime-cli run: {e}"))?;
+
+    eprintln!("[send_heartbeat] status={}", out.status);
+    eprintln!("[send_heartbeat] stdout={}", String::from_utf8_lossy(&out.stdout).trim());
+    eprintln!("[send_heartbeat] stderr={}", String::from_utf8_lossy(&out.stderr).trim());
 
     if out.status.success() {
         Ok(())
@@ -897,6 +930,61 @@ fn replace_in_file(
     Ok(())
 }
 
+// ── MCP client ────────────────────────────────────────────────────────
+
+/// Check if an MCP server is reachable. Returns true/false.
+#[tauri::command]
+async fn mcp_check_server(server_url: String) -> bool {
+    let url = format!("{}/health", server_url.trim_end_matches('/'));
+    let alt = server_url.trim_end_matches('/').to_string();
+    if let Ok(r) = reqwest::Client::new().get(&url).timeout(std::time::Duration::from_secs(5)).send().await {
+        if r.status().is_success() { return true; }
+    }
+    // Fallback: try root endpoint
+    if let Ok(r) = reqwest::Client::new().get(&alt).timeout(std::time::Duration::from_secs(5)).send().await {
+        return r.status().is_success();
+    }
+    false
+}
+
+/// List tools from an MCP server (GET /tools).
+/// Returns the raw JSON string from the server, or an Err string.
+#[tauri::command]
+async fn mcp_list_tools(server_url: String) -> Result<String, String> {
+    let url = format!("{}/tools", server_url.trim_end_matches('/'));
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .map_err(|e| format!("mcp_list_tools: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("mcp_list_tools: HTTP {}", resp.status().as_u16()));
+    }
+    resp.text().await.map_err(|e| format!("mcp_list_tools read: {e}"))
+}
+
+/// Call a tool on an MCP server (POST /call).
+/// args_json must be a valid JSON object string.
+#[tauri::command]
+async fn mcp_call_tool(server_url: String, tool_name: String, args_json: String) -> Result<String, String> {
+    let args: serde_json::Value = serde_json::from_str(&args_json)
+        .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+    let body = serde_json::json!({"tool": tool_name, "args": args});
+    let url = format!("{}/call", server_url.trim_end_matches('/'));
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .json(&body)
+        .timeout(std::time::Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("mcp_call_tool: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("mcp_call_tool: HTTP {}", resp.status().as_u16()));
+    }
+    resp.text().await.map_err(|e| format!("mcp_call_tool read: {e}"))
+}
+
 // ── .vagent.json task runner ───────────────────────────────────────────
 
 #[tauri::command]
@@ -1238,6 +1326,9 @@ pub fn run() {
             git_show_head,
             search_in_files,
             replace_in_file,
+            mcp_check_server,
+            mcp_list_tools,
+            mcp_call_tool,
             read_vagent_config,
             run_task,
             pty_create,
@@ -1246,7 +1337,9 @@ pub fn run() {
             pty_kill,
             agent_start,
             agent_send,
-            ai_chat
+            ai_chat,
+            get_vagent_memory,
+            clear_vagent_memory
         ])
         .run(tauri::generate_context!())
         .expect("error while running V-Agent");

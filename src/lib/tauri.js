@@ -234,6 +234,36 @@ export async function onAgentEvent(callback) {
   });
 }
 
+// ── MCP client ───────────────────────────────────────────────────────────────
+
+// ── Memory (Jarvis) ───────────────────────────────────────────────────────────
+
+export async function getVagentMemory() {
+  const raw = await invoke("get_vagent_memory");
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+export async function clearVagentMemory() {
+  return invoke("clear_vagent_memory");
+}
+
+// ── MCP client ────────────────────────────────────────────────────────────────
+
+export async function mcpCheckServer(serverUrl) {
+  return invoke("mcp_check_server", { serverUrl });
+}
+
+// Returns parsed tool list array, or throws.
+export async function mcpListTools(serverUrl) {
+  const raw = await invoke("mcp_list_tools", { serverUrl });
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+export async function mcpCallTool(serverUrl, toolName, args = {}) {
+  return invoke("mcp_call_tool", { serverUrl, toolName, argsJson: JSON.stringify(args) });
+}
+
 // Starts an AI chat. Tokens arrive via the "ai-token" event.
 // onToken(text) is called for each streamed JSON line; returns an unlisten fn.
 export async function aiChat(messages, config, systemPrompt, onToken) {

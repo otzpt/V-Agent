@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, memo } from "react";
 import { DiffEditor } from "@monaco-editor/react";
-import { aiChat, getConfig, listDir, agentStart, agentSend, onAgentEvent, writeFile } from "../lib/tauri.js";
+import { aiChat, getConfig, listDir, agentStart, agentSend, onAgentEvent, readFile, writeFile } from "../lib/tauri.js";
 
 // ── Project-context helpers ──────────────────────────────────────────────────
 
@@ -133,6 +133,58 @@ function ProposalCard({ msg, appTheme, onAccept, onReject, onRun }) {
     </div>
   );
 }
+
+// Progress bar shown during autonomous runs
+function AutonomousBar({ progress, onPause }) {
+  if (!progress) return null;
+  return (
+    <div style={autoBarStyle.wrap}>
+      <div style={autoBarStyle.track}>
+        <div style={{ ...autoBarStyle.fill, width: `${Math.min(100, (progress.step || 1) * 5)}%` }} />
+      </div>
+      <span style={autoBarStyle.label}>
+        Step {progress.step} — {progress.description}
+      </span>
+      <button style={autoBarStyle.pause} onClick={onPause} title="Pause autonomous run">⏸</button>
+    </div>
+  );
+}
+
+// Summary card shown after autonomous run completes
+function AutonomousSummary({ summary, backups, onRevertAll, onDismiss }) {
+  if (!summary) return null;
+  return (
+    <div style={autoSumStyle.card}>
+      <div style={autoSumStyle.head}>
+        <span style={autoSumStyle.title}>⚡ Autonomous run complete</span>
+        <button style={autoSumStyle.dismiss} onClick={onDismiss}>×</button>
+      </div>
+      <p style={autoSumStyle.body}>{summary}</p>
+      {backups.length > 0 && (
+        <button style={autoSumStyle.revert} onClick={onRevertAll}>
+          ↩ Revert all {backups.length} change{backups.length > 1 ? "s" : ""}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const autoBarStyle = {
+  wrap:  { display: "flex", alignItems: "center", gap: 8, padding: "6px 4px", flexShrink: 0 },
+  track: { flex: 1, height: 3, background: "var(--bg-3)", borderRadius: 2, overflow: "hidden" },
+  fill:  { height: "100%", background: "#f5a623", borderRadius: 2, transition: "width 300ms ease" },
+  label: { fontSize: 11, color: "var(--text-2)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "55%" },
+  pause: { fontSize: 13, background: "transparent", border: "none", color: "var(--text-2)", cursor: "pointer", padding: "2px 4px", flexShrink: 0 },
+};
+
+const autoSumStyle = {
+  card:    { margin: "8px 0", border: "1px solid #f5a62355", borderRadius: 8, background: "var(--bg-2)", overflow: "hidden" },
+  head:    { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderBottom: "1px solid var(--border)" },
+  title:   { fontSize: 12, fontWeight: 600, color: "#f5a623", fontFamily: "var(--font-ui)" },
+  dismiss: { fontSize: 16, background: "transparent", border: "none", color: "var(--text-2)", cursor: "pointer", lineHeight: 1 },
+  body:    { fontSize: 12, color: "var(--text-1)", padding: "8px 12px", margin: 0, whiteSpace: "pre-wrap", fontFamily: "var(--font-ui)" },
+  revert:  { display: "block", margin: "0 12px 10px", fontSize: 12, color: "var(--err)", background: "transparent", border: "1px solid var(--err)", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontFamily: "var(--font-ui)" },
+};
 
 const agStyles = {
   toolLine: { display: "flex", alignItems: "center", gap: 6, padding: "2px 4px", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--text-2)" },
@@ -446,12 +498,24 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [planMode, setPlanMode] = useState(false);
-  const [agentMode, setAgentMode] = useState(true);  // tools on/off
+  const [agentMode, setAgentMode] = useState(true);
+  const [terminalMode, setTerminalMode] = useState(false);
+  const [termLines, setTermLines] = useState([]);   // PTY output lines in /terminal mode
+  const [autonomousMode, setAutonomousMode] = useState(false);
+  const [autoProgress, setAutoProgress] = useState(null);  // {step, description} | null
+  const [autoSummary, setAutoSummary] = useState(null);    // summary text after auto run
+  const [autoBackups, setAutoBackups] = useState([]);      // [{path, content}] for revert-all
   const scrollRef          = useRef(null);
   const pinnedRef          = useRef(true);
   const currentReqRef      = useRef(null);
-  const lastContextFileRef = useRef(null);  // last file path included in system prompt
+  const lastContextFileRef = useRef(null);
+  const lastWriteBackupRef = useRef(null);          // {path, content} for /undo
   const isChat = mode === "chat";
+
+  // Derive a session_id from the active project root (stable across renders)
+  const sessionId = rootDirs[0]
+    ? rootDirs[0].replace(/[^a-zA-Z0-9_.-]/g, "_").slice(-60)
+    : "default";
 
   // ── Agent channel: start the persistent sidecar + route its events ──────────
   useEffect(() => {
@@ -481,12 +545,48 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
         case "info":
           setMessages((m) => [...m, { role: "info", content: ev.text }]);
           break;
+        case "memory_data": {
+          const mem = ev.data || {};
+          const facts = (mem.learned_facts || []).join("\n• ") || "(none)";
+          const projs = (mem.known_projects || []).map((p) => p.name).join(", ") || "(none)";
+          const prefs = mem.user_preferences || {};
+          setMessages((m) => [...m, {
+            role: "info",
+            content: `[V-Agent Memory]\nLanguage: ${prefs.language || "?"} | Remember me: ${mem.remember_me ? "yes" : "no"}\nProjects: ${projs}\nLearned facts:\n• ${facts}`,
+          }]);
+          break;
+        }
+        case "progress":
+          setAutoProgress({ step: ev.step, description: ev.description });
+          break;
+        case "propose_plan":
+          setMessages((m) => [...m, {
+            role: "proposal", kind: "plan", call_id: ev.call_id,
+            content: ev.content, status: "pending",
+          }]);
+          break;
+        case "auto_write":
+          setAutoBackups((prev) => [...prev, { path: ev.path, content: ev.original || "" }]);
+          setMessages((m) => [...m, {
+            role: "info",
+            content: `✓ Auto-applied: ${ev.path}`,
+          }]);
+          break;
+        case "autonomous_done":
+          setAutoProgress(null);
+          setAutoSummary(ev.summary || "Task complete.");
+          break;
+        case "provider_switch":
+          setMessages((m) => [...m, { role: "info", content: `⇄ Provider auto-switched: ${ev.from} → ${ev.to}` }]);
+          if (ev.to) setSessionProvider(ev.to);
+          break;
         case "error":
           setMessages((m) => appendAssistant(m, `\n⚠ ${ev.error}`));
           break;
         case "done":
           setMessages((m) => m.map((x, i) => (i === m.length - 1 && x.role === "assistant" ? { ...x, streaming: false } : x)));
           setStreaming(false);
+          setAutoProgress(null);
           currentReqRef.current = null;
           break;
         case "exit":
@@ -519,6 +619,19 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     return () => { alive = false; };
   }, []);
 
+  // /terminal mode: subscribe to PTY output and show it in this panel
+  useEffect(() => {
+    if (!terminalMode) return;
+    const onOutput = (e) => {
+      const raw = e.detail?.data || "";
+      // Strip ANSI codes for display in the chat panel
+      const text = raw.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
+      if (text) setTermLines((prev) => [...prev.slice(-300), text]);
+    };
+    window.addEventListener("vagent-terminal-output", onOutput);
+    return () => window.removeEventListener("vagent-terminal-output", onOutput);
+  }, [terminalMode]);
+
   // Track whether the user has scrolled up (unpin) or is near the bottom (pin)
   useEffect(() => {
     const el = scrollRef.current;
@@ -541,6 +654,12 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
   const clearMessages = useCallback(() => {
     setMessages([]);
     setInput("");
+    setTermLines([]);
+    setTerminalMode(false);
+    setAutoProgress(null);
+    setAutoSummary(null);
+    setAutoBackups([]);
+    lastWriteBackupRef.current = null;
   }, []);
 
   // Push a system info message (not sent to AI)
@@ -590,6 +709,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
         return true;
       }
       case "compact": {
+        agentSend({ type: "compact_session", session_id: sessionId }).catch(() => {});
         setMessages((prev) => {
           const conv = prev.filter((m) => m.role !== "info");
           const keep = conv.slice(-3);
@@ -599,6 +719,46 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
         setInput("");
         return true;
       }
+      case "undo": {
+        const bk = lastWriteBackupRef.current;
+        if (!bk) {
+          pushInfo("Nothing to undo — no file was written this session.");
+        } else {
+          writeFile(bk.path, bk.content)
+            .then(() => {
+              reloadFile?.(bk.path);
+              pushInfo(`↩ Reverted ${bk.path}`);
+              lastWriteBackupRef.current = null;
+            })
+            .catch((e) => pushInfo(`✗ Undo failed: ${e}`));
+        }
+        setInput("");
+        return true;
+      }
+      case "terminal": {
+        const arg = text.slice(1).trim().split(/\s+/)[1]?.toLowerCase();
+        if (arg === "off" || (terminalMode && !arg)) {
+          setTerminalMode(false);
+          setTermLines([]);
+          pushInfo("Terminal mode OFF.");
+        } else {
+          setTerminalMode(true);
+          setTermLines([]);
+          pushInfo("Terminal mode ON — PTY output appears here. Type commands or ask the AI to run them.");
+        }
+        setInput("");
+        return true;
+      }
+      case "memory":
+        agentSend({ type: "get_memory" }).catch(() => {});
+        pushInfo("Fetching memory…");
+        setInput("");
+        return true;
+      case "forget":
+        agentSend({ type: "clear_memory" }).catch(() => {});
+        pushInfo("Memory cleared.");
+        setInput("");
+        return true;
       case "help":
         pushInfo(
           "/model — switch AI provider/model\n" +
@@ -606,6 +766,10 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
           "/files — files included in context\n" +
           "/plan — toggle plan-only mode\n" +
           "/compact — shrink the conversation history\n" +
+          "/undo — revert last accepted file write\n" +
+          "/terminal — toggle terminal-observer mode\n" +
+          "/memory — show what V-Agent remembers about you\n" +
+          "/forget — clear V-Agent's memory\n" +
           "/clear — clear conversation\n" +
           "/help — show this message"
         );
@@ -614,7 +778,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
       default:
         return false;
     }
-  }, [pushInfo, planMode, rootDirs, sessionProvider, sessionModel, openFile]);
+  }, [pushInfo, planMode, rootDirs, sessionProvider, sessionModel, openFile, terminalMode, sessionId, reloadFile]);
 
   const sendText = useCallback(async (raw) => {
     const text = (raw ?? "").trim();
@@ -632,10 +796,18 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     setStreaming(true);
     pinnedRef.current = true;
 
+    // In /terminal mode: route input as a PTY command, not to the AI
+    if (terminalMode) {
+      window.dispatchEvent(new CustomEvent("vagent-run-in-terminal", { detail: { command: text } }));
+      setMessages((prev) => [...prev, { role: "user", content: `$ ${text}` }]);
+      setInput("");
+      setStreaming(false);
+      return;
+    }
+
     const reqId = `r${Date.now()}`;
     currentReqRef.current = reqId;
     const config = { ai_provider: sessionProvider, ...(sessionModel ? { model: sessionModel } : {}) };
-    // Include open file content only on first message or when the file changes
     const histLen = messages.filter((m) => m.role === "user" || m.role === "assistant").length;
     const fileChanged = openFile?.path !== lastContextFileRef.current;
     const includeFile = histLen === 0 || fileChanged;
@@ -644,9 +816,12 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
 
     try {
       await agentStart();
+      if (autonomousMode) { setAutoProgress({ step: 0, description: "Starting…" }); setAutoSummary(null); setAutoBackups([]); }
       await agentSend({
-        type: "chat", id: reqId, messages: history, config,
-        cwd: rootDirs[0] || null, system_prompt: sys, agent: agentMode, plan: planMode,
+        type: "chat", id: reqId, session_id: sessionId,
+        messages: history, config,
+        cwd: rootDirs[0] || null, system_prompt: sys,
+        agent: agentMode, plan: planMode, autonomous: autonomousMode,
       });
     } catch (e) {
       currentReqRef.current = null;
@@ -671,6 +846,8 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     const isAbs = /^([A-Za-z]:[/\\]|\/)/.test(msg.path);
     const abs = isAbs ? msg.path.replace(/[\\/]/g, sep) : (root ? root + sep + msg.path.replace(/[\\/]/g, sep) : msg.path);
     try {
+      const originalContent = await readFile(abs).catch(() => "");
+      lastWriteBackupRef.current = { path: abs, content: originalContent };
       await writeFile(abs, msg.content);
       reloadFile?.(abs);
       setMessages((m) => m.map((x) => (x === msg ? { ...x, status: "accepted" } : x)));
@@ -686,6 +863,15 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
   const rejectProposal = useCallback((msg) => {
     setMessages((m) => m.map((x) => (x === msg ? { ...x, status: "rejected" } : x)));
   }, []);
+
+  const revertAll = useCallback(async () => {
+    for (const bk of autoBackups) {
+      try { await writeFile(bk.path, bk.content); reloadFile?.(bk.path); } catch { /* skip */ }
+    }
+    pushInfo(`↩ Reverted ${autoBackups.length} file(s).`);
+    setAutoBackups([]);
+    setAutoSummary(null);
+  }, [autoBackups, reloadFile, pushInfo]);
 
   const runProposal = useCallback((msg) => {
     onRunCommand?.(msg.command);
@@ -741,12 +927,17 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
       <div style={ideStyles.wrap}>
         <div style={ideStyles.header}>
           <span style={ideStyles.label}>Assistant</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <button
               onClick={() => setAgentMode((v) => !v)}
               title={agentMode ? "Agent tools ON — can read files and propose edits" : "Agent tools OFF — plain chat"}
               style={{ ...agentToggleStyle, color: agentMode ? "var(--accent)" : "var(--text-2)", borderColor: agentMode ? "var(--accent)" : "var(--border)" }}
             >⚒ Agent</button>
+            <button
+              onClick={() => setAutonomousMode((v) => !v)}
+              title={autonomousMode ? "Autonomous mode ON — V-Agent runs without pausing for approval" : "Autonomous mode OFF"}
+              style={{ ...agentToggleStyle, color: autonomousMode ? "#f5a623" : "var(--text-2)", borderColor: autonomousMode ? "#f5a623" : "var(--border)" }}
+            >⚡ Auto</button>
             <span style={ideStyles.provBadge}>{sessionProvider}{sessionModel ? ` · ${sessionModel}` : ""}{planMode ? " · plan" : ""}</span>
             {openFile && <span style={ideStyles.context}>{openFile.name}</span>}
           </div>
@@ -775,7 +966,26 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
           {streaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div style={ideStyles.aiMsg}><div style={ideStyles.aiText}><StreamingDots /></div></div>
           )}
+          {terminalMode && termLines.length > 0 && (
+            <div style={termDisplayStyle}>
+              {termLines.map((ln, i) => <div key={i} style={termLineStyle}>{ln}</div>)}
+            </div>
+          )}
         </div>
+
+        {autoProgress && streaming && (
+          <div style={{ padding: "0 12px" }}>
+            <AutonomousBar progress={autoProgress} onPause={stop} />
+          </div>
+        )}
+        {autoSummary && !streaming && (
+          <div style={{ padding: "0 8px" }}>
+            <AutonomousSummary
+              summary={autoSummary} backups={autoBackups}
+              onRevertAll={revertAll} onDismiss={() => setAutoSummary(null)}
+            />
+          </div>
+        )}
 
         {showModelPicker && (
           <div style={{ padding: "8px" }}>
@@ -798,7 +1008,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
               maxHeight: "120px",
               overflowY: "auto",
             }}
-            placeholder="Ask anything · /model /clear /help"
+            placeholder={terminalMode ? "$ terminal mode — /terminal to exit" : "Ask anything · /model /clear /help"}
             value={input}
             onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
             onKeyDown={onKeyDown}
@@ -829,6 +1039,11 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
             title={agentMode ? "Agent tools ON" : "Agent tools OFF"}
             style={{ ...agentToggleStyle, color: agentMode ? "var(--accent)" : "var(--text-2)", borderColor: agentMode ? "var(--accent)" : "var(--border)" }}
           >⚒ Agent</button>
+          <button
+            onClick={() => setAutonomousMode((v) => !v)}
+            title={autonomousMode ? "Autonomous ON — runs without pausing" : "Autonomous OFF"}
+            style={{ ...agentToggleStyle, color: autonomousMode ? "#f5a623" : "var(--text-2)", borderColor: autonomousMode ? "#f5a623" : "var(--border)" }}
+          >⚡ Auto</button>
         </div>
         <button style={chatStyles.clearBtn} onClick={clearMessages} title="Clear conversation">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -881,8 +1096,27 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
           {streaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div style={chatStyles.aiRow}><Avatar role="assistant" /><div style={chatStyles.aiBubble}><StreamingDots /></div></div>
           )}
+          {terminalMode && termLines.length > 0 && (
+            <div style={termDisplayStyle}>
+              {termLines.map((ln, i) => <div key={i} style={termLineStyle}>{ln}</div>)}
+            </div>
+          )}
         </div>
       </div>
+
+      {autoProgress && streaming && (
+        <div style={{ padding: "0 20px" }}>
+          <AutonomousBar progress={autoProgress} onPause={stop} />
+        </div>
+      )}
+      {autoSummary && !streaming && (
+        <div style={{ padding: "0 20px 12px" }}>
+          <AutonomousSummary
+            summary={autoSummary} backups={autoBackups}
+            onRevertAll={revertAll} onDismiss={() => setAutoSummary(null)}
+          />
+        </div>
+      )}
 
       <div style={chatStyles.inputOuter}>
         <div style={chatStyles.inputInner}>
@@ -919,7 +1153,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
                 maxHeight: "120px",
                 overflowY: "auto",
               }}
-              placeholder="Ask anything… · /model /clear /help"
+              placeholder={terminalMode ? "$ terminal mode — /terminal to exit" : "Ask anything… · /model /clear /help"}
               value={input}
               onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
               onKeyDown={onKeyDown}
@@ -992,6 +1226,21 @@ const pStyles = {
     lineHeight: 1.6,
   },
 };
+
+const termDisplayStyle = {
+  margin: "8px 0",
+  background: "#0a0a16",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--r-sm)",
+  padding: "8px 10px",
+  fontFamily: "var(--font-mono)",
+  fontSize: "11px",
+  color: "#a0f0a0",
+  maxHeight: "240px",
+  overflowY: "auto",
+  whiteSpace: "pre",
+};
+const termLineStyle = { lineHeight: 1.45 };
 
 // ── IDE mode styles ──────────────────────────────────────────────────────────
 const ideStyles = {
