@@ -1,6 +1,7 @@
 {
   "theme": "github-dark",
   "ai_provider": "backend",
+  "groq_model": "groq/compound",
   "groq_api_key": "",
   "openrouter_api_key": "",
   "openrouter_model": "anthropic/claude-haiku-4-5",

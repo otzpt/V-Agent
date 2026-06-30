@@ -1,5 +1,5 @@
 """
-V-Agent 0.7.1 — Backend seguro (Vercel Serverless)
+V-Agent 0.9.0 — Backend seguro (Vercel Serverless)
 Keys ficam APENAS em Vercel Environment Variables.
 O utilizador nunca tem acesso às keys.
 """
@@ -12,7 +12,7 @@ import os
 import time
 from collections import defaultdict
 
-app = FastAPI(title="V-Agent API", version="0.7.1")
+app = FastAPI(title="V-Agent API", version="0.9.0")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -47,19 +47,22 @@ async def rate_limit_middleware(request: Request, call_next):
 # Keys vêm APENAS de Vercel Environment Variables — nunca do código
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
-# Modelos Groq permitidos (gratuitos)
-ALLOWED_GROQ_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it",
-    "gemma-7b-it",
-]
+# ── Modelo ────────────────────────────────────────────────────────────────────
+# V-Agent usa o Groq Compound: sistema agêntico com web search + execução de
+# código embutidos, ideal para tarefas de programação.
+# Os modelos Llama foram descontinuados pela Groq, por isso TODOS os pedidos
+# — incluindo clientes antigos (≤0.9.0) que ainda enviam "llama-..." — são
+# servidos por Compound. Garante que apps 0.9.0 já instaladas continuam a
+# funcionar sem reinstalar.
+GROQ_MODEL = "groq/compound"
+
+# Modelos servidos por este backend.
+ALLOWED_GROQ_MODELS = [GROQ_MODEL]
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str
-    model: str = "llama-3.3-70b-versatile"
+    model: str = GROQ_MODEL
     history: list = []  # Histórico de mensagens [{role, content}]
 
 class ChatResponse(BaseModel):
@@ -73,7 +76,7 @@ def health():
     """Health check — não expõe keys nem detalhes internos."""
     return {
         "status": "ok",
-        "version": "0.7.1",
+        "version": "0.9.0",
         "provider": "groq",
         "models": ALLOWED_GROQ_MODELS,
     }
@@ -84,12 +87,10 @@ async def chat(req: ChatRequest):
     Processa mensagem via Groq.
     Keys nunca são expostas ao utilizador.
     """
-    # ── Validação do modelo ───────────────────────────────────────────────────
-    if req.model not in ALLOWED_GROQ_MODELS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Modelo não permitido. Use um de: {ALLOWED_GROQ_MODELS}"
-        )
+    # ── Modelo ────────────────────────────────────────────────────────────────
+    # Llama foi descontinuado pela Groq: qualquer pedido — de clientes novos ou
+    # antigos (que ainda enviam "llama-...") — é servido pelo Groq Compound.
+    model = GROQ_MODEL
 
     # ── Validação da mensagem ─────────────────────────────────────────────────
     message = req.message.strip() if req.message else ""
@@ -125,7 +126,7 @@ async def chat(req: ChatRequest):
                 "Content-Type": "application/json",
             },
             json={
-                "model": req.model,
+                "model": model,
                 "messages": messages,
                 "max_tokens": 4096,
                 "temperature": 0.15,
@@ -147,7 +148,7 @@ async def chat(req: ChatRequest):
 
         return ChatResponse(
             content=content,
-            model=req.model,
+            model=model,
             provider="groq",
         )
 

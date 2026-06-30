@@ -2,6 +2,15 @@
 
 ## v0.9.0 — First Release
 
+### Fix (0.9.0 maintenance update)
+- **Backend model switched to Groq Compound (`groq/compound`)** — an agentic system
+  with built-in web search and code execution, far better suited to coding tasks than
+  the previous Llama models. Groq decommissioned the Llama 3.x models, so the backend
+  now serves every request with Compound and transparently upgrades any legacy
+  `llama-…` request from already-installed apps. No reinstall needed: the fix is
+  server-side, so existing 0.9.0 installs pick it up automatically.
+- Updated client defaults, `.env.example` and `config.example.json` to `groq/compound`.
+
 ### Core editor
 - Monaco editor (VS Code engine) with multi-tab support and per-tab save state
 - Syntax highlighting for 30+ languages with automatic language detection

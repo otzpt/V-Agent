@@ -196,7 +196,16 @@ jobs:
           Built automatically from tag \`${TAG}\`.
           EOF
 
-          gh release create "$TAG" \
-            --title "V-Agent $TAG" \
-            --notes-file /tmp/release_notes.md \
-            $FILES
+          # Idempotent: re-pushing an existing tag updates the release in place
+          # (refresh notes + clobber assets) instead of failing on "already exists".
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --title "V-Agent $TAG" \
+              --notes-file /tmp/release_notes.md
+            gh release upload "$TAG" $FILES --clobber
+          else
+            gh release create "$TAG" \
+              --title "V-Agent $TAG" \
+              --notes-file /tmp/release_notes.md \
+              $FILES
+          fi
