@@ -2,6 +2,17 @@ import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listDir, createFile, deleteFile, renameFile, createDir } from "../lib/tauri.js";
 
+// Poll interval (ms) for live folder refresh. Keeps the tree in sync with files
+// created outside the app — the in-app terminal, git, other editors — without an
+// OS-level watcher. Only expanded folders poll, and only while the window is visible.
+const POLL_MS = 1500;
+
+// Stable signature of a directory listing (list_dir is already sorted), used to
+// skip state updates — and re-renders — when a folder's contents are unchanged.
+function listingSig(items) {
+  return items.map((x) => (x.is_dir ? "d:" : "f:") + x.path).join("\n");
+}
+
 // ── Language badges ───────────────────────────────────────────────────────────
 
 const FILE_BADGES = {
@@ -439,6 +450,25 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
     return () => window.removeEventListener("vagent-fs-changed", handler);
   }, [entry.is_dir, entry.path, refreshSelf]);
 
+  // Live-refresh: while expanded, poll so files created outside the app (terminal,
+  // git, other programs) appear without a manual refresh. Children keep their keys,
+  // so expanded sub-folders and edits-in-progress are preserved.
+  useEffect(() => {
+    if (!entry.is_dir || !expanded) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (document.hidden) return;
+      try {
+        const items = await listDir(entry.path);
+        if (cancelled) return;
+        setChildren((prev) => (prev && listingSig(prev) === listingSig(items) ? prev : items));
+      } catch { /* dir vanished or transient error — the parent's poll reconciles */ }
+    };
+    const id = setInterval(tick, POLL_MS);
+    window.addEventListener("focus", tick);   // catch changes made in another app
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener("focus", tick); };
+  }, [entry.is_dir, entry.path, expanded]);
+
   const toggle = useCallback(async () => {
     if (entry.is_dir) {
       if (!expanded && children === null) {
@@ -581,6 +611,24 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, 
     window.addEventListener("vagent-fs-changed", handler);
     return () => window.removeEventListener("vagent-fs-changed", handler);
   }, [rootDir, load]);
+
+  // Live-refresh: while expanded, poll the root so externally-created files
+  // (terminal, git, other programs) show up without a manual refresh.
+  useEffect(() => {
+    if (!expanded) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (document.hidden) return;
+      try {
+        const items = await listDir(rootDir);
+        if (cancelled) return;
+        setChildren((prev) => (prev && listingSig(prev) === listingSig(items) ? prev : items));
+      } catch { /* transient — keep the last good listing */ }
+    };
+    const id = setInterval(tick, POLL_MS);
+    window.addEventListener("focus", tick);
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener("focus", tick); };
+  }, [rootDir, expanded]);
 
   const toggle = useCallback(async () => {
     if (!expanded && children === null) await load();
