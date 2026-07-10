@@ -1,5 +1,5 @@
 """
-V-Agent 0.9.0 — Backend seguro (Vercel Serverless)
+V-Agent 0.9.1 — Backend seguro (Vercel Serverless)
 Keys ficam APENAS em Vercel Environment Variables.
 O utilizador nunca tem acesso às keys.
 """
@@ -12,7 +12,7 @@ import os
 import time
 from collections import defaultdict
 
-app = FastAPI(title="V-Agent API", version="0.9.0")
+app = FastAPI(title="V-Agent API", version="0.9.1")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -76,7 +76,7 @@ def health():
     """Health check — não expõe keys nem detalhes internos."""
     return {
         "status": "ok",
-        "version": "0.9.0",
+        "version": "0.9.1",
         "provider": "groq",
         "models": ALLOWED_GROQ_MODELS,
     }

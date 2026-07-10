@@ -17,7 +17,7 @@ import StatusBar from "./components/StatusBar.jsx";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile, getConfig, saveConfig, readVagentConfig, runTask, createFile, gitCurrentBranch, openExternal } from "./lib/tauri.js";
 
-const CURRENT_VERSION = "0.9.0";
+const CURRENT_VERSION = "0.9.1";
 
 function semverGt(a, b) {
   const pa = a.replace(/^v/, "").split(".").map(Number);

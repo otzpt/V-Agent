@@ -17,12 +17,13 @@ logger = logging.getLogger("vagent.llm")
 
 # ── Allowed models whitelist (free only) ──────────────────────────────────────
 
+# Groq Compound — agentic system with built-in web search + code execution.
+# Llama models were decommissioned by Groq, so Compound is the only Groq model
+# V-Agent uses. Any legacy model id is transparently upgraded to it.
+DEFAULT_GROQ_MODEL = "groq/compound"
+
 ALLOWED_GROQ_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "mixtral-8x7b-32768",
-    "gemma2-9b-it",
-    "gemma-7b-it",
+    "groq/compound",
 ]
 
 ALLOWED_OPENROUTER_FREE_MODELS = [
@@ -419,7 +420,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
     if provider_name == "backend":
         return BackendProvider(
             server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-            model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
+            model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
         )
 
     # The frontend labels this provider "ollama"; "local" kept for back-compat.
@@ -448,7 +449,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             logger.warning("No Groq key — falling back to backend.")
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-                model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
+                model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
             )
         model = cfg.get("model") or cfg.get("groq_model") or ALLOWED_GROQ_MODELS[0]
         return GroqProvider(key, model, system_prompt)
@@ -459,7 +460,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             logger.warning("No OpenRouter key — falling back to backend.")
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-                model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
+                model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
             )
         model = cfg.get("model") or cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
         return OpenRouterProvider(key, model, system_prompt)
@@ -470,7 +471,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             logger.warning("No Anthropic key — falling back to backend.")
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-                model="llama-3.3-70b-versatile",
+                model=DEFAULT_GROQ_MODEL,
             )
         model = cfg.get("model") or cfg.get("anthropic_model") or DEFAULT_ANTHROPIC_MODEL
         return AnthropicProvider(key, model, system_prompt)
@@ -479,5 +480,5 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
     logger.error("Unknown provider '%s' — using backend.", provider_name)
     return BackendProvider(
         server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
-        model=cfg.get("groq_model", "llama-3.3-70b-versatile"),
+        model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
     )

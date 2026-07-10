@@ -62,18 +62,18 @@ def route(message: str, history: list, config: dict) -> tuple[dict, str]:
             routed.setdefault("model", "anthropic/claude-haiku-4-5")
         elif has_groq:
             routed["ai_provider"] = "groq"
-            routed["model"]       = "llama-3.3-70b-versatile"
+            routed["model"]       = "groq/compound"
 
     elif task == "complex":
         if has_groq:
             routed["ai_provider"] = "groq"
-            routed["model"]       = "llama-3.3-70b-versatile"
+            routed["model"]       = "groq/compound"
         elif has_or:
             routed["ai_provider"] = "openrouter"
 
     elif task == "simple":
         if has_groq:
             routed["ai_provider"] = "groq"
-            routed["model"]       = "llama-3.1-8b-instant"
+            routed["model"]       = "groq/compound"
 
     return routed, task

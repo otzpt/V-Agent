@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.9.1
+
+### AI backend — Groq Compound
+- **All Groq inference now runs on Groq Compound (`groq/compound`)** — an agentic
+  system with built-in web search and code execution, far better suited to coding
+  tasks. Groq decommissioned the Llama 3.x models; the hosted backend transparently
+  upgrades legacy `llama-…` requests from older installs, so 0.9.0 apps keep working.
+- Model router, context manager, client defaults and config templates all updated
+  to Compound.
+
+### Explorer (file tree)
+- **Live refresh** — open folders now detect files created outside the app
+  (in-app terminal, git, other programs) within ~1.5s and on window focus.
+  Previously the tree only updated on manual actions or AI writes.
+- **Create in any folder** — every folder row shows hover New File / New Folder
+  buttons that create inside *that* folder. Previously the header buttons only
+  created in the first workspace root.
+- **Create with no folder open** — VS Code-style empty state: New File… (Save
+  dialog), New Folder… (pick location, then opens as workspace), Open Folder….
+
+### Jarvis mode (experimental)
+- Sidecar rearchitecture: persistent cross-session memory, autonomous agent loop,
+  MCP tool support, RAG file context, heuristic model routing, token-budget
+  context compaction. A testing ground for [ECHOVOID](https://github.com/otzpt/ECHOVOID) —
+  not production-ready.
+
+### Misc
+- Release workflow is idempotent (re-tagging refreshes an existing release).
+- Update-check banner: 0.9.0 users will now see the v0.9.1 update notification.
+
 ## v0.9.0 — First Release
 
 ### Core editor

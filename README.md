@@ -6,7 +6,7 @@
 <p align="center"><em>Local-first AI coding agent. No cloud lock-in, no bloat.</em></p>
 
 <p align="center">
-  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/version-0.9.1--alpha-f5a623?style=flat-square" alt="Version"/></a>
+  <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/version-0.9.1-7c6ef8?style=flat-square" alt="Version"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-7cf26e?style=flat-square" alt="License"/></a>
   <a href="https://github.com/otzpt/V-Agent/releases"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-555?style=flat-square" alt="Platform"/></a>
 </p>
@@ -31,7 +31,7 @@
 
 ---
 
-## Note on "Jarvis mode" (v0.9.1 alpha)
+## Note on "Jarvis mode" (experimental)
 
 V-Agent v0.9.1 includes an experimental **Jarvis mode** — persistent cross-session memory, autonomous agent loop, MCP tool support, and RAG context. This is a **testing ground**, not the main feature of V-Agent.
 
@@ -65,9 +65,10 @@ Get the latest installer from [GitHub Releases](https://github.com/otzpt/V-Agent
 
 | Provider | Setup | Notes |
 |----------|-------|-------|
-| V-Agent Cloud | None (default) | Rate-limited shared backend |
-| Groq | Free API key at [console.groq.com](https://console.groq.com) | Fast, free tier |
+| V-Agent Cloud | None (default) | Rate-limited shared backend — runs **Groq Compound** (built-in web search + code execution) |
+| Groq | Free API key at [console.groq.com](https://console.groq.com) | Groq Compound, fast free tier |
 | OpenRouter | API key at [openrouter.ai](https://openrouter.ai) | Many models including free tier |
+| Anthropic | API key at [console.anthropic.com](https://console.anthropic.com) | Claude Haiku / Sonnet / Opus |
 | Ollama | [Install Ollama](https://ollama.ai) locally | Fully offline, no API key |
 
 Configure in **Settings** (`Ctrl+,`) → AI Provider.

@@ -7,12 +7,9 @@ from typing import Optional
 
 # Approximate context limits per model (conservative)
 MODEL_TOKEN_LIMITS: dict[str, int] = {
-    # Groq
-    "llama-3.1-8b-instant":     8_000,
-    "llama-3.3-70b-versatile": 32_000,
-    "mixtral-8x7b-32768":      32_000,
-    "gemma2-9b-it":             8_000,
-    "gemma-7b-it":              8_000,
+    # Groq — Compound supports ~131k, but the free tier caps tokens/minute,
+    # so keep the compact threshold conservative.
+    "groq/compound":           32_000,
     # Anthropic
     "claude-haiku-4-5":       200_000,
     "claude-sonnet-4-5":      200_000,
