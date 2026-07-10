@@ -141,6 +141,21 @@ select,
   user-select: text;
 }
 
+/* ── File-tree row hover actions (New File / New Folder) ─────────────────── */
+/* display:none until hover so the buttons never reserve space (which would
+   otherwise clip long file names on every row). */
+.ft-row-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 6px;
+}
+.file-tree-item:hover .ft-row-actions,
+.file-tree-item:focus-within .ft-row-actions {
+  display: flex;
+}
+
 /* ── Base elements ────────────────────────────────────────────────────────── */
 
 button {

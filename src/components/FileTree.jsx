@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, memo } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { listDir, createFile, deleteFile, renameFile, createDir } from "../lib/tauri.js";
 
 // Poll interval (ms) for live folder refresh. Keeps the tree in sync with files
@@ -154,6 +154,27 @@ const OpenFileIcon = memo(function OpenFileIcon() {
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
       <polyline points="14 2 14 8 20 8" />
     </svg>
+  );
+});
+
+// Hover-revealed "New File" / "New Folder" buttons shown on any folder row, so
+// items can be created inside that specific folder (not just the first root).
+const RowActions = memo(function RowActions({ dirPath, onStartCreate }) {
+  return (
+    <span className="ft-row-actions">
+      <button
+        className="va-btn" style={styles.rowActionBtn} title="New File"
+        onClick={(e) => { e.stopPropagation(); onStartCreate(dirPath, "file"); }}
+      >
+        <FilePlusIcon />
+      </button>
+      <button
+        className="va-btn" style={styles.rowActionBtn} title="New Folder"
+        onClick={(e) => { e.stopPropagation(); onStartCreate(dirPath, "folder"); }}
+      >
+        <FolderPlusIcon />
+      </button>
+    </span>
   );
 });
 
@@ -392,7 +413,7 @@ function isAncestorPath(dir, target) {
 
 // ── Tree node ────────────────────────────────────────────────────────────────
 
-const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
+const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
   const [expanded,      setExpanded]      = useState(false);
   const [children,      setChildren]      = useState(null);
   const [refreshError,  setRefreshError]  = useState(false);
@@ -533,6 +554,9 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
           {entry.name}
         </span>
         <GitDot xy={gitStatusMap?.[entry.path]} />
+        {entry.is_dir && !refreshError && (
+          <RowActions dirPath={entry.path} onStartCreate={onStartCreate} />
+        )}
         {refreshError && (
           <button
             style={{ ...styles.rootRemove, color: "var(--err)", marginLeft: "auto" }}
@@ -561,6 +585,7 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
                 parentPath={entry.path}
                 refreshParent={refreshSelf}
                 onContextMenu={onContextMenu}
+                onStartCreate={onStartCreate}
                 gitStatusMap={gitStatusMap}
                 activeFilePath={activeFilePath}
                 reveal={reveal}
@@ -576,7 +601,7 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 
 // ── Root folder node (collapsible, removable) ─────────────────────────────────
 
-function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
+function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
   const [expanded,   setExpanded]   = useState(true);
   const [children,   setChildren]   = useState(null);
   const [hover,      setHover]      = useState(false);
@@ -654,6 +679,9 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, 
             onClick={(e) => { e.stopPropagation(); load(); }}
           >↺</button>
         )}
+        {!loadError && (
+          <RowActions dirPath={rootDir} onStartCreate={onStartCreate} />
+        )}
         {hover && !loadError && (
           <button
             style={styles.rootRemove}
@@ -682,6 +710,7 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, gitStatusMap, 
                 parentPath={rootDir}
                 refreshParent={load}
                 onContextMenu={onContextMenu}
+                onStartCreate={onStartCreate}
                 gitStatusMap={gitStatusMap}
                 activeFilePath={activeFilePath}
                 reveal={reveal}
@@ -728,6 +757,35 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
     }
   }, [onOpenFile]);
 
+  // No workspace open → create a file anywhere via a Save dialog, then open it.
+  const newFileNoWorkspace = useCallback(async () => {
+    const path = await save({ title: "New File" });
+    if (!path || typeof path !== "string") return;
+    try {
+      await createFile(path, "");
+      onOpenFile({ path, name: path.split(/[/\\]/).pop() });
+    } catch (e) {
+      window.notify?.(`Could not create file: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
+    }
+  }, [onOpenFile]);
+
+  // No workspace open → pick a location, name a new folder, create it and open it.
+  const newFolderNoWorkspace = useCallback(async () => {
+    const parent = await open({ directory: true, multiple: false, title: "Choose where to create the folder" });
+    if (!parent || typeof parent !== "string") return;
+    const name = window.prompt("New folder name:");
+    if (!name || !name.trim()) return;
+    if (/[\\/]/.test(name.trim())) { window.notify?.("Folder name can't contain / or \\", "error"); return; }
+    const sep = parent.includes("\\") ? "\\" : "/";
+    const full = parent + sep + name.trim();
+    try {
+      await createDir(full);
+      onReplaceRoots(full);   // open the new folder as the workspace
+    } catch (e) {
+      window.notify?.(`Could not create folder: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
+    }
+  }, [onReplaceRoots]);
+
   const handleContextMenu = useCallback((e, entry, parentPath, refreshParent, refreshSelf) => {
     setCtxMenu({ x: e.clientX, y: e.clientY, entry, parentPath, refreshParent, refreshSelf });
   }, []);
@@ -767,7 +825,14 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
         </div>
       </div>
       <div style={styles.body}>
-        {!hasRoots && <div style={styles.empty}>No folder open</div>}
+        {!hasRoots && (
+          <div style={styles.empty}>
+            <div style={styles.emptyText}>No folder open</div>
+            <button style={styles.emptyBtn} onClick={newFileNoWorkspace}>New File…</button>
+            <button style={styles.emptyBtn} onClick={newFolderNoWorkspace}>New Folder…</button>
+            <button style={styles.emptyBtn} onClick={openFolder}>Open Folder…</button>
+          </div>
+        )}
         {hasRoots &&
           rootDirs.map((dir) => (
             <RootNode
@@ -776,6 +841,7 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
               onOpenFile={onOpenFile}
               onRemove={onRemoveRoot}
               onContextMenu={handleContextMenu}
+              onStartCreate={startCreate}
               gitStatusMap={gitStatusMap}
               activeFilePath={activeFilePath}
               reveal={reveal}
@@ -850,7 +916,38 @@ const styles = {
     whiteSpace: "nowrap",
   },
   body: { flex: 1, overflow: "auto", padding: "6px 0" },
-  empty: { padding: "12px", fontSize: "12px", color: "var(--text-2)" },
+  empty: {
+    padding: "12px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 6,
+  },
+  emptyText: { fontSize: "12px", color: "var(--text-2)", marginBottom: 2 },
+  emptyBtn: {
+    fontSize: "12px",
+    color: "var(--text-1)",
+    padding: "6px 9px",
+    borderRadius: "var(--r-sm)",
+    border: "1px solid var(--border)",
+    background: "transparent",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  rowActionBtn: {
+    width: 20,
+    height: 20,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "var(--text-2)",
+    background: "transparent",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    padding: 0,
+    flexShrink: 0,
+  },
   rootRow: {
     display: "flex",
     alignItems: "center",
