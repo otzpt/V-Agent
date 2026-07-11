@@ -161,19 +161,34 @@ async def chat(req: ChatRequest):
             timeout=60,
         )
 
-    try:
-        response = _call_groq(model)
+    def _try_chain(primary: str):
+        """Primário + fallbacks. Devolve (response, modelo_usado)."""
+        r = _call_groq(primary)
+        if r.status_code != 429:
+            return r, primary
+        for fb in FALLBACK_GROQ_MODELS:
+            if fb == primary:
+                continue
+            r = _call_groq(fb)
+            if r.status_code != 429:
+                return r, fb
+        return r, primary
 
-        # 429 → percorre os fallbacks (cada um tem quota separada na Groq)
-        # antes de desistir. Sem sleep: no máximo duas chamadas extra.
+    try:
+        response, model = _try_chain(model)
+
+        # O limite da Groq no free tier é ao nível da CONTA (todos os modelos
+        # ao mesmo tempo) e por minuto — janelas reabrem em segundos. Uma
+        # única espera curta (Retry-After, máx. 6s) resgata a maioria dos
+        # bursts sem estourar o tempo da função serverless.
         if response.status_code == 429:
-            for fb in FALLBACK_GROQ_MODELS:
-                if fb == model:
-                    continue
-                response = _call_groq(fb)
-                if response.status_code != 429:
-                    model = fb
-                    break
+            retry_after = response.headers.get("retry-after", "")
+            try:
+                wait = min(float(retry_after), 6.0) if retry_after else 2.5
+            except ValueError:
+                wait = 2.5
+            time.sleep(max(wait, 1.0))
+            response, model = _try_chain(GROQ_MODEL)
 
         # ── Tratar erros sem expor detalhes internos ──────────────────────────
         if response.status_code == 401:
