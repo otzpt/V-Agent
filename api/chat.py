@@ -71,19 +71,21 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # funcionar sem reinstalar.
 GROQ_MODEL = "groq/compound"
 
-# Fallback quando o Compound atinge o rate limit da key partilhada: o
-# compound-mini é a mesma família agêntica mas tem quota própria na Groq,
-# por isso duplica a capacidade gratuita.
-FALLBACK_GROQ_MODEL = "groq/compound-mini"
+# Fallbacks quando o Compound atinge o rate limit da key partilhada, por
+# ordem: compound-mini (mesma família agêntica, quota própria) e depois
+# gpt-oss-120b (modelo plano com limites muito maiores — último recurso
+# para o backend nunca ficar mudo). Cada modelo tem bucket próprio na Groq.
+FALLBACK_GROQ_MODELS = ["groq/compound-mini", "openai/gpt-oss-120b"]
 
 # Modelos servidos por este backend.
-ALLOWED_GROQ_MODELS = [GROQ_MODEL, FALLBACK_GROQ_MODEL]
+ALLOWED_GROQ_MODELS = [GROQ_MODEL, *FALLBACK_GROQ_MODELS]
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str
     model: str = GROQ_MODEL
     history: list = []  # Histórico de mensagens [{role, content}]
+    system: str = ""    # System prompt opcional (personalidade/regras do cliente)
 
 class ChatResponse(BaseModel):
     content: str
@@ -126,6 +128,10 @@ async def chat(req: ChatRequest):
 
     # ── Construir histórico ───────────────────────────────────────────────────
     messages = []
+    # System prompt do cliente (regras de estilo/ferramentas do V-Agent)
+    system = (req.system or "").strip()[:6000]
+    if system:
+        messages.append({"role": "system", "content": system})
     # Adicionar histórico (max últimas 10 mensagens para não exceder tokens)
     if req.history:
         safe_history = [
@@ -158,11 +164,16 @@ async def chat(req: ChatRequest):
     try:
         response = _call_groq(model)
 
-        # 429 no Compound → tenta o compound-mini (quota separada na Groq)
-        # antes de desistir. Sem sleep: uma única chamada extra.
-        if response.status_code == 429 and model != FALLBACK_GROQ_MODEL:
-            model = FALLBACK_GROQ_MODEL
-            response = _call_groq(model)
+        # 429 → percorre os fallbacks (cada um tem quota separada na Groq)
+        # antes de desistir. Sem sleep: no máximo duas chamadas extra.
+        if response.status_code == 429:
+            for fb in FALLBACK_GROQ_MODELS:
+                if fb == model:
+                    continue
+                response = _call_groq(fb)
+                if response.status_code != 429:
+                    model = fb
+                    break
 
         # ── Tratar erros sem expor detalhes internos ──────────────────────────
         if response.status_code == 401:

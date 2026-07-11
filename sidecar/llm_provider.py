@@ -74,9 +74,10 @@ class LLMRateLimitError(LLMError):
 class BackendProvider(LLMProvider):
     name = "backend"
 
-    def __init__(self, server_url: str, model: str):
-        self.server_url = server_url.rstrip("/")
-        self.model      = model
+    def __init__(self, server_url: str, model: str, system_prompt: str = ""):
+        self.server_url    = server_url.rstrip("/")
+        self.model         = model
+        self.system_prompt = system_prompt
 
     def is_available(self) -> bool:
         try:
@@ -96,7 +97,8 @@ class BackendProvider(LLMProvider):
         try:
             resp = requests.post(
                 f"{self.server_url}/chat",
-                json={"message": last_user, "model": self.model, "history": history},
+                json={"message": last_user, "model": self.model, "history": history,
+                      "system": self.system_prompt or ""},
                 timeout=60,
             )
         except requests.exceptions.ConnectionError:
@@ -421,6 +423,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
         return BackendProvider(
             server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
             model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
+            system_prompt=system_prompt,
         )
 
     # The frontend labels this provider "ollama"; "local" kept for back-compat.
@@ -450,6 +453,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
+                system_prompt=system_prompt,
             )
         model = cfg.get("model") or cfg.get("groq_model") or ALLOWED_GROQ_MODELS[0]
         return GroqProvider(key, model, system_prompt)
@@ -461,6 +465,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
+                system_prompt=system_prompt,
             )
         model = cfg.get("model") or cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
         return OpenRouterProvider(key, model, system_prompt)
@@ -472,6 +477,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             return BackendProvider(
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=DEFAULT_GROQ_MODEL,
+                system_prompt=system_prompt,
             )
         model = cfg.get("model") or cfg.get("anthropic_model") or DEFAULT_ANTHROPIC_MODEL
         return AnthropicProvider(key, model, system_prompt)
@@ -481,4 +487,5 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
     return BackendProvider(
         server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
         model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
+        system_prompt=system_prompt,
     )
