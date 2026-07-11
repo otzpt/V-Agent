@@ -1,18 +1,19 @@
 """
-V-Agent 0.9.1 — Backend seguro (Vercel Serverless)
+V-Agent 0.9.2 — Backend seguro (Vercel Serverless)
 Keys ficam APENAS em Vercel Environment Variables.
 O utilizador nunca tem acesso às keys.
 """
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import requests
 import os
 import time
 from collections import defaultdict
 
-app = FastAPI(title="V-Agent API", version="0.9.1")
+app = FastAPI(title="V-Agent API", version="0.9.2")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -27,18 +28,32 @@ app.add_middleware(
 _request_counts: dict = defaultdict(list)
 MAX_REQUESTS_PER_MINUTE = 30
 
+def _client_ip(request: Request) -> str:
+    # Atrás do proxy da Vercel, request.client.host é o proxy — TODOS os
+    # utilizadores cairiam no mesmo bucket. O IP real vem no x-forwarded-for.
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    # /health é um ping barato (o cliente verifica antes de cada chat) —
+    # não deve consumir o limite.
+    if request.url.path == "/health":
+        return await call_next(request)
+    client_ip = _client_ip(request)
     now = time.time()
     # Limpa requests antigos (>1 min)
     _request_counts[client_ip] = [
         t for t in _request_counts[client_ip] if now - t < 60
     ]
     if len(_request_counts[client_ip]) >= MAX_REQUESTS_PER_MINUTE:
-        raise HTTPException(
+        # HTTPException dentro de middleware vira 500 (não passa pelos
+        # exception handlers) — devolve a resposta 429 diretamente.
+        return JSONResponse(
             status_code=429,
-            detail="Too many requests. Max 30/min per IP."
+            content={"detail": "Too many requests. Max 30/min per IP."},
         )
     _request_counts[client_ip].append(now)
     return await call_next(request)
@@ -56,8 +71,13 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # funcionar sem reinstalar.
 GROQ_MODEL = "groq/compound"
 
+# Fallback quando o Compound atinge o rate limit da key partilhada: o
+# compound-mini é a mesma família agêntica mas tem quota própria na Groq,
+# por isso duplica a capacidade gratuita.
+FALLBACK_GROQ_MODEL = "groq/compound-mini"
+
 # Modelos servidos por este backend.
-ALLOWED_GROQ_MODELS = [GROQ_MODEL]
+ALLOWED_GROQ_MODELS = [GROQ_MODEL, FALLBACK_GROQ_MODEL]
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -76,7 +96,7 @@ def health():
     """Health check — não expõe keys nem detalhes internos."""
     return {
         "status": "ok",
-        "version": "0.9.1",
+        "version": "0.9.2",
         "provider": "groq",
         "models": ALLOWED_GROQ_MODELS,
     }
@@ -118,15 +138,15 @@ async def chat(req: ChatRequest):
     messages.append({"role": "user", "content": message})
 
     # ── Chamada Groq ──────────────────────────────────────────────────────────
-    try:
-        response = requests.post(
+    def _call_groq(m: str):
+        return requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": model,
+                "model": m,
                 "messages": messages,
                 "max_tokens": 4096,
                 "temperature": 0.15,
@@ -134,6 +154,15 @@ async def chat(req: ChatRequest):
             },
             timeout=60,
         )
+
+    try:
+        response = _call_groq(model)
+
+        # 429 no Compound → tenta o compound-mini (quota separada na Groq)
+        # antes de desistir. Sem sleep: uma única chamada extra.
+        if response.status_code == 429 and model != FALLBACK_GROQ_MODEL:
+            model = FALLBACK_GROQ_MODEL
+            response = _call_groq(model)
 
         # ── Tratar erros sem expor detalhes internos ──────────────────────────
         if response.status_code == 401:

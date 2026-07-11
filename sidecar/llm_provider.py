@@ -105,7 +105,7 @@ class BackendProvider(LLMProvider):
             raise LLMError("Backend request timed out (60s).")
 
         if resp.status_code == 429:
-            raise LLMError("Rate limit reached (30/min). Try again shortly.")
+            raise LLMError("Backend is busy (shared free tier hit its limit). Wait a moment and retry, or add your own free Groq key in Settings.")
         if resp.status_code == 503:
             raise LLMError("Backend temporarily unavailable.")
         if resp.status_code != 200:

@@ -35,7 +35,8 @@ async function buildTree(root) {
 function systemPromptFrom(rootDir, treeText, openFile, planMode) {
   let p =
     "You are V-Agent, an AI assistant embedded in a local code editor. " +
-    "Be concise and practical. When proposing changes, show the full updated code in a fenced block with its language.";
+    "Answer first, keep it short — a simple question gets 1-3 sentences, no headers or tables unless asked. " +
+    "When proposing changes, show only the changed code in a fenced block with its language, plus one line of explanation.";
   if (planMode) p += "\n\nPLAN MODE: Output a short step-by-step plan only. Do NOT write code.";
   if (rootDir)  p += `\n\nWorkspace root: ${rootDir}\nProject files (2 levels):\n${treeText}`;
   if (openFile) {

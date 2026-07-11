@@ -49,6 +49,23 @@ export async function getSystemInfo() {
   return invoke("get_system_info");
 }
 
+// ── In-app updater ───────────────────────────────────────────────────────────
+
+// "msi" (installed), "portable" (loose exe on Windows) or "external" (other OS).
+export async function getUpdateKind() {
+  return invoke("get_update_kind");
+}
+
+// Downloads the asset and hands off to the swap script; resolves when the
+// script is launched. Caller must then quitApp() so the swap can proceed.
+export async function applyUpdate(url, version, kind) {
+  return invoke("apply_update", { url, version, kind });
+}
+
+export async function quitApp() {
+  return invoke("quit_app");
+}
+
 // Returns the parsed config object, or null if no config exists yet.
 export async function getConfig() {
   const json = await invoke("get_config");

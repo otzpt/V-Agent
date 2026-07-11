@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.9.2
+
+### Backend — rate limit fixes
+- **Per-user rate limiting actually works now**: behind Vercel's proxy every user
+  was sharing one 30/min bucket (`request.client.host` is the proxy, not the user);
+  the real IP is now read from `x-forwarded-for`.
+- Rate-limit rejections return a clean **429** (previously surfaced as a 500 from
+  inside the middleware), and `/health` pings no longer consume the limit.
+- **Automatic fallback to `groq/compound-mini`** when `groq/compound` hits the
+  shared key's Groq limit — a separate quota bucket, doubling free capacity.
+- Clearer client message when the shared backend is busy, suggesting a personal
+  free Groq key.
+
+### In-app auto-updater
+- The update banner now has **Install & restart**: downloads the right asset for
+  your install (MSI installer or portable ZIP), waits for the app to close,
+  installs silently (one UAC prompt for MSI), and relaunches — same system as
+  VOIDTUNE. Non-Windows platforms keep the release-page link.
+
+### AI panel
+- **Much less talkative**: new system prompt enforces answer-first responses sized
+  to the question — no more giant tables, cheat-sheets, and "common pitfalls"
+  essays for one-line questions.
+- Stronger tool discipline: reads files before editing, batches reads, replies in
+  1-3 sentences after tool use instead of narrating.
+
+### Editor
+- **New syntax colors** (One-Dark-style: blue keywords, pink operators, gold types,
+  green strings) applied across all app themes, with the editor background matched
+  to each theme. **Rainbow bracket-pair colorization** + active-pair guides.
+- **Structural error detection for C, C++, C#, Java, Kotlin, Swift, Dart and Go**
+  (previously no diagnostics at all): unmatched `( [ {`, unclosed strings/char
+  literals, unclosed block comments — shown as squiggles + in the Problems panel.
+
 ## v0.9.1
 
 ### AI backend — Groq Compound

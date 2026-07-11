@@ -15,9 +15,9 @@ import CommandPalette from "./components/CommandPalette.jsx";
 import Notifications from "./components/Notifications.jsx";
 import StatusBar from "./components/StatusBar.jsx";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readFile, getConfig, saveConfig, readVagentConfig, runTask, createFile, gitCurrentBranch, openExternal } from "./lib/tauri.js";
+import { readFile, getConfig, saveConfig, readVagentConfig, runTask, createFile, gitCurrentBranch, openExternal, getUpdateKind, applyUpdate, quitApp } from "./lib/tauri.js";
 
-const CURRENT_VERSION = "0.9.1";
+const CURRENT_VERSION = "0.9.2";
 
 function semverGt(a, b) {
   const pa = a.replace(/^v/, "").split(".").map(Number);
@@ -686,21 +686,46 @@ export default function App() {
   }, [gitRoot]);
 
   // ── Update check ─────────────────────────────────────────────────────────────
-  const [updateBanner, setUpdateBanner] = useState(null); // null | { version, url }
+  // { version, url, asset, kind } — asset is the direct download for this install
+  // kind (msi/portable); null on non-Windows or when the release has no match.
+  const [updateBanner, setUpdateBanner] = useState(null);
+  const [updateState,  setUpdateState]  = useState(null); // null | "downloading" | "restarting"
   useEffect(() => {
-    fetch("https://api.github.com/repos/otzpt/V-Agent/releases/latest", {
-      headers: { Accept: "application/vnd.github+json" },
-    })
-      .then((r) => r.json())
-      .then((data) => {
+    (async () => {
+      try {
+        const r = await fetch("https://api.github.com/repos/otzpt/V-Agent/releases/latest", {
+          headers: { Accept: "application/vnd.github+json" },
+        });
+        const data   = await r.json();
         const latest = data?.tag_name;
         const url    = data?.html_url;
-        if (latest && url && semverGt(latest, CURRENT_VERSION)) {
-          setUpdateBanner({ version: latest, url });
-        }
-      })
-      .catch(() => {});
+        if (!(latest && url && semverGt(latest, CURRENT_VERSION))) return;
+        let kind = "external";
+        try { kind = await getUpdateKind(); } catch { /* older backend — link only */ }
+        const assets = Array.isArray(data?.assets) ? data.assets : [];
+        const find = (pred) => assets.find((a) => pred((a?.name || "").toLowerCase()))?.browser_download_url || null;
+        const asset =
+          kind === "msi"      ? find((n) => n.endsWith(".msi"))
+          : kind === "portable" ? find((n) => n.endsWith("-windows-portable.zip"))
+          : null;
+        setUpdateBanner({ version: latest, url, asset, kind });
+      } catch { /* offline — skip */ }
+    })();
   }, []);
+
+  // Download + hand off to the swap script, then exit so it can replace us.
+  const installUpdate = useCallback(async () => {
+    if (!updateBanner?.asset || updateState) return;
+    setUpdateState("downloading");
+    try {
+      await applyUpdate(updateBanner.asset, updateBanner.version, updateBanner.kind);
+      setUpdateState("restarting");
+      setTimeout(() => { quitApp().catch(() => {}); }, 400);
+    } catch (e) {
+      setUpdateState(null);
+      window.notify?.(`Update failed: ${e}`, "error");
+    }
+  }, [updateBanner, updateState]);
 
   // ── Status bar state ─────────────────────────────────────────────────────────
   const [cursorPos,     setCursorPos]       = useState(null);
@@ -832,22 +857,39 @@ export default function App() {
         padding: "5px 12px", background: "var(--accent)", color: "#fff", fontSize: 13,
         flexShrink: 0,
       }}>
-        <span>Update available: <strong>{updateBanner.version}</strong></span>
-        <button
-          onClick={() => openExternal(updateBanner.url).catch(() => {})}
-          style={{
-            background: "rgba(255,255,255,0.2)", border: "none", color: "#fff",
-            borderRadius: 4, padding: "2px 10px", cursor: "pointer", fontSize: 12,
-          }}
-        >Download</button>
-        <button
-          onClick={() => setUpdateBanner(null)}
-          style={{
-            background: "none", border: "none", color: "#fff",
-            cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px",
-          }}
-          aria-label="Dismiss"
-        >×</button>
+        <span>
+          {updateState === "downloading" ? <>Downloading <strong>{updateBanner.version}</strong>…</>
+           : updateState === "restarting" ? <>Restarting to finish the update…</>
+           : <>Update available: <strong>{updateBanner.version}</strong></>}
+        </span>
+        {!updateState && updateBanner.asset && (
+          <button
+            onClick={installUpdate}
+            style={{
+              background: "rgba(255,255,255,0.25)", border: "none", color: "#fff",
+              borderRadius: 4, padding: "2px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            }}
+          >Install & restart</button>
+        )}
+        {!updateState && (
+          <button
+            onClick={() => openExternal(updateBanner.url).catch(() => {})}
+            style={{
+              background: "rgba(255,255,255,0.12)", border: "none", color: "#fff",
+              borderRadius: 4, padding: "2px 10px", cursor: "pointer", fontSize: 12,
+            }}
+          >Release notes</button>
+        )}
+        {!updateState && (
+          <button
+            onClick={() => setUpdateBanner(null)}
+            style={{
+              background: "none", border: "none", color: "#fff",
+              cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px",
+            }}
+            aria-label="Dismiss"
+          >×</button>
+        )}
       </div>
     )}
     <div

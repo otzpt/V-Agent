@@ -1284,6 +1284,102 @@ async fn ai_chat(
     Ok(())
 }
 
+// ── In-app updater ─────────────────────────────────────────────────────
+// VOIDTUNE-style: download the release asset, then hand off to a detached
+// PowerShell script that waits for this process to exit, installs silently
+// (MSI, with one UAC prompt) or swaps the files (portable ZIP), and
+// relaunches the app. Non-Windows platforms keep the release-page link.
+
+#[tauri::command]
+fn get_update_kind() -> String {
+    if cfg!(windows) {
+        let p = std::env::current_exe()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_lowercase();
+        if p.contains("program files") { "msi".to_string() } else { "portable".to_string() }
+    } else {
+        "external".to_string()
+    }
+}
+
+#[tauri::command]
+async fn apply_update(url: String, version: String, kind: String) -> Result<(), String> {
+    if !cfg!(windows) {
+        return Err("In-app update is Windows-only; use the release page.".into());
+    }
+    let is_msi = kind == "msi";
+    let ext = if is_msi { "msi" } else { "zip" };
+    let tmp = std::env::temp_dir();
+    let safe_ver: String = version.chars().filter(|c| c.is_alphanumeric() || *c == '.').collect();
+    let pkg = tmp.join(format!("vagent_update_{safe_ver}.{ext}"));
+
+    let bytes = reqwest::Client::new()
+        .get(&url)
+        .header("User-Agent", "V-Agent-Updater")
+        .send()
+        .await
+        .map_err(|e| format!("download update: {e}"))?
+        .bytes()
+        .await
+        .map_err(|e| format!("read update: {e}"))?;
+    fs::write(&pkg, &bytes).map_err(|e| format!("save update: {e}"))?;
+
+    let exe = std::env::current_exe().map_err(|e| format!("current_exe: {e}"))?;
+    let app_dir = exe.parent().ok_or("no app dir")?.to_path_buf();
+    let pid = std::process::id();
+    let script = tmp.join("vagent_update.ps1");
+    let log = tmp.join("vagent_update.log");
+
+    // Wait for our own exit before touching files — racing the swap against a
+    // still-running exe causes "file in use" failures. If the UAC prompt is
+    // declined the install silently no-ops and the old exe is relaunched.
+    let body = if is_msi {
+        format!(
+            "$ErrorActionPreference='SilentlyContinue'\n\
+             while (Get-Process -Id {pid} -EA SilentlyContinue) {{ Start-Sleep -Milliseconds 400 }}\n\
+             Start-Sleep -Seconds 1\n\
+             Start-Process msiexec.exe -ArgumentList '/i \"{pkg}\" /qn /norestart /l*v \"{log}\"' -Verb RunAs -Wait\n\
+             Remove-Item '{pkg}' -Force\n\
+             if (Test-Path '{exe}') {{ Start-Process '{exe}' }}",
+            pid = pid, pkg = pkg.display(), log = log.display(), exe = exe.display()
+        )
+    } else {
+        format!(
+            "$ErrorActionPreference='SilentlyContinue'\n\
+             while (Get-Process -Id {pid} -EA SilentlyContinue) {{ Start-Sleep -Milliseconds 400 }}\n\
+             Start-Sleep -Seconds 1\n\
+             $tmp = Join-Path $env:TEMP ('vagent_unzip_' + [guid]::NewGuid().ToString('N'))\n\
+             Expand-Archive -Path '{pkg}' -DestinationPath $tmp -Force\n\
+             $src = if ((Get-ChildItem $tmp -File).Count -eq 0 -and (Get-ChildItem $tmp -Directory).Count -eq 1) {{ (Get-ChildItem $tmp -Directory)[0].FullName }} else {{ $tmp }}\n\
+             Copy-Item -Path (Join-Path $src '*') -Destination '{dir}' -Recurse -Force\n\
+             Remove-Item '{pkg}' -Force; Remove-Item $tmp -Recurse -Force\n\
+             Start-Process '{exe}'",
+            pid = pid, pkg = pkg.display(), dir = app_dir.display(), exe = exe.display()
+        )
+    };
+    fs::write(&script, body).map_err(|e| format!("write update script: {e}"))?;
+
+    new_command("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-WindowStyle",
+            "Hidden",
+            "-File",
+            &script.to_string_lossy(),
+        ])
+        .spawn()
+        .map_err(|e| format!("launch updater: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1339,7 +1435,10 @@ pub fn run() {
             agent_send,
             ai_chat,
             get_vagent_memory,
-            clear_vagent_memory
+            clear_vagent_memory,
+            get_update_kind,
+            apply_update,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running V-Agent");

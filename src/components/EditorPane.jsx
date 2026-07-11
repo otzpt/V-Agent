@@ -10,11 +10,78 @@ const FONT_MAX = 24;
 const FONT_DEFAULT = 13;
 const clampFont = (n) => Math.min(FONT_MAX, Math.max(FONT_MIN, n));
 
-// Monaco built-in/custom theme to use for a given app theme.
+// Editor background per app theme so the editor blends with the app chrome.
+// Token colors are shared (One-Dark-style — the user-preferred scheme).
+const EDITOR_BG = {
+  dark:          "#0a0a16",   // Aether default
+  dracula:       "#282a36",
+  "one-dark":    "#282c34",
+  nord:          "#2e3440",
+  catppuccin:    "#1e1e2e",
+  "github-dark": "#0d1117",
+  solarized:     "#002b36",
+};
+
+// Monaco custom theme to use for a given app theme (defined in the monaco effect).
 function monacoThemeFor(appTheme) {
-  if (appTheme === "light") return "vs";
-  if (appTheme === "solarized") return "vagent-solarized";
-  return "vs-dark";
+  if (appTheme === "light") return "vagent-light";
+  return EDITOR_BG[appTheme] ? `vagent-${appTheme}` : "vagent-dark";
+}
+
+// ── Lightweight syntax lint (brace-family languages) ─────────────────────────
+// Monaco has no diagnostics for C/C++/Java/etc — this catches the common
+// structural errors safely: unmatched ( [ {, unclosed block comments, and
+// string/char literals left open at end of line. No style opinions.
+const BRACE_LANGS = new Set(["c", "cpp", "csharp", "java", "kotlin", "swift", "dart", "go"]);
+
+function lintBraces(text) {
+  const out = [];
+  const pairs = { ")": "(", "]": "[", "}": "{" };
+  const stack = [];
+  let mode = null;            // null | "line" | "block" | "triple" | '"' | "'" | "`"
+  let line = 1, col = 1, strLine = 0, strCol = 0, blkLine = 0, blkCol = 0;
+  for (let i = 0; i < text.length; i++, col++) {
+    const c = text[i], n = text[i + 1];
+    if (c === "\n") {
+      if (mode === "line") mode = null;
+      if (mode === '"' || mode === "'") {
+        out.push({ line: strLine, col: strCol, msg: mode === '"' ? "String literal is not closed" : "Character literal is not closed" });
+        mode = null;
+      }
+      line++; col = 0; continue;
+    }
+    if (mode === "line") continue;
+    if (mode === "block") {
+      if (c === "*" && n === "/") { mode = null; i++; col++; }
+      continue;
+    }
+    if (mode === "triple") {
+      if (c === '"' && n === '"' && text[i + 2] === '"') { mode = null; i += 2; col += 2; }
+      continue;
+    }
+    if (mode === "`") { if (c === "`") mode = null; continue; }
+    if (mode === '"' || mode === "'") {
+      if (c === "\\") {
+        if (n === "\n") { line++; col = 0; }
+        i++; col++;
+      } else if (c === mode) mode = null;
+      continue;
+    }
+    if (c === "/" && n === "/") { mode = "line"; i++; col++; continue; }
+    if (c === "/" && n === "*") { mode = "block"; blkLine = line; blkCol = col; i++; col++; continue; }
+    if (c === '"' && n === '"' && text[i + 2] === '"') { mode = "triple"; i += 2; col += 2; continue; }
+    if (c === '"' || c === "'") { mode = c; strLine = line; strCol = col; continue; }
+    if (c === "`") { mode = "`"; continue; }
+    if (c === "(" || c === "[" || c === "{") { stack.push({ ch: c, line, col }); continue; }
+    if (c === ")" || c === "]" || c === "}") {
+      const top = stack[stack.length - 1];
+      if (top && top.ch === pairs[c]) stack.pop();
+      else out.push({ line, col, msg: `Unmatched '${c}'` });
+    }
+  }
+  if (mode === "block") out.push({ line: blkLine, col: blkCol, msg: "Block comment is not closed" });
+  for (const o of stack) out.push({ line: o.line, col: o.col, msg: `Unclosed '${o.ch}'` });
+  return out.slice(0, 20);
 }
 
 // WakaTime language names (as accepted by the Hackatime API)
@@ -533,18 +600,67 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
   useEffect(() => {
     if (!monaco) return;
 
-    // Custom Monaco theme for Solarized (built-ins cover the rest).
-    monaco.editor.defineTheme("vagent-solarized", {
-      base: "vs-dark",
+    // ── Theme factory ─────────────────────────────────────────────────────────
+    // One shared token scheme (One-Dark-style: blue keywords, pink operators,
+    // gold types, green strings) with the editor background matched to each app
+    // theme. Rainbow bracket-pair colors match the token accents.
+    const TOKEN_RULES = [
+      { token: "comment",          foreground: "7f848e", fontStyle: "italic" },
+      { token: "keyword",          foreground: "61afef" },
+      { token: "operator",         foreground: "e06c75" },
+      { token: "delimiter",        foreground: "c8ccd4" },
+      { token: "type",             foreground: "e5c07b" },
+      { token: "type.identifier",  foreground: "e5c07b" },
+      { token: "string",           foreground: "98c379" },
+      { token: "string.escape",    foreground: "d19a66" },
+      { token: "number",           foreground: "d19a66" },
+      { token: "constant",         foreground: "d19a66" },
+      { token: "function",         foreground: "e5c07b" },
+      { token: "identifier",       foreground: "d7dbe0" },
+      { token: "tag",              foreground: "e06c75" },
+      { token: "attribute.name",   foreground: "d19a66" },
+      { token: "attribute.value",  foreground: "98c379" },
+    ];
+    const BRACKET_COLORS = {
+      "editorBracketHighlight.foreground1": "#e5c07b",
+      "editorBracketHighlight.foreground2": "#c678dd",
+      "editorBracketHighlight.foreground3": "#61afef",
+      "editorBracketHighlight.foreground4": "#98c379",
+      "editorBracketHighlight.unexpectedBracket.foreground": "#f06060",
+    };
+    for (const [name, bg] of Object.entries(EDITOR_BG)) {
+      monaco.editor.defineTheme(`vagent-${name}`, {
+        base: "vs-dark",
+        inherit: true,
+        rules: TOKEN_RULES,
+        colors: {
+          "editor.background":              bg,
+          "editor.foreground":              "#d7dbe0",
+          "editorLineNumber.foreground":    "#5c6370",
+          "editor.lineHighlightBackground": "#ffffff08",
+          ...BRACKET_COLORS,
+        },
+      });
+    }
+    monaco.editor.defineTheme("vagent-light", {
+      base: "vs",
       inherit: true,
-      rules: [],
+      rules: [
+        { token: "comment",         foreground: "6a737d", fontStyle: "italic" },
+        { token: "keyword",         foreground: "0550ae" },
+        { token: "operator",        foreground: "cf222e" },
+        { token: "type",            foreground: "953800" },
+        { token: "type.identifier", foreground: "953800" },
+        { token: "string",          foreground: "116329" },
+        { token: "number",          foreground: "b76b01" },
+        { token: "function",        foreground: "8250df" },
+      ],
       colors: {
-        "editor.background":             "#002b36",
-        "editor.foreground":             "#93a1a1",
-        "editorLineNumber.foreground":   "#586e75",
-        "editorCursor.foreground":       "#268bd2",
-        "editor.selectionBackground":    "#0d4a6b",
-        "editor.lineHighlightBackground":"#073642",
+        "editor.background": "#ffffff",
+        "editorBracketHighlight.foreground1": "#b76b01",
+        "editorBracketHighlight.foreground2": "#8250df",
+        "editorBracketHighlight.foreground3": "#0550ae",
+        "editorBracketHighlight.unexpectedBracket.foreground": "#d03020",
       },
     });
 
@@ -596,7 +712,42 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
       }, 500);
     });
 
-    return () => { disposable.dispose(); clearTimeout(markerTimer); };
+    // ── Structural lint for C-family languages (no built-in diagnostics) ─────
+    const lintModel = (model) => {
+      if (model.isDisposed()) return;
+      const ms = BRACE_LANGS.has(model.getLanguageId())
+        ? lintBraces(model.getValue()).map((m) => ({
+            severity:        monaco.MarkerSeverity.Error,
+            message:         m.msg,
+            startLineNumber: m.line,
+            startColumn:     m.col,
+            endLineNumber:   m.line,
+            endColumn:       m.col + 1,
+          }))
+        : [];
+      monaco.editor.setModelMarkers(model, "vagent-syntax", ms);
+    };
+    const lintDisposables = [];
+    const lintTimers = new Map();
+    const attachLint = (model) => {
+      lintDisposables.push(
+        model.onDidChangeContent(() => {
+          clearTimeout(lintTimers.get(model));
+          lintTimers.set(model, setTimeout(() => lintModel(model), 600));
+        }),
+        model.onDidChangeLanguage(() => lintModel(model)),
+      );
+      lintModel(model);
+    };
+    monaco.editor.getModels().forEach(attachLint);
+    lintDisposables.push(monaco.editor.onDidCreateModel(attachLint));
+
+    return () => {
+      disposable.dispose();
+      clearTimeout(markerTimer);
+      lintDisposables.forEach((d) => d.dispose());
+      lintTimers.forEach((t) => clearTimeout(t));
+    };
   }, [monaco]);
 
   // ── Execute pending line-jump after a tab switch ──────────────────────────────
@@ -877,6 +1028,9 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
                 cursorBlinking:      "smooth",
                 padding:             { top: 12 },
                 renderWhitespace:    "selection",
+                matchBrackets:       "always",
+                bracketPairColorization: { enabled: true },
+                guides:              { bracketPairs: "active" },
               }}
             />
           ) : (
