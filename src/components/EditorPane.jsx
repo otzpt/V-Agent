@@ -22,10 +22,79 @@ const EDITOR_BG = {
   solarized:     "#002b36",
 };
 
-// Monaco custom theme to use for a given app theme (defined in the monaco effect).
+// Monaco custom theme to use for a given app theme (defined in defineEditorThemes).
 function monacoThemeFor(appTheme) {
   if (appTheme === "light") return "vagent-light";
   return EDITOR_BG[appTheme] ? `vagent-${appTheme}` : "vagent-dark";
+}
+
+// ── Theme factory ─────────────────────────────────────────────────────────────
+// One shared token scheme (One-Dark-style: blue keywords, pink operators, gold
+// types, green strings) with the editor background matched to each app theme.
+// MUST run in the Editor's beforeMount: if the theme prop names a theme that is
+// not registered yet, Monaco silently falls back to "vs" — a white editor on
+// every cold app start. beforeMount is synchronous, so the name always exists
+// by the time the first setTheme happens. Safe to call repeatedly.
+function defineEditorThemes(monaco) {
+  const TOKEN_RULES = [
+    { token: "comment",          foreground: "7f848e", fontStyle: "italic" },
+    { token: "keyword",          foreground: "61afef" },
+    { token: "operator",         foreground: "e06c75" },
+    { token: "delimiter",        foreground: "c8ccd4" },
+    { token: "type",             foreground: "e5c07b" },
+    { token: "type.identifier",  foreground: "e5c07b" },
+    { token: "string",           foreground: "98c379" },
+    { token: "string.escape",    foreground: "d19a66" },
+    { token: "number",           foreground: "d19a66" },
+    { token: "constant",         foreground: "d19a66" },
+    { token: "function",         foreground: "e5c07b" },
+    { token: "identifier",       foreground: "d7dbe0" },
+    { token: "tag",              foreground: "e06c75" },
+    { token: "attribute.name",   foreground: "d19a66" },
+    { token: "attribute.value",  foreground: "98c379" },
+  ];
+  const BRACKET_COLORS = {
+    "editorBracketHighlight.foreground1": "#e5c07b",
+    "editorBracketHighlight.foreground2": "#c678dd",
+    "editorBracketHighlight.foreground3": "#61afef",
+    "editorBracketHighlight.foreground4": "#98c379",
+    "editorBracketHighlight.unexpectedBracket.foreground": "#f06060",
+  };
+  for (const [name, bg] of Object.entries(EDITOR_BG)) {
+    monaco.editor.defineTheme(`vagent-${name}`, {
+      base: "vs-dark",
+      inherit: true,
+      rules: TOKEN_RULES,
+      colors: {
+        "editor.background":              bg,
+        "editor.foreground":              "#d7dbe0",
+        "editorLineNumber.foreground":    "#5c6370",
+        "editor.lineHighlightBackground": "#ffffff08",
+        ...BRACKET_COLORS,
+      },
+    });
+  }
+  monaco.editor.defineTheme("vagent-light", {
+    base: "vs",
+    inherit: true,
+    rules: [
+      { token: "comment",         foreground: "6a737d", fontStyle: "italic" },
+      { token: "keyword",         foreground: "0550ae" },
+      { token: "operator",        foreground: "cf222e" },
+      { token: "type",            foreground: "953800" },
+      { token: "type.identifier", foreground: "953800" },
+      { token: "string",          foreground: "116329" },
+      { token: "number",          foreground: "b76b01" },
+      { token: "function",        foreground: "8250df" },
+    ],
+    colors: {
+      "editor.background": "#ffffff",
+      "editorBracketHighlight.foreground1": "#b76b01",
+      "editorBracketHighlight.foreground2": "#8250df",
+      "editorBracketHighlight.foreground3": "#0550ae",
+      "editorBracketHighlight.unexpectedBracket.foreground": "#d03020",
+    },
+  });
 }
 
 // ── Lightweight syntax lint (brace-family languages) ─────────────────────────
@@ -600,69 +669,10 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
   useEffect(() => {
     if (!monaco) return;
 
-    // ── Theme factory ─────────────────────────────────────────────────────────
-    // One shared token scheme (One-Dark-style: blue keywords, pink operators,
-    // gold types, green strings) with the editor background matched to each app
-    // theme. Rainbow bracket-pair colors match the token accents.
-    const TOKEN_RULES = [
-      { token: "comment",          foreground: "7f848e", fontStyle: "italic" },
-      { token: "keyword",          foreground: "61afef" },
-      { token: "operator",         foreground: "e06c75" },
-      { token: "delimiter",        foreground: "c8ccd4" },
-      { token: "type",             foreground: "e5c07b" },
-      { token: "type.identifier",  foreground: "e5c07b" },
-      { token: "string",           foreground: "98c379" },
-      { token: "string.escape",    foreground: "d19a66" },
-      { token: "number",           foreground: "d19a66" },
-      { token: "constant",         foreground: "d19a66" },
-      { token: "function",         foreground: "e5c07b" },
-      { token: "identifier",       foreground: "d7dbe0" },
-      { token: "tag",              foreground: "e06c75" },
-      { token: "attribute.name",   foreground: "d19a66" },
-      { token: "attribute.value",  foreground: "98c379" },
-    ];
-    const BRACKET_COLORS = {
-      "editorBracketHighlight.foreground1": "#e5c07b",
-      "editorBracketHighlight.foreground2": "#c678dd",
-      "editorBracketHighlight.foreground3": "#61afef",
-      "editorBracketHighlight.foreground4": "#98c379",
-      "editorBracketHighlight.unexpectedBracket.foreground": "#f06060",
-    };
-    for (const [name, bg] of Object.entries(EDITOR_BG)) {
-      monaco.editor.defineTheme(`vagent-${name}`, {
-        base: "vs-dark",
-        inherit: true,
-        rules: TOKEN_RULES,
-        colors: {
-          "editor.background":              bg,
-          "editor.foreground":              "#d7dbe0",
-          "editorLineNumber.foreground":    "#5c6370",
-          "editor.lineHighlightBackground": "#ffffff08",
-          ...BRACKET_COLORS,
-        },
-      });
-    }
-    monaco.editor.defineTheme("vagent-light", {
-      base: "vs",
-      inherit: true,
-      rules: [
-        { token: "comment",         foreground: "6a737d", fontStyle: "italic" },
-        { token: "keyword",         foreground: "0550ae" },
-        { token: "operator",        foreground: "cf222e" },
-        { token: "type",            foreground: "953800" },
-        { token: "type.identifier", foreground: "953800" },
-        { token: "string",          foreground: "116329" },
-        { token: "number",          foreground: "b76b01" },
-        { token: "function",        foreground: "8250df" },
-      ],
-      colors: {
-        "editor.background": "#ffffff",
-        "editorBracketHighlight.foreground1": "#b76b01",
-        "editorBracketHighlight.foreground2": "#8250df",
-        "editorBracketHighlight.foreground3": "#0550ae",
-        "editorBracketHighlight.unexpectedBracket.foreground": "#d03020",
-      },
-    });
+    // Idempotent — themes are primarily defined in the Editor's beforeMount
+    // (synchronously, so the first setTheme never sees an unknown name and
+    // falls back to the white "vs" theme); this covers hot-reload paths.
+    defineEditorThemes(monaco);
 
     const js = monaco.languages.typescript.javascriptDefaults;
     const ts = monaco.languages.typescript.typescriptDefaults;
@@ -1015,6 +1025,7 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
               language={langFor(activeFile.name)}
               value={activeFile.content}
               onChange={(value) => onChange(value ?? "")}
+              beforeMount={defineEditorThemes}
               onMount={handleMount}
               options={{
                 fontFamily:          `${editorPrefs.editor_font || "JetBrains Mono"}, monospace`,
