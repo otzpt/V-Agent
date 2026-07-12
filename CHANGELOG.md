@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.3
+
+### Fix
+- **White editor on app start** — the custom Monaco themes introduced in 0.9.2
+  were registered after the editor first applied them, and Monaco falls back to
+  the white `vs` theme for unknown names. Themes are now registered synchronously
+  in `beforeMount`, so the editor is correctly dark from the first paint.
+
 ## v0.9.2
 
 ### Backend — rate limit fixes
