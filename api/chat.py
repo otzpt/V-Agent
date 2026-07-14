@@ -115,11 +115,14 @@ async def chat(req: ChatRequest):
     model = GROQ_MODEL
 
     # ── Validação da mensagem ─────────────────────────────────────────────────
+    # Truncar em vez de rejeitar: a mensagem pode ser um bloco de resultados
+    # de ferramentas do agente (ex.: read_file de um ficheiro grande) — um 400
+    # aqui mataria o loop de ferramentas a meio da tarefa.
     message = req.message.strip() if req.message else ""
     if not message:
         raise HTTPException(status_code=400, detail="Mensagem vazia.")
-    if len(message) > 8000:
-        raise HTTPException(status_code=400, detail="Mensagem demasiado longa (max 8000 chars).")
+    if len(message) > 24_000:
+        message = message[:24_000] + "\n…(truncado)"
 
     # ── Verificar key (configurada no Vercel) ─────────────────────────────────
     if not GROQ_API_KEY:
@@ -128,14 +131,17 @@ async def chat(req: ChatRequest):
 
     # ── Construir histórico ───────────────────────────────────────────────────
     messages = []
-    # System prompt do cliente (regras de estilo/ferramentas do V-Agent)
-    system = (req.system or "").strip()[:6000]
+    # System prompt do cliente (identidade + protocolo de ferramentas + contexto).
+    # 6000 era curto demais: o TOOLS_DOC ficava truncado quando havia um ficheiro
+    # aberto e o agente nunca "aprendia" a sintaxe das ferramentas.
+    system = (req.system or "").strip()[:20_000]
     if system:
         messages.append({"role": "system", "content": system})
-    # Adicionar histórico (max últimas 10 mensagens para não exceder tokens)
+    # Adicionar histórico (max últimas 10 mensagens; 6k chars cada — resultados
+    # de ferramentas a 2k perdiam o conteúdo dos ficheiros lidos)
     if req.history:
         safe_history = [
-            {"role": m.get("role", "user"), "content": str(m.get("content", ""))[:2000]}
+            {"role": m.get("role", "user"), "content": str(m.get("content", ""))[:6000]}
             for m in req.history[-10:]
             if m.get("role") in ("user", "assistant")
         ]

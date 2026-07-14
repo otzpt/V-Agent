@@ -319,21 +319,23 @@ TOOL DISCIPLINE:
 
 
 def _build_system(base: str, use_tools: bool, plan: bool, rag_ctx: str, mem_ctx: str = "") -> str:
+    # Rules FIRST, volatile context LAST: providers (notably the shared
+    # backend) may truncate long system prompts from the end — losing file
+    # context degrades an answer, but losing TOOLS_DOC silently disables
+    # tool use entirely.
     parts = [IDENTITY]
+    if plan:
+        parts.append("PLAN MODE: Provide a concise step-by-step plan only. Do NOT use tools or write code.")
+    elif use_tools:
+        parts.append(TOOLS_DOC)
+        if EXTENSION_DOCS:
+            parts.append("Extension tools:\n" + "\n".join(EXTENSION_DOCS))
+        if MCP_TOOLS_DOC:
+            parts.append("MCP tools:\n" + MCP_TOOLS_DOC)
     if mem_ctx:
         parts.append(mem_ctx)
     if base:
         parts.append(base)
-    if plan:
-        parts.append("PLAN MODE: Provide a concise step-by-step plan only. Do NOT use tools or write code.")
-    elif use_tools:
-        extra_docs = []
-        if EXTENSION_DOCS:
-            extra_docs.append("Extension tools:\n" + "\n".join(EXTENSION_DOCS))
-        if MCP_TOOLS_DOC:
-            extra_docs.append("MCP tools:\n" + MCP_TOOLS_DOC)
-        parts.append(TOOLS_DOC)
-        parts.extend(extra_docs)
     if rag_ctx:
         parts.append(rag_ctx)
     return "\n\n".join(p for p in parts if p)
