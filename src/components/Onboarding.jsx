@@ -395,7 +395,7 @@ export default function Onboarding({ onComplete }) {
   const [hkEnabled, setHkEnabled] = useState(false);
   const [hkKey, setHkKey] = useState("");
   const [fontSize, setFontSize] = useState(13);
-  const [tabSize, setTabSize] = useState(2);
+  const [tabSize, setTabSize] = useState(4);
   const [autoSave, setAutoSave] = useState(false);
   const [wordWrap, setWordWrap] = useState(false);
 

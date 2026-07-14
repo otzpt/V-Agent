@@ -46,7 +46,7 @@ function editorPrefsFromConfig(c = {}) {
     word_wrap:        c.word_wrap         ?? false,
     editor_font_size: Math.min(EDITOR_FONT_MAX, Math.max(EDITOR_FONT_MIN, c.editor_font_size ?? EDITOR_FONT_DEFAULT)),
     editor_font:      c.editor_font       || "JetBrains Mono",
-    tab_size:         c.tab_size           ?? 2,
+    tab_size:         c.tab_size           ?? 4,
     auto_save:        c.auto_save         ?? false,
   };
 }

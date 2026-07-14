@@ -1030,7 +1030,7 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
               options={{
                 fontFamily:          `${editorPrefs.editor_font || "JetBrains Mono"}, monospace`,
                 fontSize:            fontSize,
-                tabSize:             editorPrefs.tab_size ?? 2,
+                tabSize:             editorPrefs.tab_size ?? 4,
                 minimap:             { enabled: !!editorPrefs.minimap_enabled },
                 wordWrap:            editorPrefs.word_wrap ? "on" : "off",
                 stickyScroll:        { enabled: true },

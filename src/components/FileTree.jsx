@@ -178,6 +178,34 @@ const RowActions = memo(function RowActions({ dirPath, onStartCreate }) {
   );
 });
 
+// ── Move / rename helpers (VS Code-style file handling) ──────────────────────
+
+const basename = (p) => p.split(/[\\/]/).filter(Boolean).pop() || p;
+const sepFor   = (p) => (p.includes("\\") ? "\\" : "/");
+
+// Reject moves that are no-ops or would nest a folder inside itself.
+function isInvalidMove(src, destDir) {
+  const s = normp(src), d = normp(destDir);
+  if (d === s) return true;                          // onto itself
+  if (d.startsWith(s + "/")) return true;            // into own descendant
+  if (s.slice(0, s.lastIndexOf("/")) === d) return true; // already there
+  return false;
+}
+
+// Shared drop handler: move the dragged entry into destDir via rename.
+// The live-refresh polling picks up both source and destination folders.
+async function performMove(dataTransfer, destDir) {
+  let src;
+  try { src = JSON.parse(dataTransfer.getData("text/plain") || "{}").path; } catch { return; }
+  if (!src || isInvalidMove(src, destDir)) return;
+  const dest = destDir + sepFor(destDir) + basename(src);
+  try {
+    await renameFile(src, dest);
+  } catch (e) {
+    window.notify?.(`Could not move: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
+  }
+}
+
 // Create a file/folder under parentPath, re-list that folder, open new files.
 async function performCreate(parentPath, kind, name, refresh, onOpenFile) {
   const sep = parentPath.includes("\\") ? "\\" : "/";
@@ -245,6 +273,63 @@ function NewItemInput({ kind, depth, onConfirm, onCancel }) {
   );
 }
 
+// Inline rename input rendered in place of the entry's row (VS Code-style:
+// the name is preselected up to the extension so typing replaces the stem).
+function RenameInput({ entry, depth, onConfirm, onCancel }) {
+  const [value, setValue] = useState(entry.name);
+  const [error, setError] = useState(null);
+  const [busy, setBusy]   = useState(false);
+  const submittingRef = useRef(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    const dot = entry.is_dir ? -1 : entry.name.lastIndexOf(".");
+    el.setSelectionRange(0, dot > 0 ? dot : entry.name.length);
+  }, [entry]);
+
+  const submit = async () => {
+    if (submittingRef.current) return;
+    const name = value.trim();
+    if (!name || name === entry.name) { onCancel(); return; }
+    if (/[\\/]/.test(name)) { setError("Name can't contain / or \\"); return; }
+    submittingRef.current = true;
+    setBusy(true);
+    try {
+      await onConfirm(name);
+    } catch (e) {
+      const msg = String(e).replace(/^[^:]*:\s*/, "");
+      setError(msg);
+      window.notify?.(`Could not rename: ${msg}`, "error");
+      submittingRef.current = false;
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ ...styles.row, paddingLeft: 8 + depth * 12, cursor: "default" }}>
+      <span style={styles.caret} />
+      {entry.is_dir ? <FolderIcon open={false} /> : <FileBadge name={value || entry.name} />}
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => { setValue(e.target.value); setError(null); }}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") { e.preventDefault(); submit(); }
+          else if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        }}
+        onBlur={() => { if (!submittingRef.current) onCancel(); }}
+        spellCheck={false}
+        style={{ ...niStyles.input, opacity: busy ? 0.6 : 1 }}
+      />
+      {error && <span style={niStyles.error} title={error}>{error}</span>}
+    </div>
+  );
+}
+
 const niStyles = {
   input: {
     flex: 1,
@@ -273,7 +358,7 @@ const niStyles = {
 
 // ── Context menu ─────────────────────────────────────────────────────────────
 
-function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onClose, onStartCreate }) {
+function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onClose, onStartCreate, onStartRename }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -290,33 +375,24 @@ function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onCl
   // When right-clicking a dir, create inside it; for a file, create in its parent.
   const containerPath = entry.is_dir ? entry.path : parentPath;
 
-  const sep = parentPath.includes("\\") ? "\\" : "/";
-
   // Open an inline naming input inside the target folder.
   const newFile   = () => { onClose(); onStartCreate(containerPath, "file"); };
   const newFolder = () => { onClose(); onStartCreate(containerPath, "folder"); };
 
-  const rename = async () => {
+  // Inline rename on the entry's own row (VS Code-style), not a prompt.
+  const rename = () => {
     onClose();
-    const newName = window.prompt("Rename to:", entry.name);
-    if (!newName || !newName.trim() || newName.trim() === entry.name) return;
-    const newPath = parentPath + sep + newName.trim();
-    try {
-      await renameFile(entry.path, newPath);
-      refreshParent();
-    } catch (e) {
-      alert(`Error renaming: ${e}`);
-    }
+    onStartRename(entry.path);
   };
 
   const remove = async () => {
     onClose();
-    if (!window.confirm(`Delete "${entry.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Move "${entry.name}" to the Recycle Bin?`)) return;
     try {
       await deleteFile(entry.path);
       refreshParent();
     } catch (e) {
-      alert(`Error deleting: ${e}`);
+      window.notify?.(`Could not delete: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
     }
   };
 
@@ -413,7 +489,7 @@ function isAncestorPath(dir, target) {
 
 // ── Tree node ────────────────────────────────────────────────────────────────
 
-const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect }) {
+const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect, renaming, onClearRenaming }) {
   const [expanded,      setExpanded]      = useState(false);
   const [children,      setChildren]      = useState(null);
   const [refreshError,  setRefreshError]  = useState(false);
@@ -525,13 +601,57 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 
   const isActive   = !entry.is_dir && entry.path === activeFilePath;
   const isSelected = !!selectedPath && samePath(selectedPath, entry.path);
-  const restBg     = isActive ? "var(--accent-dim)" : isSelected ? "var(--bg-3)" : "transparent";
+  const isRenaming = !!renaming && samePath(renaming, entry.path);
+  const [dragOver, setDragOver] = useState(false);
+  const restBg     = dragOver ? "var(--accent-dim)" : isActive ? "var(--accent-dim)" : isSelected ? "var(--bg-3)" : "transparent";
+
+  // Inline rename replaces the row (VS Code behavior); an expanded folder
+  // re-expands via its fresh path after the rename lands.
+  if (isRenaming) {
+    return (
+      <div>
+        <RenameInput
+          entry={entry}
+          depth={depth}
+          onConfirm={async (name) => {
+            const newPath = parentPath + sepFor(parentPath) + name;
+            await renameFile(entry.path, newPath);
+            onClearRenaming();
+            refreshParent();
+            onSelect?.({ path: newPath, isDir: entry.is_dir, parentPath });
+          }}
+          onCancel={onClearRenaming}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div
         ref={rowRef}
         className="file-tree-item"
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", JSON.stringify({ path: entry.path }));
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "move";
+          if (!dragOver) setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(false);
+          // Dropping on a folder moves into it; on a file, into its parent
+          // (VS Code behavior). The live-refresh polling updates both sides.
+          performMove(e.dataTransfer, entry.is_dir ? entry.path : parentPath);
+        }}
         style={{
           ...styles.row,
           paddingLeft: 8 + depth * 12,
@@ -600,6 +720,8 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
                 onClearCreating={onClearCreating}
                 selectedPath={selectedPath}
                 onSelect={onSelect}
+                renaming={renaming}
+                onClearRenaming={onClearRenaming}
               />
             ))}
         </>
@@ -610,7 +732,7 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 
 // ── Root folder node (collapsible, removable) ─────────────────────────────────
 
-function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect }) {
+function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect, renaming, onClearRenaming }) {
   const [expanded,   setExpanded]   = useState(true);
   const [children,   setChildren]   = useState(null);
   const [hover,      setHover]      = useState(false);
@@ -682,6 +804,12 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate,
           onSelect?.({ path: rootDir, isDir: true, parentPath: null });
           toggle();
         }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "move"; }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          performMove(e.dataTransfer, rootDir);
+        }}
         onMouseEnter={(e) => { setHover(true); e.currentTarget.style.background = "var(--bg-3)"; }}
         onMouseLeave={(e) => {
           setHover(false);
@@ -738,6 +866,8 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate,
                 onClearCreating={onClearCreating}
                 selectedPath={selectedPath}
                 onSelect={onSelect}
+                renaming={renaming}
+                onClearRenaming={onClearRenaming}
               />
             ))}
         </>
@@ -754,9 +884,42 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
   // Explorer selection — the context the header New File / New Folder buttons
   // act on. { path, isDir, parentPath } | null.
   const [selected, setSelected] = useState(null);
+  // Path of the entry currently being renamed inline (F2 / context menu).
+  const [renaming, setRenaming] = useState(null);
 
   // Workspace changed → the old selection may not exist anymore.
-  useEffect(() => { setSelected(null); }, [rootDirs]);
+  useEffect(() => { setSelected(null); setRenaming(null); }, [rootDirs]);
+
+  const clearRenaming = useCallback(() => setRenaming(null), []);
+
+  // Move to Recycle Bin (delete_file is trash-backed). The live-refresh
+  // polling reconciles the tree afterwards.
+  const deleteEntry = useCallback(async (path) => {
+    if (!window.confirm(`Move "${basename(path)}" to the Recycle Bin?`)) return;
+    try {
+      await deleteFile(path);
+      setSelected((s) => (s && samePath(s.path, path) ? null : s));
+    } catch (e) {
+      window.notify?.(`Could not delete: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
+    }
+  }, []);
+
+  // Keyboard: F2 renames, Delete trashes the selected entry (VS Code keys).
+  // Ignored while typing anywhere else (inputs, editor, terminal).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!selected || (e.key !== "F2" && e.key !== "Delete")) return;
+      const t = e.target;
+      if (t?.closest?.("input, textarea, [contenteditable='true'], .monaco-editor, .xterm")) return;
+      // Workspace roots can't be renamed or deleted from the tree.
+      if (rootDirs?.some((r) => samePath(r, selected.path))) return;
+      e.preventDefault();
+      if (e.key === "F2") setRenaming(selected.path);
+      else deleteEntry(selected.path);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, rootDirs, deleteEntry]);
 
   const clearCreating = useCallback(() => setCreating(null), []);
   const startCreate   = useCallback((parentPath, kind) => { setCreating({ parentPath, kind }); }, []);
@@ -885,6 +1048,8 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
               onClearCreating={clearCreating}
               selectedPath={selected?.path || null}
               onSelect={setSelected}
+              renaming={renaming}
+              onClearRenaming={clearRenaming}
             />
           ))}
       </div>
@@ -899,6 +1064,7 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
           refreshSelf={ctxMenu.refreshSelf}
           onClose={() => setCtxMenu(null)}
           onStartCreate={startCreate}
+          onStartRename={setRenaming}
         />
       )}
     </div>

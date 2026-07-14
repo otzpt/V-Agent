@@ -99,12 +99,10 @@ fn create_file(path: String, content: String) -> Result<(), String> {
 
 #[tauri::command]
 fn delete_file(path: String) -> Result<(), String> {
-    let p = Path::new(&path);
-    if p.is_dir() {
-        fs::remove_dir(&path).map_err(|e| format!("delete_file (dir): {e}"))
-    } else {
-        fs::remove_file(&path).map_err(|e| format!("delete_file: {e}"))
-    }
+    // VS Code parity: deletes go to the OS trash (recoverable) and folders
+    // are deleted recursively. The old fs::remove_dir failed on non-empty
+    // folders and removed files permanently.
+    trash::delete(&path).map_err(|e| format!("delete_file: {e}"))
 }
 
 #[tauri::command]

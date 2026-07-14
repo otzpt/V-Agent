@@ -701,6 +701,30 @@ export default function Settings({ theme, onToggleTheme, onSelectTheme, onClose,
                 >+</button>
               </div>
             </div>
+            {/* Tab size */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+              <span style={{ fontSize: 13, color: "var(--text-1)", fontFamily: "var(--font-ui)" }}>
+                Tab size
+                <span style={{ display: "block", fontSize: 11, color: "var(--text-2)", marginTop: 2 }}>
+                  Spaces inserted per Tab press
+                </span>
+              </span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[2, 4, 8].map((n) => {
+                  const active = (editorPrefs.tab_size ?? 4) === n;
+                  return (
+                    <button
+                      key={n}
+                      style={{ ...ss.stepBtn, width: "auto", padding: "0 10px",
+                        background: active ? "var(--accent-dim)" : "var(--bg-2)",
+                        borderColor: active ? "var(--accent)" : "var(--border)",
+                        color: active ? "var(--text-0)" : "var(--text-1)" }}
+                      onClick={() => onEditorPref?.("tab_size", n)}
+                    >{n}</button>
+                  );
+                })}
+              </div>
+            </div>
             {/* Editor font family */}
             <div style={{ marginTop: 16 }}>
               <span style={{ fontSize: 13, color: "var(--text-1)", fontFamily: "var(--font-ui)" }}>Font family</span>
