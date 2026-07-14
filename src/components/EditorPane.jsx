@@ -614,7 +614,8 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
 
   const activeExt     = activeFile?.name?.split(".").pop()?.toLowerCase() ?? "";
   const isPreviewable = PREVIEW_EXTS.has(activeExt);
-  const isArduino     = activeExt === "ino";
+  // Board workflows: .ino → arduino-cli, .py → MicroPython (mpremote)
+  const isArduino     = activeExt === "ino" || activeExt === "py";
 
   const [arduinoPanelOpen, setArduinoPanelOpen] = useState(false);
 

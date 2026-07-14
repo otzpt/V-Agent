@@ -477,16 +477,28 @@ fn get_file_line_count(path: String) -> Result<u32, String> {
 /// Returns Err when arduino-cli is not installed.
 #[tauri::command]
 fn arduino_list_ports() -> Result<Vec<String>, String> {
-    let out = new_command("arduino-cli")
-        .args(["board", "list", "--format", "json"])
-        .output()
-        .map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                "arduino-cli not found. Install from https://arduino.github.io/arduino-cli/latest/installation/".to_string()
-            } else {
-                format!("arduino-cli board list: {e}")
+    let run = |json_flag: &[&str]| {
+        new_command("arduino-cli")
+            .args(["board", "list"])
+            .args(json_flag)
+            .output()
+    };
+    // arduino-cli 1.0 removed `--format json` in favor of the global `--json`;
+    // try modern first, fall back for pre-1.0 installs.
+    let mut out = run(&["--json"]).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            "arduino-cli not found. Install from https://arduino.github.io/arduino-cli/latest/installation/".to_string()
+        } else {
+            format!("arduino-cli board list: {e}")
+        }
+    })?;
+    if !out.status.success() {
+        if let Ok(legacy) = run(&["--format", "json"]) {
+            if legacy.status.success() {
+                out = legacy;
             }
-        })?;
+        }
+    }
 
     let Ok(json) = serde_json::from_slice::<serde_json::Value>(&out.stdout) else {
         return Ok(vec![]);
@@ -529,14 +541,21 @@ fn arduino_compile(fqbn: String, file_path: String) -> Result<String, String> {
 }
 
 /// Upload an Arduino sketch to a board via the given port.
+/// An empty port is allowed: RP2040 boards in BOOTSEL mode expose no serial
+/// port and the core uploads via picotool / the UF2 drive instead.
 #[tauri::command]
 fn arduino_upload(port: String, fqbn: String, file_path: String) -> Result<String, String> {
     let sketch_dir = Path::new(&file_path)
         .parent()
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_else(|| file_path.clone());
-    let out = new_command("arduino-cli")
-        .args(["upload", "-p", &port, "--fqbn", &fqbn, &sketch_dir])
+    let mut cmd = new_command("arduino-cli");
+    cmd.arg("upload");
+    if !port.is_empty() {
+        cmd.args(["-p", &port]);
+    }
+    cmd.args(["--fqbn", &fqbn, &sketch_dir]);
+    let out = cmd
         .output()
         .map_err(|e| format!("arduino-cli upload: {e}"))?;
     let stdout = String::from_utf8_lossy(&out.stdout).to_string();

@@ -1,18 +1,27 @@
 import { useState, useEffect, useRef } from "react";
 import { arduinoListPorts, arduinoCompile, arduinoUpload, openExternal } from "../lib/tauri.js";
 
+// Each board carries the platform core to install and (for third-party cores)
+// the Boards-Manager index URL — powers the "Install core" action.
+const RP2040_URL = "https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json";
 const BOARDS = [
-  { label: "Arduino Uno",          fqbn: "arduino:avr:uno" },
-  { label: "Arduino Mega 2560",    fqbn: "arduino:avr:mega" },
-  { label: "Arduino Nano",         fqbn: "arduino:avr:nano" },
-  { label: "Arduino Nano Every",   fqbn: "arduino:megaavr:nona4809" },
-  { label: "Arduino Leonardo",     fqbn: "arduino:avr:leonardo" },
-  { label: "Arduino Due",          fqbn: "arduino:sam:arduino_due_x" },
-  { label: "Arduino Micro",        fqbn: "arduino:avr:micro" },
-  { label: "ESP32",                fqbn: "esp32:esp32:esp32" },
-  { label: "ESP8266 Generic",      fqbn: "esp8266:esp8266:generic" },
-  { label: "Raspberry Pi Pico",    fqbn: "rp2040:rp2040:rpipico" },
-  { label: "STM32 (Generic F1)",   fqbn: "STMicroelectronics:stm32:GenF1" },
+  { label: "Arduino Uno",          fqbn: "arduino:avr:uno",              core: "arduino:avr" },
+  { label: "Arduino Mega 2560",    fqbn: "arduino:avr:mega",             core: "arduino:avr" },
+  { label: "Arduino Nano",         fqbn: "arduino:avr:nano",             core: "arduino:avr" },
+  { label: "Arduino Nano Every",   fqbn: "arduino:megaavr:nona4809",     core: "arduino:megaavr" },
+  { label: "Arduino Leonardo",     fqbn: "arduino:avr:leonardo",         core: "arduino:avr" },
+  { label: "Arduino Due",          fqbn: "arduino:sam:arduino_due_x",    core: "arduino:sam" },
+  { label: "Arduino Micro",        fqbn: "arduino:avr:micro",            core: "arduino:avr" },
+  { label: "ESP32",                fqbn: "esp32:esp32:esp32",            core: "esp32:esp32",
+    url: "https://espressif.github.io/arduino-esp32/package_esp32_index.json" },
+  { label: "ESP8266 Generic",      fqbn: "esp8266:esp8266:generic",      core: "esp8266:esp8266",
+    url: "https://arduino.esp8266.com/stable/package_esp8266com_index.json" },
+  { label: "Raspberry Pi Pico",    fqbn: "rp2040:rp2040:rpipico",        core: "rp2040:rp2040", url: RP2040_URL },
+  { label: "Raspberry Pi Pico W",  fqbn: "rp2040:rp2040:rpipicow",       core: "rp2040:rp2040", url: RP2040_URL },
+  { label: "Raspberry Pi Pico 2",  fqbn: "rp2040:rp2040:rpipico2",       core: "rp2040:rp2040", url: RP2040_URL },
+  { label: "Raspberry Pi Pico 2 W", fqbn: "rp2040:rp2040:rpipico2w",     core: "rp2040:rp2040", url: RP2040_URL },
+  { label: "STM32 (Generic F1)",   fqbn: "STMicroelectronics:stm32:GenF1", core: "STMicroelectronics:stm32",
+    url: "https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json" },
 ];
 
 const BAUDS = ["9600", "19200", "38400", "57600", "115200", "250000", "500000", "1000000"];
@@ -58,21 +67,47 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
   }, [output]);
 
+  const board    = BOARDS.find((b) => b.fqbn === fqbn);
+  // RP2040 boards flash without a serial port (BOOTSEL → picotool/UF2 drive)
+  const isRp2040 = fqbn.startsWith("rp2040:");
+
+  // Actionable hint when the failure is a missing platform core.
+  const coreHint = (msg) =>
+    /platform.*not (installed|found)|unknown fqbn|not installed/i.test(msg)
+      ? `\n\n💡 Board support for ${board?.label ?? fqbn} isn't installed — click "Install core" above (runs in the terminal, takes a few minutes).`
+      : "";
+
   const run = async (action) => {
     setRunning(action);
-    setOutput(`${action === "compile" ? "Compiling" : "Uploading"}…\n`);
     try {
-      const result = action === "compile"
-        ? await arduinoCompile(fqbn, filePath)
-        : await arduinoUpload(port, fqbn, filePath);
-      const label = action === "compile" ? "Compiled" : "Uploaded";
-      setOutput(`✓ ${label} successfully.\n\n${result || "(no output)"}`);
+      if (action === "compile") {
+        setOutput("Compiling…\n");
+        const r = await arduinoCompile(fqbn, filePath);
+        setOutput(`✓ Compiled successfully.\n\n${r || "(no output)"}`);
+      } else {
+        // Arduino IDE parity: Upload always verifies (compiles) first —
+        // a bare `arduino-cli upload` would flash the previous build.
+        setOutput("Compiling…\n");
+        await arduinoCompile(fqbn, filePath);
+        setOutput("✓ Compiled.\n⇪ Uploading…\n");
+        const u = await arduinoUpload(port, fqbn, filePath);
+        setOutput(`✓ Uploaded successfully.\n\n${u || "(no output)"}`);
+      }
     } catch (err) {
       const label = action === "compile" ? "Compile" : "Upload";
-      setOutput(`✗ ${label} failed:\n\n${String(err)}`);
+      setOutput(`✗ ${label} failed:\n\n${String(err)}${coreHint(String(err))}`);
     } finally {
       setRunning(null);
     }
+  };
+
+  // Installs the platform core for the selected board in the visible terminal
+  // (downloads a full toolchain — progress belongs where the user can see it).
+  const installCore = () => {
+    if (!board?.core) return;
+    const url = board.url ? ` --additional-urls ${board.url}` : "";
+    onRunInTerminal?.(`arduino-cli core update-index${url} && arduino-cli core install ${board.core}${url}`);
+    onClose();
   };
 
   const openSerialMonitor = () => {
@@ -82,6 +117,15 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
   };
 
   const sketchName = filePath?.split(/[/\\]/).pop() ?? "";
+  // .py files get the MicroPython workflow (mpremote); .ino the arduino-cli one.
+  const isPy = /\.py$/i.test(filePath || "");
+
+  // MicroPython actions run in the visible terminal via mpremote; with no port
+  // selected, mpremote auto-connects to the first MicroPython board it finds.
+  const mp = (args) => {
+    onRunInTerminal?.(`mpremote ${port ? `connect ${port} ` : ""}${args}`);
+    onClose();
+  };
 
   return (
     <div style={ap.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -94,7 +138,7 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
               <polyline points="16 18 22 12 16 6"/>
               <polyline points="8 6 2 12 8 18"/>
             </svg>
-            <span style={ap.title}>Arduino</span>
+            <span style={ap.title}>{isPy ? "MicroPython" : "Arduino"}</span>
             <span style={{ fontSize: 11, color: "var(--text-2)", fontFamily: "var(--font-mono)" }}>
               {sketchName}
             </span>
@@ -102,7 +146,44 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
           <button style={ap.closeBtn} onClick={onClose} title="Close (Esc)">×</button>
         </div>
 
-        {notInstalled ? (
+        {isPy ? (
+          /* ── MicroPython body (Pico & friends via mpremote) ── */
+          <div style={ap.body}>
+            <div style={ap.row}>
+              <div style={ap.field}>
+                <label style={ap.label}>Port</label>
+                <select style={ap.select} value={port} onChange={(e) => setPort(e.target.value)}>
+                  <option value="">(auto-detect)</option>
+                  {ports.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={ap.actions}>
+              <button
+                style={{ ...ap.btn, background: "var(--accent)", color: "#fff", border: "none" }}
+                onClick={() => mp(`run "${filePath}"`)}
+                title="Runs this file on the board without saving it there"
+              >
+                ▶ Run on board
+              </button>
+              <button
+                style={ap.btn}
+                onClick={() => mp(`fs cp "${filePath}" :main.py + reset`)}
+                title="Copies this file to the board as main.py (runs on every boot) and resets"
+              >
+                ⇪ Deploy as main.py
+              </button>
+              <button style={{ ...ap.btn, marginLeft: "auto" }} onClick={() => mp("repl")} title="Interactive MicroPython prompt in the terminal">
+                REPL
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.6 }}>
+              Requires <b>mpremote</b> (<code>pip install mpremote</code>) and MicroPython firmware on the board —
+              for a new Pico, hold <b>BOOTSEL</b> while plugging in and copy the firmware UF2 from micropython.org once.
+              Commands run in the terminal below.
+            </div>
+          </div>
+        ) : notInstalled ? (
           /* ── Not installed state ── */
           <div style={ap.notInstalled}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -162,11 +243,20 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
                 {running === "compile" ? "Compiling…" : "Compile"}
               </button>
               <button
-                style={{ ...ap.btn, background: "var(--accent)", color: "#fff", border: "none", opacity: (!port || !!running) ? 0.45 : 1 }}
-                disabled={!port || !!running}
+                style={{ ...ap.btn, background: "var(--accent)", color: "#fff", border: "none", opacity: ((!port && !isRp2040) || !!running) ? 0.45 : 1 }}
+                disabled={(!port && !isRp2040) || !!running}
                 onClick={() => run("upload")}
+                title={isRp2040 && !port ? "No port needed for a Pico in BOOTSEL mode" : undefined}
               >
                 {running === "upload" ? "Uploading…" : "⇪ Upload"}
+              </button>
+              <button
+                style={{ ...ap.btn, opacity: running ? 0.4 : 1 }}
+                disabled={!!running}
+                onClick={installCore}
+                title={`Installs ${board?.core ?? "the platform"} via the terminal (needed once per board family)`}
+              >
+                Install core
               </button>
               <button
                 style={{ ...ap.btn, marginLeft: "auto", opacity: (!port || !!running) ? 0.4 : 1 }}
@@ -177,6 +267,13 @@ export default function ArduinoPanel({ filePath, onClose, onRunInTerminal }) {
                 Serial Monitor
               </button>
             </div>
+
+            {isRp2040 && !port && (
+              <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.6 }}>
+                No port detected — that's normal for a Pico's first flash (or one running MicroPython):
+                hold <b>BOOTSEL</b> while plugging it in, then Upload. It flashes through the UF2 drive.
+              </div>
+            )}
 
             {/* Output panel */}
             {output && (
