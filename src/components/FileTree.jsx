@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { listDir, createFile, deleteFile, renameFile, createDir } from "../lib/tauri.js";
+import { listDir, createFile, deleteFile, renameFile, createDir, readFile, openExternal } from "../lib/tauri.js";
 
 // Poll interval (ms) for live folder refresh. Keeps the tree in sync with files
 // created outside the app — the in-app terminal, git, other editors — without an
@@ -358,7 +358,7 @@ const niStyles = {
 
 // ── Context menu ─────────────────────────────────────────────────────────────
 
-function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onClose, onStartCreate, onStartRename }) {
+function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onClose, onStartCreate, onStartRename, rootDirs }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -396,21 +396,61 @@ function ContextMenu({ x, y, entry, parentPath, refreshParent, refreshSelf, onCl
     }
   };
 
-  // Clamp menu so it doesn't go off screen bottom/right
-  const viewW = window.innerWidth;
-  const viewH = window.innerHeight;
-  const menuW = 168;
-  const menuH = 148;
-  const left = x + menuW > viewW ? viewW - menuW - 8 : x;
-  const top  = y + menuH > viewH ? viewH - menuH - 8 : y;
+  // ── VS Code-parity extras ──────────────────────────────────────────────────
+
+  const copyPath = () => {
+    onClose();
+    navigator.clipboard?.writeText(entry.path).catch(() => {});
+  };
+
+  const copyRelativePath = () => {
+    onClose();
+    const root = (rootDirs || []).find((r) => isAncestorPath(r, entry.path));
+    const rel  = root ? entry.path.slice(root.length + 1) : entry.path;
+    navigator.clipboard?.writeText(rel).catch(() => {});
+  };
+
+  // Opens the containing folder in the OS file manager.
+  const revealInOS = () => {
+    onClose();
+    openExternal(entry.is_dir ? entry.path : parentPath).catch(() => {});
+  };
+
+  // Files only — "name copy.ext" alongside the original (VS Code paste naming).
+  const duplicate = async () => {
+    onClose();
+    try {
+      const content = await readFile(entry.path);
+      const dot  = entry.name.lastIndexOf(".");
+      const stem = dot > 0 ? entry.name.slice(0, dot) : entry.name;
+      const ext  = dot > 0 ? entry.name.slice(dot) : "";
+      await createFile(parentPath + sepFor(parentPath) + `${stem} copy${ext}`, content);
+      refreshParent();
+    } catch (e) {
+      window.notify?.(`Could not duplicate: ${String(e).replace(/^[^:]*:\s*/, "")}`, "error");
+    }
+  };
 
   const items = [
     { label: "New File",   action: newFile },
     { label: "New Folder", action: newFolder },
     null,
+    { label: "Copy Path",              action: copyPath },
+    { label: "Copy Relative Path",     action: copyRelativePath },
+    { label: "Reveal in File Explorer", action: revealInOS },
+    ...(!entry.is_dir ? [{ label: "Duplicate", action: duplicate }] : []),
+    null,
     { label: "Rename",  action: rename },
     { label: "Delete",  action: remove, danger: true },
   ];
+
+  // Clamp menu so it doesn't go off screen bottom/right
+  const viewW = window.innerWidth;
+  const viewH = window.innerHeight;
+  const menuW = 190;
+  const menuH = items.length * 29 + 16;
+  const left = x + menuW > viewW ? viewW - menuW - 8 : x;
+  const top  = y + menuH > viewH ? viewH - menuH - 8 : y;
 
   return (
     <div ref={ref} style={{ ...cmStyles.menu, top, left }}>
@@ -441,7 +481,7 @@ const cmStyles = {
     borderRadius: "8px",
     padding: "4px",
     zIndex: 9999,
-    minWidth: "168px",
+    minWidth: "190px",
     boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
   },
   sep: { height: "1px", background: "var(--border)", margin: "4px 0" },
@@ -1065,6 +1105,7 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
           onClose={() => setCtxMenu(null)}
           onStartCreate={startCreate}
           onStartRename={setRenaming}
+          rootDirs={rootDirs}
         />
       )}
     </div>

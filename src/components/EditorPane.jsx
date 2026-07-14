@@ -1,6 +1,7 @@
 import { Editor, useMonaco } from "@monaco-editor/react";
 import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { writeFile, sendHeartbeat, getOsName } from "../lib/tauri.js";
+import { defineEnhancedLanguages } from "../lib/monacoLangs.js";
 import LivePreview from "./LivePreview.jsx";
 import ArduinoPanel from "./ArduinoPanel.jsx";
 
@@ -26,6 +27,14 @@ const EDITOR_BG = {
 function monacoThemeFor(appTheme) {
   if (appTheme === "light") return "vagent-light";
   return EDITOR_BG[appTheme] ? `vagent-${appTheme}` : "vagent-dark";
+}
+
+// One-shot Monaco setup: custom themes + enhanced language grammars. Runs in
+// the Editor's beforeMount (synchronous, before the first render/setTheme) and
+// again from the monaco effect as an idempotent safety net.
+function setupMonaco(monaco) {
+  defineEditorThemes(monaco);
+  defineEnhancedLanguages(monaco);
 }
 
 // ── Theme factory ─────────────────────────────────────────────────────────────
@@ -672,7 +681,7 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
     // Idempotent — themes are primarily defined in the Editor's beforeMount
     // (synchronously, so the first setTheme never sees an unknown name and
     // falls back to the white "vs" theme); this covers hot-reload paths.
-    defineEditorThemes(monaco);
+    setupMonaco(monaco);
 
     const js = monaco.languages.typescript.javascriptDefaults;
     const ts = monaco.languages.typescript.typescriptDefaults;
@@ -1025,7 +1034,7 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
               language={langFor(activeFile.name)}
               value={activeFile.content}
               onChange={(value) => onChange(value ?? "")}
-              beforeMount={defineEditorThemes}
+              beforeMount={setupMonaco}
               onMount={handleMount}
               options={{
                 fontFamily:          `${editorPrefs.editor_font || "JetBrains Mono"}, monospace`,
