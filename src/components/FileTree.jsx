@@ -413,7 +413,7 @@ function isAncestorPath(dir, target) {
 
 // ── Tree node ────────────────────────────────────────────────────────────────
 
-const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
+const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, refreshParent, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect }) {
   const [expanded,      setExpanded]      = useState(false);
   const [children,      setChildren]      = useState(null);
   const [refreshError,  setRefreshError]  = useState(false);
@@ -509,8 +509,23 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    // VS Code selects the item you right-click, so a follow-up New File
+    // from the header targets the same place the menu acted on.
+    onSelect?.({ path: entry.path, isDir: entry.is_dir, parentPath });
     onContextMenu(e, entry, parentPath, refreshParent, refreshSelf);
-  }, [entry, parentPath, refreshParent, refreshSelf, onContextMenu]);
+  }, [entry, parentPath, refreshParent, refreshSelf, onContextMenu, onSelect]);
+
+  // Selection (VS Code-style): clicking any row marks it as the target
+  // context for the header New File / New Folder buttons.
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();               // body click clears selection
+    onSelect?.({ path: entry.path, isDir: entry.is_dir, parentPath });
+    toggle();
+  }, [entry, parentPath, onSelect, toggle]);
+
+  const isActive   = !entry.is_dir && entry.path === activeFilePath;
+  const isSelected = !!selectedPath && samePath(selectedPath, entry.path);
+  const restBg     = isActive ? "var(--accent-dim)" : isSelected ? "var(--bg-3)" : "transparent";
 
   return (
     <div>
@@ -520,24 +535,16 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
         style={{
           ...styles.row,
           paddingLeft: 8 + depth * 12,
-          background: (!entry.is_dir && entry.path === activeFilePath)
-            ? "var(--accent-dim)"
-            : "transparent",
-          boxShadow: (!entry.is_dir && entry.path === activeFilePath)
-            ? "inset 2px 0 0 var(--accent)"
-            : "none",
+          background: restBg,
+          boxShadow: isActive ? "inset 2px 0 0 var(--accent)" : "none",
         }}
-        onClick={toggle}
+        onClick={handleClick}
         onContextMenu={handleContextMenu}
         onMouseEnter={(e) => {
-          if (entry.path !== activeFilePath)
-            e.currentTarget.style.background = "var(--bg-3)";
+          if (!isActive) e.currentTarget.style.background = "var(--bg-3)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background =
-            (!entry.is_dir && entry.path === activeFilePath)
-              ? "var(--accent-dim)"
-              : "transparent";
+          e.currentTarget.style.background = restBg;
         }}
       >
         <span style={styles.caret}>
@@ -591,6 +598,8 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
                 reveal={reveal}
                 creating={creating}
                 onClearCreating={onClearCreating}
+                selectedPath={selectedPath}
+                onSelect={onSelect}
               />
             ))}
         </>
@@ -601,7 +610,7 @@ const TreeNode = memo(function TreeNode({ entry, depth, onOpenFile, parentPath, 
 
 // ── Root folder node (collapsible, removable) ─────────────────────────────────
 
-function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating }) {
+function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate, gitStatusMap, activeFilePath, reveal, creating, onClearCreating, selectedPath, onSelect }) {
   const [expanded,   setExpanded]   = useState(true);
   const [children,   setChildren]   = useState(null);
   const [hover,      setHover]      = useState(false);
@@ -664,10 +673,21 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate,
     <div>
       <div
         className="file-tree-item"
-        style={styles.rootRow}
-        onClick={toggle}
+        style={{
+          ...styles.rootRow,
+          background: selectedPath && samePath(selectedPath, rootDir) ? "var(--bg-3)" : "transparent",
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect?.({ path: rootDir, isDir: true, parentPath: null });
+          toggle();
+        }}
         onMouseEnter={(e) => { setHover(true); e.currentTarget.style.background = "var(--bg-3)"; }}
-        onMouseLeave={(e) => { setHover(false); e.currentTarget.style.background = "transparent"; }}
+        onMouseLeave={(e) => {
+          setHover(false);
+          e.currentTarget.style.background =
+            selectedPath && samePath(selectedPath, rootDir) ? "var(--bg-3)" : "transparent";
+        }}
         title={rootDir}
       >
         <span style={styles.caret}>{expanded ? "▾" : "▸"}</span>
@@ -716,6 +736,8 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate,
                 reveal={reveal}
                 creating={creating}
                 onClearCreating={onClearCreating}
+                selectedPath={selectedPath}
+                onSelect={onSelect}
               />
             ))}
         </>
@@ -729,13 +751,26 @@ function RootNode({ rootDir, onOpenFile, onRemove, onContextMenu, onStartCreate,
 export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceRoots, onOpenFile, gitStatusMap, activeFilePath, reveal }) {
   const [ctxMenu, setCtxMenu]   = useState(null);
   const [creating, setCreating] = useState(null); // { parentPath, kind }
+  // Explorer selection — the context the header New File / New Folder buttons
+  // act on. { path, isDir, parentPath } | null.
+  const [selected, setSelected] = useState(null);
+
+  // Workspace changed → the old selection may not exist anymore.
+  useEffect(() => { setSelected(null); }, [rootDirs]);
 
   const clearCreating = useCallback(() => setCreating(null), []);
   const startCreate   = useCallback((parentPath, kind) => { setCreating({ parentPath, kind }); }, []);
-  // Header buttons create at the root of the first workspace folder.
-  const startCreateAtRoot = useCallback((kind) => {
-    if (rootDirs && rootDirs.length) setCreating({ parentPath: rootDirs[0], kind });
-  }, [rootDirs]);
+
+  // Header buttons follow VS Code's rule (fileActions.ts openExplorerAndCreate):
+  // selected folder → create inside it; selected file → create in its parent;
+  // nothing selected → first workspace root.
+  const startCreateAtSelection = useCallback((kind) => {
+    if (!rootDirs || !rootDirs.length) return;
+    const target = selected
+      ? (selected.isDir ? selected.path : (selected.parentPath || rootDirs[0]))
+      : rootDirs[0];
+    setCreating({ parentPath: target, kind });
+  }, [rootDirs, selected]);
 
   // Open dialog → replace the whole workspace with the picked folder
   const openFolder = useCallback(async () => {
@@ -803,10 +838,10 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
             </button>
             {hasRoots && (
               <>
-                <button className="va-btn" style={styles.iconBtn} onClick={() => startCreateAtRoot("file")} title="New File">
+                <button className="va-btn" style={styles.iconBtn} onClick={() => startCreateAtSelection("file")} title="New File">
                   <FilePlusIcon />
                 </button>
-                <button className="va-btn" style={styles.iconBtn} onClick={() => startCreateAtRoot("folder")} title="New Folder">
+                <button className="va-btn" style={styles.iconBtn} onClick={() => startCreateAtSelection("folder")} title="New Folder">
                   <FolderPlusIcon />
                 </button>
               </>
@@ -824,7 +859,8 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
           </button>
         </div>
       </div>
-      <div style={styles.body}>
+      {/* Clicking empty space clears the selection (VS Code behavior) */}
+      <div style={styles.body} onClick={() => setSelected(null)}>
         {!hasRoots && (
           <div style={styles.empty}>
             <div style={styles.emptyText}>No folder open</div>
@@ -847,6 +883,8 @@ export default function FileTree({ rootDirs, onAddRoot, onRemoveRoot, onReplaceR
               reveal={reveal}
               creating={creating}
               onClearCreating={clearCreating}
+              selectedPath={selected?.path || null}
+              onSelect={setSelected}
             />
           ))}
       </div>
