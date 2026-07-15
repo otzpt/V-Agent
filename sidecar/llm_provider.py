@@ -22,13 +22,14 @@ logger = logging.getLogger("vagent.llm")
 # follow V-Agent's <tool_call> protocol (it hallucinates results instead of
 # calling tools) — agent runs use a plain instruct model that obeys literally.
 DEFAULT_GROQ_MODEL = "groq/compound"
-AGENT_GROQ_MODEL   = "openai/gpt-oss-120b"
+AGENT_GROQ_MODEL   = "moonshotai/kimi-k2-instruct"
 
 ALLOWED_GROQ_MODELS = [
     "groq/compound",
     "groq/compound-mini",
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
+    "moonshotai/kimi-k2-instruct",
 ]
 
 ALLOWED_OPENROUTER_FREE_MODELS = [

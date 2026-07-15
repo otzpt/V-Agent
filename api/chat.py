@@ -80,10 +80,13 @@ GROQ_MODEL = "groq/compound"
 # bucket de rate limit próprio na Groq, por isso as chains também servem de
 # fallback quando a key partilhada satura.
 CHAT_CHAIN  = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b"]
-AGENT_CHAIN = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound-mini"]
+# Kimi K2 primeiro no modo agente: os gpt-oss são modelos de "reasoning" e
+# emitem as tool calls no canal de raciocínio (que a Groq remove do content) —
+# o K2 é instruct puro e segue o protocolo textual à letra.
+AGENT_CHAIN = ["moonshotai/kimi-k2-instruct", "openai/gpt-oss-120b", "groq/compound-mini"]
 
 # Modelos servidos por este backend.
-ALLOWED_GROQ_MODELS = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+ALLOWED_GROQ_MODELS = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "moonshotai/kimi-k2-instruct"]
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -175,11 +178,13 @@ async def chat(req: ChatRequest):
         )
 
     def _try_chain():
-        """Percorre a chain do modo. Devolve (response, modelo_usado)."""
+        """Percorre a chain do modo. Devolve (response, modelo_usado).
+        Avança em QUALQUER erro (não só 429): a Groq descontinua/renomeia
+        modelos com frequência e um 404 no primário não deve matar o pedido."""
         r = None
         for m in chain:
             r = _call_groq(m)
-            if r.status_code != 429:
+            if r.status_code == 200:
                 return r, m
         return r, chain[-1]
 
