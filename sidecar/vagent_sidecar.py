@@ -297,6 +297,10 @@ TOOLS_DOC = """You have tools. Use them proactively.
 
 CRITICAL RULE: When the user asks to create, write, edit, or modify a file — always use write_file immediately. Never just show code in a code block without also proposing write_file. If the user wants a file created, create it.
 
+CRITICAL RULE: Tool calls only work when the <tool_call> tag appears VERBATIM in your final visible reply — never inside private reasoning or analysis. If you decide to use a tool, your reply must contain the tag itself.
+
+CRITICAL RULE: Never claim a tool is unavailable, and never state that a file exists or is missing, without calling the tool first. Project context included in this prompt may be partial or stale — verify with list_dir / read_file before asserting anything about the project.
+
 Tool calls (one per line):
 <tool_call>{"tool": "read_file", "args": {"path": "relative/path"}}</tool_call>
 <tool_call>{"tool": "list_dir", "args": {"path": "."}}</tool_call>
