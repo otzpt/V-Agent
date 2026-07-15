@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import requests
+import json as pyjson
 import os
 import time
 from collections import defaultdict
@@ -161,59 +162,91 @@ async def chat(req: ChatRequest):
 
     # ── Chamada Groq ──────────────────────────────────────────────────────────
     def _call_groq(m: str):
+        body = {
+            "model": m,
+            "messages": messages,
+            "max_tokens": 4096,
+            "temperature": 0.15,
+            "stream": False,
+        }
+        # gpt-oss são modelos de reasoning — com esforço alto a resposta útil
+        # pode ficar toda no canal de raciocínio e o content sair vazio.
+        if m.startswith("openai/gpt-oss"):
+            body["reasoning_effort"] = "low"
         return requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": m,
-                "messages": messages,
-                "max_tokens": 4096,
-                "temperature": 0.15,
-                "stream": False,
-            },
+            json=body,
             timeout=60,
         )
 
+    def _extract(resp):
+        """Texto útil da resposta, ou None se vier vazia.
+        Os gpt-oss por vezes emitem tool calls NATIVAS (fora do content,
+        mesmo sem 'tools' declaradas) — traduz para o protocolo textual
+        <tool_call> do V-Agent para o agente as conseguir executar."""
+        try:
+            msg = resp.json()["choices"][0]["message"]
+        except Exception:
+            return None
+        parts = []
+        content = (msg.get("content") or "").strip()
+        if content:
+            parts.append(content)
+        for tc in msg.get("tool_calls") or []:
+            fn = tc.get("function") or {}
+            name = fn.get("name", "")
+            try:
+                args = pyjson.loads(fn.get("arguments") or "{}")
+            except Exception:
+                args = {}
+            if name:
+                parts.append(
+                    "<tool_call>" + pyjson.dumps({"tool": name, "args": args}) + "</tool_call>"
+                )
+        text = "\n".join(parts).strip()
+        return text or None
+
     def _try_chain():
-        """Percorre a chain do modo. Devolve (response, modelo_usado).
-        Avança em QUALQUER erro (não só 429): a Groq descontinua/renomeia
-        modelos com frequência e um 404 no primário não deve matar o pedido."""
+        """Percorre a chain do modo. Devolve (texto|None, modelo, response).
+        Avança em QUALQUER falha — erro HTTP (a Groq descontinua modelos com
+        frequência) OU resposta vazia (reasoning engoliu o output)."""
         r = None
         for m in chain:
             r = _call_groq(m)
             if r.status_code == 200:
-                return r, m
-        return r, chain[-1]
+                text = _extract(r)
+                if text:
+                    return text, m, r
+        return None, chain[-1], r
 
     try:
-        response, model = _try_chain()
+        content, model, response = _try_chain()
 
         # O limite da Groq no free tier é ao nível da CONTA (todos os modelos
         # ao mesmo tempo) e por minuto — janelas reabrem em segundos. Uma
         # única espera curta (Retry-After, máx. 6s) resgata a maioria dos
         # bursts sem estourar o tempo da função serverless.
-        if response.status_code == 429:
+        if content is None and response is not None and response.status_code == 429:
             retry_after = response.headers.get("retry-after", "")
             try:
                 wait = min(float(retry_after), 6.0) if retry_after else 2.5
             except ValueError:
                 wait = 2.5
             time.sleep(max(wait, 1.0))
-            response, model = _try_chain()
+            content, model, response = _try_chain()
 
         # ── Tratar erros sem expor detalhes internos ──────────────────────────
-        if response.status_code == 401:
-            raise HTTPException(status_code=503, detail="Serviço temporariamente indisponível.")
-        if response.status_code == 429:
-            raise HTTPException(status_code=429, detail="Limite de pedidos atingido. Tenta mais tarde.")
-        if response.status_code != 200:
+        if content is None:
+            status = response.status_code if response is not None else 0
+            if status == 401:
+                raise HTTPException(status_code=503, detail="Serviço temporariamente indisponível.")
+            if status == 429:
+                raise HTTPException(status_code=429, detail="Limite de pedidos atingido. Tenta mais tarde.")
             raise HTTPException(status_code=502, detail="Erro ao processar pedido.")
-
-        data = response.json()
-        content = data["choices"][0]["message"]["content"]
 
         return ChatResponse(
             content=content,
