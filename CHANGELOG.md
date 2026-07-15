@@ -1,5 +1,50 @@
 # Changelog
 
+## v0.9.4
+
+### AI agent — tools actually work now
+Six stacked bugs kept the agent from ever using its tools on the backend
+provider; all fixed and verified end-to-end (real `list_dir`/`read_file`
+executions with grounded answers):
+- Server system-prompt cap truncated the tool instructions away; prompt now
+  orders rules first and the cap fits the whole protocol.
+- Oversized tool results were rejected mid-loop; now truncated safely.
+- Agent requests route to instruction-faithful models (`gpt-oss-120b` →
+  `llama-4-scout` → `compound-mini`); chat keeps Compound and its web search.
+- Tool calls hidden in the models' reasoning channel or native `tool_calls`
+  field are now harvested into the tool protocol (server + streaming client).
+- Lenient tool-tag parser (accepts the `<tool_calls>` plural variant).
+- A stale `OLLAMA_MODEL` from `.env` no longer leaks into other providers'
+  model choice (this silently forced agent runs onto Compound).
+
+### Explorer — VS Code-grade file handling
+- New File/Folder create in the **selected** folder (folder → inside it,
+  file → its parent, none → root), with row selection + highlight.
+- Inline rename (F2 or context menu) with the name stem preselected.
+- Delete goes to the **Recycle Bin** and handles non-empty folders; Delete key
+  works on the selection; workspace roots protected.
+- Drag & drop to move files/folders (guarded against invalid moves).
+- Context menu: Copy Path, Copy Relative Path, Reveal in File Explorer,
+  Duplicate.
+
+### Editor
+- Default tab size is now **4** (+ a 2/4/8 control in Settings).
+- VS Code-style token colors for C/C++/Python: function calls, constants and
+  class names get distinct colors (vendored + enhanced Monarch grammars).
+
+### Arduino / Raspberry Pi Pico
+- Port listing fixed for arduino-cli ≥ 1.0 (`--json`).
+- Upload now compiles first (Arduino IDE parity) and supports **portless
+  BOOTSEL flashing** for RP2040 boards, with a hint in the panel.
+- Boards added: Pico W, Pico 2, Pico 2 W; one-click **Install core** per board
+  family (runs in the terminal).
+- **MicroPython mode** for .py files: Run on board, Deploy as main.py, REPL
+  via mpremote.
+
+### Extension store
+- The registry is live at [vagent-extensions](https://github.com/otzpt/vagent-extensions)
+  with three starters: HTTP Fetch, TODO Scanner, Serial Tools.
+
 ## v0.9.3
 
 ### Fix

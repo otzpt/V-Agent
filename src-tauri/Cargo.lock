@@ -4257,7 +4257,7 @@ dependencies = [
 
 [[package]]
 name = "v-agent"
-version = "0.9.3"
+version = "0.9.4"
 dependencies = [
  "portable-pty",
  "regex",

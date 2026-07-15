@@ -1,6 +1,6 @@
 [package]
 name = "v-agent"
-version = "0.9.3"
+version = "0.9.4"
 description = "V-Agent — local-first AI coding agent"
 authors = ["otzpt"]
 edition = "2021"
