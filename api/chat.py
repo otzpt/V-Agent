@@ -11,8 +11,12 @@ from pydantic import BaseModel
 import requests
 import json as pyjson
 import os
+import re
 import time
 from collections import defaultdict
+
+# Aceita singular/plural — os modelos variam a tag.
+TOOL_TAG_RE = re.compile(r"<tool_calls?>\s*(\{.*?\})\s*</tool_calls?>", re.DOTALL)
 
 app = FastAPI(title="V-Agent API", version="0.9.3")
 
@@ -210,6 +214,16 @@ async def chat(req: ChatRequest):
                 parts.append(
                     "<tool_call>" + pyjson.dumps({"tool": name, "args": args}) + "</tool_call>"
                 )
+        # gpt-oss coloca as tags <tool_call> DENTRO de message.reasoning (o
+        # content vem vazio) — resgata-as de lá; só as tags, nunca o texto
+        # de raciocínio em si.
+        reasoning = msg.get("reasoning") or ""
+        if reasoning:
+            seen = set(TOOL_TAG_RE.findall(content))
+            for body_json in TOOL_TAG_RE.findall(reasoning):
+                if body_json not in seen:
+                    seen.add(body_json)
+                    parts.append("<tool_call>" + body_json + "</tool_call>")
         text = "\n".join(parts).strip()
         return text or None
 

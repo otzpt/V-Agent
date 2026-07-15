@@ -6,6 +6,7 @@ No API keys ever stored in this file.
 
 import os
 import json
+import re
 import time
 import logging
 from abc import ABC, abstractmethod
@@ -14,6 +15,9 @@ from typing import Generator, Optional
 import requests
 
 logger = logging.getLogger("vagent.llm")
+
+# Accepts the plural variant some models emit.
+TOOL_TAG_RE = re.compile(r"<tool_calls?>\s*(\{.*?\})\s*</tool_calls?>", re.DOTALL)
 
 # ── Allowed models whitelist (free only) ──────────────────────────────────────
 
@@ -207,14 +211,20 @@ class GroqProvider(LLMProvider):
         msgs = ([{"role": "system", "content": self.system_prompt}]
                 if self.system_prompt else []) + messages[-20:]
 
+        body = {"model": self.model, "messages": msgs,
+                "stream": True, "temperature": temperature,
+                "max_tokens": max_tokens}
+        # gpt-oss are reasoning models — high effort can swallow the visible
+        # output into the reasoning channel.
+        if self.model.startswith("openai/gpt-oss"):
+            body["reasoning_effort"] = "low"
+
         try:
             resp = requests.post(
                 self.BASE_URL,
                 headers={"Authorization": f"Bearer {self._key}",
                          "Content-Type": "application/json"},
-                json={"model": self.model, "messages": msgs,
-                      "stream": True, "temperature": temperature,
-                      "max_tokens": max_tokens},
+                json=body,
                 stream=True,
                 timeout=180,
             )
@@ -230,6 +240,14 @@ class GroqProvider(LLMProvider):
         if resp.status_code != 200:
             raise LLMError(f"Groq API error ({resp.status_code}).")
 
+        # Two places actions can hide outside delta.content:
+        # - NATIVE tool calls (delta.tool_calls), even with no tools declared;
+        # - reasoning models (gpt-oss) writing the <tool_call> TAGS inside
+        #   delta.reasoning while content stays empty.
+        # Harvest both and emit them as V-Agent's text protocol at the end.
+        native_calls: dict = {}   # index -> {"name": str, "arguments": str}
+        reasoning_acc = ""
+        content_acc   = ""
         for raw in resp.iter_lines():
             if cancel_flag and cancel_flag():
                 return
@@ -243,11 +261,38 @@ class GroqProvider(LLMProvider):
                 break
             try:
                 delta = json.loads(data)["choices"][0].get("delta", {})
-                tok   = delta.get("content", "")
-                if tok:
-                    yield tok
             except (json.JSONDecodeError, KeyError, IndexError):
                 continue
+            tok = delta.get("content", "")
+            if tok:
+                content_acc += tok
+                yield tok
+            reasoning_acc += delta.get("reasoning") or ""
+            for tc in delta.get("tool_calls") or []:
+                idx = tc.get("index", 0)
+                acc = native_calls.setdefault(idx, {"name": "", "arguments": ""})
+                fn = tc.get("function") or {}
+                if fn.get("name"):
+                    acc["name"] += fn["name"]
+                if fn.get("arguments"):
+                    acc["arguments"] += fn["arguments"]
+
+        seen = set(TOOL_TAG_RE.findall(content_acc))
+        for acc in native_calls.values():
+            if not acc["name"]:
+                continue
+            try:
+                args = json.loads(acc["arguments"] or "{}")
+            except json.JSONDecodeError:
+                args = {}
+            body = json.dumps({"tool": acc["name"], "args": args})
+            if body not in seen:
+                seen.add(body)
+                yield "\n<tool_call>" + body + "</tool_call>"
+        for body in TOOL_TAG_RE.findall(reasoning_acc):
+            if body not in seen:
+                seen.add(body)
+                yield "\n<tool_call>" + body + "</tool_call>"
 
 # ── OpenRouter provider ────────────────────────────────────────────────────────
 
