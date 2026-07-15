@@ -118,7 +118,10 @@ def _persisted_config() -> dict:
                 "GROQ_API_KEY":        "groq_api_key",
                 "OPENROUTER_API_KEY":  "openrouter_api_key",
                 "ANTHROPIC_API_KEY":   "anthropic_api_key",
-                "OLLAMA_MODEL":        "model",
+                # Scoped key — mapping this to the generic "model" leaked a
+                # stale Ollama model name into every other provider (which
+                # then coerced it to whatever their whitelist fallback was).
+                "OLLAMA_MODEL":        "ollama_model",
             }
             if env_key in mapping:
                 data.setdefault(mapping[env_key], env_val)

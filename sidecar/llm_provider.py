@@ -464,7 +464,12 @@ def build_provider(cfg: dict, system_prompt: str = "", agent: bool = False) -> L
                 system_prompt=system_prompt,
                 mode="agent" if agent else "chat",
             )
-        model = cfg.get("model") or cfg.get("groq_model") or (AGENT_GROQ_MODEL if agent else DEFAULT_GROQ_MODEL)
+        # Validate here (not just in the ctor): a stale/foreign model name
+        # must fall back per-mode — the ctor's ALLOWED[0] fallback would send
+        # agent runs to compound, which ignores the tool protocol.
+        model = cfg.get("model") or cfg.get("groq_model")
+        if model not in ALLOWED_GROQ_MODELS:
+            model = AGENT_GROQ_MODEL if agent else DEFAULT_GROQ_MODEL
         return GroqProvider(key, model, system_prompt)
 
     if provider_name == "openrouter":
