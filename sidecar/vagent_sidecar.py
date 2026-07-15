@@ -387,7 +387,7 @@ def run_agent(req: dict) -> None:
 
     # ── Provider ──────────────────────────────────────────────────────────────
     try:
-        provider = build_provider(config, system)
+        provider = build_provider(config, system, agent=use_tools)
     except Exception as e:
         emit({"type": "error", "id": rid, "error": f"provider: {e}"})
         emit({"type": "done",  "id": rid})

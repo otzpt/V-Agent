@@ -18,12 +18,17 @@ logger = logging.getLogger("vagent.llm")
 # ── Allowed models whitelist (free only) ──────────────────────────────────────
 
 # Groq Compound — agentic system with built-in web search + code execution.
-# Llama models were decommissioned by Groq, so Compound is the only Groq model
-# V-Agent uses. Any legacy model id is transparently upgraded to it.
+# Great for plain chat, but it runs its OWN internal tool loop and does not
+# follow V-Agent's <tool_call> protocol (it hallucinates results instead of
+# calling tools) — agent runs use a plain instruct model that obeys literally.
 DEFAULT_GROQ_MODEL = "groq/compound"
+AGENT_GROQ_MODEL   = "openai/gpt-oss-120b"
 
 ALLOWED_GROQ_MODELS = [
     "groq/compound",
+    "groq/compound-mini",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
 ]
 
 ALLOWED_OPENROUTER_FREE_MODELS = [
@@ -74,10 +79,11 @@ class LLMRateLimitError(LLMError):
 class BackendProvider(LLMProvider):
     name = "backend"
 
-    def __init__(self, server_url: str, model: str, system_prompt: str = ""):
+    def __init__(self, server_url: str, model: str, system_prompt: str = "", mode: str = "chat"):
         self.server_url    = server_url.rstrip("/")
         self.model         = model
         self.system_prompt = system_prompt
+        self.mode          = mode  # "agent" → server routes to a tool-following model
 
     def is_available(self) -> bool:
         try:
@@ -98,7 +104,7 @@ class BackendProvider(LLMProvider):
             resp = requests.post(
                 f"{self.server_url}/chat",
                 json={"message": last_user, "model": self.model, "history": history,
-                      "system": self.system_prompt or ""},
+                      "system": self.system_prompt or "", "mode": self.mode},
                 timeout=60,
             )
         except requests.exceptions.ConnectionError:
@@ -407,7 +413,7 @@ class AnthropicProvider(LLMProvider):
 
 # ── Provider factory ───────────────────────────────────────────────────────────
 
-def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
+def build_provider(cfg: dict, system_prompt: str = "", agent: bool = False) -> LLMProvider:
     """
     Build the correct provider from config.
     Priority:
@@ -424,6 +430,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
             server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
             model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
             system_prompt=system_prompt,
+            mode="agent" if agent else "chat",
         )
 
     # The frontend labels this provider "ollama"; "local" kept for back-compat.
@@ -454,8 +461,9 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
                 system_prompt=system_prompt,
+                mode="agent" if agent else "chat",
             )
-        model = cfg.get("model") or cfg.get("groq_model") or ALLOWED_GROQ_MODELS[0]
+        model = cfg.get("model") or cfg.get("groq_model") or (AGENT_GROQ_MODEL if agent else DEFAULT_GROQ_MODEL)
         return GroqProvider(key, model, system_prompt)
 
     if provider_name == "openrouter":
@@ -466,6 +474,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
                 system_prompt=system_prompt,
+                mode="agent" if agent else "chat",
             )
         model = cfg.get("model") or cfg.get("openrouter_model") or DEFAULT_OPENROUTER_MODEL
         return OpenRouterProvider(key, model, system_prompt)
@@ -478,6 +487,7 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
                 server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
                 model=DEFAULT_GROQ_MODEL,
                 system_prompt=system_prompt,
+                mode="agent" if agent else "chat",
             )
         model = cfg.get("model") or cfg.get("anthropic_model") or DEFAULT_ANTHROPIC_MODEL
         return AnthropicProvider(key, model, system_prompt)
@@ -488,4 +498,5 @@ def build_provider(cfg: dict, system_prompt: str = "") -> LLMProvider:
         server_url=cfg.get("vagent_server_url", "https://vt-inference-relay.vercel.app"),
         model=cfg.get("groq_model", DEFAULT_GROQ_MODEL),
         system_prompt=system_prompt,
+        mode="agent" if agent else "chat",
     )

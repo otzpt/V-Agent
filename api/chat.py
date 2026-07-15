@@ -71,14 +71,19 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # funcionar sem reinstalar.
 GROQ_MODEL = "groq/compound"
 
-# Fallbacks quando o Compound atinge o rate limit da key partilhada, por
-# ordem: compound-mini (mesma família agêntica, quota própria) e depois
-# gpt-oss-120b (modelo plano com limites muito maiores — último recurso
-# para o backend nunca ficar mudo). Cada modelo tem bucket próprio na Groq.
-FALLBACK_GROQ_MODELS = ["groq/compound-mini", "openai/gpt-oss-120b"]
+# ── Modo agente vs chat ───────────────────────────────────────────────────────
+# O Compound é ele próprio um sistema agêntico: corre o seu loop interno e
+# devolve prosa polida — NÃO segue o protocolo <tool_call> do V-Agent (chega a
+# alucinar listagens de ficheiros em vez de chamar as ferramentas). Pedidos do
+# agente (mode="agent") vão para um modelo plano que segue instruções à letra;
+# o chat normal mantém o Compound (web search embutido). Cada modelo tem
+# bucket de rate limit próprio na Groq, por isso as chains também servem de
+# fallback quando a key partilhada satura.
+CHAT_CHAIN  = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b"]
+AGENT_CHAIN = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound-mini"]
 
 # Modelos servidos por este backend.
-ALLOWED_GROQ_MODELS = [GROQ_MODEL, *FALLBACK_GROQ_MODELS]
+ALLOWED_GROQ_MODELS = ["groq/compound", "groq/compound-mini", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -86,6 +91,7 @@ class ChatRequest(BaseModel):
     model: str = GROQ_MODEL
     history: list = []  # Histórico de mensagens [{role, content}]
     system: str = ""    # System prompt opcional (personalidade/regras do cliente)
+    mode: str = "chat"  # "chat" (Compound) | "agent" (modelo plano p/ tool calls)
 
 class ChatResponse(BaseModel):
     content: str
@@ -110,9 +116,10 @@ async def chat(req: ChatRequest):
     Keys nunca são expostas ao utilizador.
     """
     # ── Modelo ────────────────────────────────────────────────────────────────
-    # Llama foi descontinuado pela Groq: qualquer pedido — de clientes novos ou
-    # antigos (que ainda enviam "llama-...") — é servido pelo Groq Compound.
-    model = GROQ_MODEL
+    # Llama foi descontinuado pela Groq. A chain depende do modo: agente →
+    # modelo plano (segue o protocolo de ferramentas), chat → Compound.
+    chain = AGENT_CHAIN if req.mode == "agent" else CHAT_CHAIN
+    model = chain[0]
 
     # ── Validação da mensagem ─────────────────────────────────────────────────
     # Truncar em vez de rejeitar: a mensagem pode ser um bloco de resultados
@@ -167,21 +174,17 @@ async def chat(req: ChatRequest):
             timeout=60,
         )
 
-    def _try_chain(primary: str):
-        """Primário + fallbacks. Devolve (response, modelo_usado)."""
-        r = _call_groq(primary)
-        if r.status_code != 429:
-            return r, primary
-        for fb in FALLBACK_GROQ_MODELS:
-            if fb == primary:
-                continue
-            r = _call_groq(fb)
+    def _try_chain():
+        """Percorre a chain do modo. Devolve (response, modelo_usado)."""
+        r = None
+        for m in chain:
+            r = _call_groq(m)
             if r.status_code != 429:
-                return r, fb
-        return r, primary
+                return r, m
+        return r, chain[-1]
 
     try:
-        response, model = _try_chain(model)
+        response, model = _try_chain()
 
         # O limite da Groq no free tier é ao nível da CONTA (todos os modelos
         # ao mesmo tempo) e por minuto — janelas reabrem em segundos. Uma
@@ -194,7 +197,7 @@ async def chat(req: ChatRequest):
             except ValueError:
                 wait = 2.5
             time.sleep(max(wait, 1.0))
-            response, model = _try_chain(GROQ_MODEL)
+            response, model = _try_chain()
 
         # ── Tratar erros sem expor detalhes internos ──────────────────────────
         if response.status_code == 401:
