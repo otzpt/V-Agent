@@ -5,6 +5,7 @@ Receives tool functions as an injected dict (avoids circular imports).
 
 import re
 import json
+import time
 from typing import Callable
 
 from llm_provider import LLMError, LLMRateLimitError
@@ -12,6 +13,8 @@ from llm_provider import LLMError, LLMRateLimitError
 # Lenient: models mangle the tag ("<tool_calls>" plural, mismatched pairs) —
 # accept any tool_call/tool_calls open/close combination.
 TOOL_RE        = re.compile(r"<tool_calls?>\s*(\{.*?\})\s*</tool_calls?>", re.DOTALL)
+# Live-stream gate: prefix shared by both tag spellings.
+TOOL_MARK      = "<tool_call"
 MAX_STEPS      = 10
 MAX_STEPS_AUTO = 30
 
@@ -217,10 +220,55 @@ class AgentLoop:
                     "description": f"Step {step}…",
                 })
 
-            acc = ""
+            # ── Live streaming ────────────────────────────────────────────────
+            # Tokens go to the UI as they arrive (typing effect). Once a tool
+            # tag starts, the rest of the turn is held back — tags and their
+            # aftermath are loop machinery, not chat. A short tail is withheld
+            # in case it's the beginning of a tag split across tokens.
+            acc   = ""
+            sent  = 0        # chars of acc already shown live
+            gated = False    # saw a tool tag → hold the rest of this turn
+
+            def emit_text(text: str) -> None:
+                # ≤24-char chunks; pace multi-chunk bursts so buffered
+                # providers (the backend returns one blob) still type.
+                burst = len(text) > 24
+                for i in range(0, len(text), 24):
+                    if cancelled():
+                        return
+                    self.emit({"type": "token", "id": rid, "text": text[i:i + 24]})
+                    if burst:
+                        time.sleep(0.009)
+
+            def on_token(tok: str) -> None:
+                nonlocal acc, sent, gated
+                acc += tok
+                if gated:
+                    return
+                if not use_tools:
+                    emit_text(acc[sent:])
+                    sent = len(acc)
+                    return
+                cut = acc.find(TOOL_MARK, sent)
+                if cut != -1:
+                    if cut > sent:
+                        emit_text(acc[sent:cut])
+                        sent = cut
+                    gated = True
+                    return
+                hold = 0
+                for k in range(min(len(TOOL_MARK), len(acc) - sent), 0, -1):
+                    if acc.endswith(TOOL_MARK[:k]):
+                        hold = k
+                        break
+                upto = len(acc) - hold
+                if upto > sent:
+                    emit_text(acc[sent:upto])
+                    sent = upto
+
             try:
                 for tok in self.provider.stream(convo, cancel_flag=cancelled):
-                    acc += tok
+                    on_token(tok)
 
             except LLMRateLimitError:
                 if fallback_provider:
@@ -228,7 +276,7 @@ class AgentLoop:
                                "text": "Rate limited — switched to fallback provider"})
                     try:
                         for tok in fallback_provider.stream(convo, cancel_flag=cancelled):
-                            acc += tok
+                            on_token(tok)
                     except LLMError as e2:
                         self.emit({"type": "error", "id": rid, "error": str(e2)})
                         break
@@ -248,10 +296,10 @@ class AgentLoop:
 
             if not calls:
                 final = strip_tool_calls(acc) if use_tools else acc
-                for i in range(0, len(final), 24):
-                    if cancelled():
-                        break
-                    self.emit({"type": "token", "id": rid, "text": final[i:i + 24]})
+                # Flush whatever live emission held back. Emitted chars are
+                # always a tag-free prefix, so `final` extends what was shown.
+                if len(final) > sent:
+                    emit_text(final[sent:])
                 convo.append({"role": "assistant", "content": final})
 
                 # In autonomous mode, check if the model signals completion

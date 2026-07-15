@@ -214,16 +214,14 @@ async def chat(req: ChatRequest):
                 parts.append(
                     "<tool_call>" + pyjson.dumps({"tool": name, "args": args}) + "</tool_call>"
                 )
-        # gpt-oss coloca as tags <tool_call> DENTRO de message.reasoning (o
-        # content vem vazio) — resgata-as de lá; só as tags, nunca o texto
-        # de raciocínio em si.
+        # gpt-oss coloca tags <tool_call> DENTRO de message.reasoning. Só as
+        # resgatamos quando o content vem VAZIO: se há resposta visível, as
+        # tags no raciocínio são rascunho/planeamento — promovê-las a ações
+        # reais faz o agente entrar em loop e suprime a resposta final.
         reasoning = msg.get("reasoning") or ""
-        if reasoning:
-            seen = set(TOOL_TAG_RE.findall(content))
+        if reasoning and not parts:
             for body_json in TOOL_TAG_RE.findall(reasoning):
-                if body_json not in seen:
-                    seen.add(body_json)
-                    parts.append("<tool_call>" + body_json + "</tool_call>")
+                parts.append("<tool_call>" + body_json + "</tool_call>")
         text = "\n".join(parts).strip()
         return text or None
 

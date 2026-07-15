@@ -401,14 +401,17 @@ def run_agent(req: dict) -> None:
         _cancel.pop(rid, None)
         return
 
-    # Build fallback provider (OpenRouter) for rate-limit recovery
+    # Fallback for rate-limit recovery: OpenRouter when the user has a key,
+    # otherwise the shared backend — its server-side model chain and
+    # Retry-After logic absorb personal-key 429s instead of erroring out.
     fallback = None
-    or_key   = config.get("openrouter_api_key", "").strip()
-    if or_key and config.get("ai_provider") == "groq":
+    if config.get("ai_provider") == "groq":
+        or_key = config.get("openrouter_api_key", "").strip()
         try:
-            fallback = build_provider(
-                {**config, "ai_provider": "openrouter"}, system
-            )
+            if or_key:
+                fallback = build_provider({**config, "ai_provider": "openrouter"}, system)
+            else:
+                fallback = build_provider({**config, "ai_provider": "backend"}, system, agent=use_tools)
         except Exception:
             pass
 

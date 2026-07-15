@@ -289,10 +289,14 @@ class GroqProvider(LLMProvider):
             if body not in seen:
                 seen.add(body)
                 yield "\n<tool_call>" + body + "</tool_call>"
-        for body in TOOL_TAG_RE.findall(reasoning_acc):
-            if body not in seen:
-                seen.add(body)
-                yield "\n<tool_call>" + body + "</tool_call>"
+        # Reasoning tags are the model's scratchpad — only trust them when the
+        # visible reply carried nothing (no text, no tags, no native calls).
+        # Promoting them alongside a real answer loops the agent forever.
+        if not content_acc.strip() and not seen:
+            for body in TOOL_TAG_RE.findall(reasoning_acc):
+                if body not in seen:
+                    seen.add(body)
+                    yield "\n<tool_call>" + body + "</tool_call>"
 
 # ── OpenRouter provider ────────────────────────────────────────────────────────
 
