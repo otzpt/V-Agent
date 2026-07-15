@@ -194,7 +194,10 @@ async def chat(req: ChatRequest):
             return None
         parts = []
         content = (msg.get("content") or "").strip()
+        # Normaliza a tag plural que alguns modelos emitem ("<tool_calls>") —
+        # clientes já distribuídos têm um parser estrito à forma singular.
         if content:
+            content = content.replace("<tool_calls>", "<tool_call>").replace("</tool_calls>", "</tool_call>")
             parts.append(content)
         for tc in msg.get("tool_calls") or []:
             fn = tc.get("function") or {}

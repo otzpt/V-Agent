@@ -9,7 +9,9 @@ from typing import Callable
 
 from llm_provider import LLMError, LLMRateLimitError
 
-TOOL_RE        = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
+# Lenient: models mangle the tag ("<tool_calls>" plural, mismatched pairs) —
+# accept any tool_call/tool_calls open/close combination.
+TOOL_RE        = re.compile(r"<tool_calls?>\s*(\{.*?\})\s*</tool_calls?>", re.DOTALL)
 MAX_STEPS      = 10
 MAX_STEPS_AUTO = 30
 
