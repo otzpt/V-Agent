@@ -289,6 +289,12 @@ const CodeBlock = memo(function CodeBlock({ lang, code }) {
   );
 });
 
+// Memoized per message: while one message streams, every OTHER message skips
+// its markdown re-parse and re-render entirely (frame-budget principle).
+const MessageContent = memo(function MessageContent({ text }) {
+  return <>{renderContent(text)}</>;
+});
+
 // Animated streaming dots — three dots that fade in sequence
 function StreamingDots() {
   return (
@@ -518,6 +524,24 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     ? rootDirs[0].replace(/[^a-zA-Z0-9_.-]/g, "_").slice(-60)
     : "default";
 
+  // Frame-budgeted token rendering (Zed principle: one state update per
+  // animation frame, never one per token). Streaming tokens accumulate in a
+  // ref and flush on the next frame; non-token events flush first so event
+  // ordering in the transcript is preserved.
+  const tokenBufRef = useRef("");
+  const tokenRafRef = useRef(0);
+  const flushTokens = useCallback(() => {
+    tokenRafRef.current = 0;
+    const buf = tokenBufRef.current;
+    if (!buf) return;
+    tokenBufRef.current = "";
+    setMessages((m) => appendAssistant(m, buf));
+  }, []);
+  const queueToken = useCallback((text) => {
+    tokenBufRef.current += text;
+    if (!tokenRafRef.current) tokenRafRef.current = requestAnimationFrame(flushTokens);
+  }, [flushTokens]);
+
   // ── Agent channel: start the persistent sidecar + route its events ──────────
   useEffect(() => {
     let alive = true;
@@ -527,9 +551,10 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     const handle = (ev) => {
       const reqId = currentReqRef.current;
       if (ev.id && reqId && ev.id !== reqId) return;  // ignore stale requests
+      if (ev.type !== "token" && tokenBufRef.current) flushTokens();
       switch (ev.type) {
         case "token":
-          setMessages((m) => appendAssistant(m, ev.text));
+          queueToken(ev.text);
           break;
         case "tool_call":
           setMessages((m) => [...m, { role: "tool", call_id: ev.call_id, tool: ev.tool, args: ev.args, status: "running" }]);
@@ -608,7 +633,11 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
     };
 
     onAgentEvent(handle).then((fn) => { if (alive) unlisten = fn; else fn(); }).catch(() => {});
-    return () => { alive = false; if (unlisten) unlisten(); };
+    return () => {
+      alive = false;
+      if (unlisten) unlisten();
+      if (tokenRafRef.current) cancelAnimationFrame(tokenRafRef.current);
+    };
   }, []);
 
   // Initialise the session provider from saved config (onboarding / settings)
@@ -959,7 +988,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
                 {msg.role === "user" ? (
                   <p style={ideStyles.userText}>{msg.content}</p>
                 ) : (
-                  <div style={ideStyles.aiText}>{renderContent(msg.content || "…")}</div>
+                  <div style={ideStyles.aiText}><MessageContent text={msg.content || "…"} /></div>
                 )}
               </div>
             );
@@ -1088,7 +1117,7 @@ export default function AIPanel({ openFile, mode = "ide", providerCmd, rootDirs 
                   {isUser ? (
                     <p style={chatStyles.userText}>{msg.content}</p>
                   ) : (
-                    <div style={chatStyles.aiText}>{renderContent(msg.content || "…")}</div>
+                    <div style={chatStyles.aiText}><MessageContent text={msg.content || "…"} /></div>
                   )}
                 </div>
               </div>

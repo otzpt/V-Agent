@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import { ptyCreate, ptyWrite, ptyResize, ptyKill, onPtyOutput, onPtyClosed } from "../lib/tauri.js";
 
@@ -52,6 +53,16 @@ export default function Terminal({ onReady }) {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(containerRef.current);
+
+    // GPU-rendered terminal (Zed-style speed). WebGL contexts can be lost
+    // (driver reset, too many contexts) — dispose the addon and xterm falls
+    // back to its DOM renderer automatically. Never fatal.
+    try {
+      const webgl = new WebglAddon();
+      webgl.onContextLoss(() => webgl.dispose());
+      term.loadAddon(webgl);
+    } catch { /* no WebGL available — DOM renderer is fine */ }
+
     fit.fit();
 
     termRef.current = term;

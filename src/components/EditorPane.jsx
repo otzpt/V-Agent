@@ -1045,7 +1045,9 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
                 wordWrap:            editorPrefs.word_wrap ? "on" : "off",
                 stickyScroll:        { enabled: true },
                 scrollBeyondLastLine: false,
-                smoothScrolling:     true,
+                // Instant wheel response (Zed-style crispness) — animated
+                // scrolling reads as latency.
+                smoothScrolling:     false,
                 cursorBlinking:      "smooth",
                 padding:             { top: 12 },
                 renderWhitespace:    "selection",
