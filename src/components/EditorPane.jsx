@@ -106,6 +106,43 @@ function defineEditorThemes(monaco) {
   });
 }
 
+// Zed-style empty state: quiet wordmark + the shortcuts that matter, instead
+// of a bare gray void. Pure presentation — no handlers, the global keybinds
+// already exist.
+const EMPTY_HINTS = [
+  ["Open Folder",     "File tree → Open folder"],
+  ["Command Palette", "Ctrl+Shift+P"],
+  ["Search in Files", "Ctrl+Shift+F"],
+  ["Settings",        "Ctrl+,"],
+];
+
+const EmptyEditorState = memo(function EmptyEditorState() {
+  return (
+    <div style={{
+      height: "100%", background: "var(--bg-0)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: 10,
+      userSelect: "none",
+    }}>
+      <div style={{
+        fontSize: 24, fontWeight: 600, letterSpacing: "0.04em",
+        color: "var(--text-2)", fontFamily: "var(--font-ui)", marginBottom: 8,
+      }}>
+        V-Agent
+      </div>
+      {EMPTY_HINTS.map(([label, key]) => (
+        <div key={label} style={{
+          display: "flex", justifyContent: "space-between",
+          width: 300, fontSize: 13, fontFamily: "var(--font-ui)",
+        }}>
+          <span style={{ color: "var(--text-2)" }}>{label}</span>
+          <span style={{ color: "var(--text-1)", fontFamily: "var(--font-mono)", fontSize: 12 }}>{key}</span>
+        </div>
+      ))}
+    </div>
+  );
+});
+
 // ── Lightweight syntax lint (brace-family languages) ─────────────────────────
 // Monaco has no diagnostics for C/C++/Java/etc — this catches the common
 // structural errors safely: unmatched ( [ {, unclosed block comments, and
@@ -1057,7 +1094,7 @@ export default function EditorPane({ openFiles, activeFilePath, onSelectTab, onC
               }}
             />
           ) : (
-            <div style={styles.noActive} />
+            <EmptyEditorState />
           )}
         </div>
         {/* Preview half (visible only when toggled on for previewable files) */}
