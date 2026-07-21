@@ -1,6 +1,6 @@
 ---
 title: SQL
-description: "Configure SQL language support in Zed, including language servers, formatting, and debugging."
+description: "Configure SQL language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # SQL
@@ -11,7 +11,7 @@ SQL files are handled by the [SQL Extension](https://github.com/zed-extensions/s
 
 ### Formatting
 
-Zed supports auto-formatting SQL using external tools like [`sql-formatter`](https://github.com/sql-formatter-org/sql-formatter).
+V-Agent supports auto-formatting SQL using external tools like [`sql-formatter`](https://github.com/sql-formatter-org/sql-formatter).
 
 1. Install `sql-formatter`:
 
@@ -43,7 +43,7 @@ sql-formatter --version
 
 Substitute your preferred [SQL Dialect] for `mysql` above (`duckdb`, `hive`, `mariadb`, `postgresql`, `redshift`, `snowflake`, `sqlite`, `spark`, etc).
 
-You can add this to Zed project settings (`.zed/settings.json`) or via your Zed user settings (`~/.config/zed/settings.json`).
+You can add this to V-Agent project settings (`.zed/settings.json`) or via your V-Agent user settings (`~/.config/zed/settings.json`).
 
 ### Advanced Formatting
 
@@ -58,7 +58,7 @@ Sql-formatter also allows more precise control by providing [sql-formatter confi
 }
 ```
 
-When using a `.sql-formatter.json` file you can use a simplified Zed settings configuration:
+When using a `.sql-formatter.json` file you can use a simplified V-Agent settings configuration:
 
 ```json [settings]
 {

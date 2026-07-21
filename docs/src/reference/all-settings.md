@@ -1,17 +1,17 @@
 ---
 title: All Settings
-description: "Complete reference for all Zed settings."
+description: "Complete reference for all V-Agent settings."
 ---
 
 # All Settings
 
-This is the complete reference for all Zed settings.
+This is the complete reference for all V-Agent settings.
 
 You may also want to change your [theme](../themes.md), configure your [key bindings](../key-bindings.md), set up [tasks](../tasks.md), or install [extensions](../extensions.md).
 
 # Settings
 
-The sections below document supported Zed settings.
+The sections below document supported V-Agent settings.
 
 ## Active Pane Modifiers
 
@@ -200,7 +200,7 @@ Define extensions which should be installed (`true`) or never installed (`false`
 
 **Options**
 
-By default, every installed extension is auto-updated when Zed starts.
+By default, every installed extension is auto-updated when V-Agent starts.
 Add an extension here with `false` to pin it to its currently installed version.
 
 ```json [settings]
@@ -375,7 +375,7 @@ The name of any font family installed on the user's system, or `".ZedMono"`.
 
 **Options**
 
-Zed supports all OpenType features that can be enabled or disabled for a given buffer or terminal font, as well as setting values for font features.
+V-Agent supports all OpenType features that can be enabled or disabled for a given buffer or terminal font, as well as setting values for font features.
 
 For example, to disable font ligatures, add the following to your settings:
 
@@ -569,7 +569,7 @@ See [Git documentation](../git.md#diff-view-styles) for more details.
 
 ## Disable AI
 
-- Description: Whether to disable all AI features in Zed
+- Description: Whether to disable all AI features in V-Agent
 - Setting: `disable_ai`
 - Default: `false`
 
@@ -1581,7 +1581,7 @@ or
 
 ### Session
 
-- Description: Controls Zed lifecycle-related behavior.
+- Description: Controls V-Agent lifecycle-related behavior.
 - Setting: `session`
 - Default:
 
@@ -1665,7 +1665,7 @@ Each option controls displaying of a particular toolbar element. If all elements
 
 **Options**
 
-This setting enables integration with macOS’s native window tabbing feature. When set to `true`, Zed windows can be grouped together as tabs in a single macOS window, following the system-wide tabbing preferences set by the user (such as "Always", "In Full Screen", or "Never"). This setting is only available on macOS.
+This setting enables integration with macOS’s native window tabbing feature. When set to `true`, V-Agent windows can be grouped together as tabs in a single macOS window, following the system-wide tabbing preferences set by the user (such as "Always", "In Full Screen", or "Never"). This setting is only available on macOS.
 
 ## Enable Language Server
 
@@ -1783,7 +1783,7 @@ Positive `integer` value between 1 and 32. Values outside of this range will be 
 }
 ```
 
-There is an experimental setting that completely hides the status bar. This causes major usability problems (you will be unable to use many of Zed's features), but is provided for those who value screen real-estate above all else.
+There is an experimental setting that completely hides the status bar. This causes major usability problems (you will be unable to use many of V-Agent's features), but is provided for those who value screen real-estate above all else.
 
 ```json
 "status_bar": {
@@ -2088,7 +2088,7 @@ The result is still `)))` and not `))))))`, which is what it would be by default
 ## File Scan Exclusions
 
 - Setting: `file_scan_exclusions`
-- Description: Files or globs of files that will be excluded by Zed entirely. They will be skipped during file scans, file searches, and not be displayed in the project file tree. Overrides `file_scan_inclusions`.
+- Description: Files or globs of files that will be excluded by V-Agent entirely. They will be skipped during file scans, file searches, and not be displayed in the project file tree. Overrides `file_scan_inclusions`.
 - Default:
 
 ```json [settings]
@@ -2112,7 +2112,7 @@ Note, specifying `file_scan_exclusions` in settings.json will override the defau
 ## File Scan Inclusions
 
 - Setting: `file_scan_inclusions`
-- Description: Files or globs of files that will be included by Zed, even when ignored by git. This is useful for files that are not tracked by git, but are still important to your project. Note that globs that are overly broad can slow down Zed's file scanning. `file_scan_exclusions` takes precedence over these inclusions.
+- Description: Files or globs of files that will be included by V-Agent, even when ignored by git. This is useful for files that are not tracked by git, but are still important to your project. Note that globs that are overly broad can slow down V-Agent's file scanning. `file_scan_exclusions` takes precedence over these inclusions.
 - Default:
 
 ```json [settings]
@@ -2145,12 +2145,12 @@ Note, specifying `file_scan_exclusions` in settings.json will override the defau
 }
 ```
 
-When set to `expanded`, symbolic links are only scanned after you explicitly expand them in the project panel. When set to `always`, Zed follows all symbolic links and scans their contents when indexing the project, unless they match gitignore rules. The `always` option may have performance implications for projects with many or deeply nested symlinks.
+When set to `expanded`, symbolic links are only scanned after you explicitly expand them in the project panel. When set to `always`, V-Agent follows all symbolic links and scans their contents when indexing the project, unless they match gitignore rules. The `always` option may have performance implications for projects with many or deeply nested symlinks.
 
 ## File Types
 
 - Setting: `file_types`
-- Description: Configure how Zed selects a language for a file based on its filename or extension. Supports glob entries.
+- Description: Configure how V-Agent selects a language for a file based on its filename or extension. Supports glob entries.
 - Default:
 
 ```json [settings]
@@ -2712,7 +2712,7 @@ Example:
 
 ## Icon Theme
 
-- Description: The icon theme setting can be specified in two forms - either as the name of an icon theme or as an object containing the `mode`, `dark`, and `light` icon themes for files/folders inside Zed.
+- Description: The icon theme setting can be specified in two forms - either as the name of an icon theme or as an object containing the `mode`, `dark`, and `light` icon themes for files/folders inside V-Agent.
 - Setting: `icon_theme`
 - Default: `Zed (Default)`
 
@@ -2867,7 +2867,7 @@ Inlay hints querying consists of two parts: editor (client) and LSP server.
 When the inlay settings above are changed to enable the hints, the editor will start to query certain types of hints and react on LSP hint refresh request from the server.
 At this point, the server may or may not return hints depending on its implementation, further configuration might be needed, refer to the corresponding LSP server documentation.
 
-The following languages have inlay hints preconfigured by Zed:
+The following languages have inlay hints preconfigured by V-Agent:
 
 - [Go](https://docs.zed.dev/languages/go)
 - [Rust](https://docs.zed.dev/languages/rust)
@@ -2876,7 +2876,7 @@ The following languages have inlay hints preconfigured by Zed:
 
 Use the `lsp` section for the server configuration. Examples are provided in the corresponding language documentation.
 
-Hints are not instantly queried in Zed, two kinds of debounces are used, either may be set to 0 to be disabled.
+Hints are not instantly queried in V-Agent, two kinds of debounces are used, either may be set to 0 to be disabled.
 Settings-related hint updates are not debounced.
 
 All possible config values for `toggle_on_modifiers_press` are:
@@ -3193,7 +3193,7 @@ Positive `integer` values or `null` for unlimited tabs
 
 ## Network Proxy
 
-- Description: Configure a network proxy for Zed.
+- Description: Configure a network proxy for V-Agent.
 - Setting: `proxy`
 - Default: `null`
 
@@ -3212,7 +3212,7 @@ The following URI schemes are supported:
 
 `http` will be used when no scheme is specified.
 
-By default no proxy will be used, or Zed will attempt to retrieve proxy settings from environment variables, such as `http_proxy`, `HTTP_PROXY`, `https_proxy`, `HTTPS_PROXY`, `all_proxy`, `ALL_PROXY`, `no_proxy` and `NO_PROXY`.
+By default no proxy will be used, or V-Agent will attempt to retrieve proxy settings from environment variables, such as `http_proxy`, `HTTP_PROXY`, `https_proxy`, `HTTPS_PROXY`, `all_proxy`, `ALL_PROXY`, `no_proxy` and `NO_PROXY`.
 
 For example, to set an `http` proxy, add the following to your settings:
 
@@ -3284,7 +3284,7 @@ If you wish to exclude certain hosts from using the proxy, set the `NO_PROXY` en
 
 ## Profiles
 
-- Description: Configuration profiles that can be temporarily applied on top of existing settings or Zed's defaults.
+- Description: Configuration profiles that can be temporarily applied on top of existing settings or V-Agent's defaults.
 - Setting: `profiles`
 - Default: `{}`
 
@@ -3294,7 +3294,7 @@ Each profile is an object with the following optional fields:
 
 - `base`: What settings to start from before applying the profile's overrides.
   - `"user"` (default): Apply on top of your current user settings.
-  - `"default"`: Apply on top of Zed's default settings, ignoring user customizations.
+  - `"default"`: Apply on top of V-Agent's default settings, ignoring user customizations.
 - `settings`: The settings overrides for this profile.
 
 Examples:
@@ -3600,7 +3600,7 @@ List of strings containing any combination of:
 
 **Options**
 
-1. Restore all workspaces that were open when quitting Zed:
+1. Restore all workspaces that were open when quitting V-Agent:
 
 ```json [settings]
 {
@@ -4082,7 +4082,7 @@ Positive integer values
 
 ## Use Auto Surround
 
-- Description: Whether to automatically surround selected text when typing opening parenthesis, bracket, brace, single or double quote characters. For example, when you select text and type '(', Zed will surround the text with ().
+- Description: Whether to automatically surround selected text when typing opening parenthesis, bracket, brace, single or double quote characters. For example, when you select text and type '(', V-Agent will surround the text with ().
 - Setting: `use_auto_surround`
 - Default: `true`
 
@@ -4092,7 +4092,7 @@ Positive integer values
 
 ## Use System Path Prompts
 
-- Description: Whether to use the system provided dialogs for Open and Save As. When set to false, Zed will use the built-in keyboard-first pickers.
+- Description: Whether to use the system provided dialogs for Open and Save As. When set to false, V-Agent will use the built-in keyboard-first pickers.
 - Setting: `use_system_path_prompts`
 - Default: `true`
 
@@ -4102,7 +4102,7 @@ Positive integer values
 
 ## Use System Prompts
 
-- Description: Whether to use the system provided dialogs for prompts, such as confirmation prompts. When set to false, Zed will use its built-in prompts. Note that on Linux, this option is ignored and Zed will always use the built-in prompts.
+- Description: Whether to use the system provided dialogs for prompts, such as confirmation prompts. When set to false, V-Agent will use its built-in prompts. Note that on Linux, this option is ignored and V-Agent will always use the built-in prompts.
 - Setting: `use_system_prompts`
 - Default: `true`
 
@@ -4132,7 +4132,7 @@ List of `integer` column numbers
 
 ## Tasks
 
-- Description: Configuration for tasks that can be run within Zed
+- Description: Configuration for tasks that can be run within V-Agent
 - Setting: `tasks`
 - Default:
 
@@ -4150,11 +4150,11 @@ List of `integer` column numbers
 
 - `variables`: Custom variables for task configuration
 - `enabled`: Whether tasks are enabled
-- `prefer_lsp`: Whether to prefer LSP-provided tasks over Zed language extension ones
+- `prefer_lsp`: Whether to prefer LSP-provided tasks over V-Agent language extension ones
 
 ## Telemetry
 
-- Description: Control what info is collected by Zed.
+- Description: Control what info is collected by V-Agent.
 - Setting: `telemetry`
 - Default:
 
@@ -4181,7 +4181,7 @@ List of `integer` column numbers
 
 ### Metrics
 
-- Description: Setting for sending anonymized usage data, such as what languages you're using Zed with.
+- Description: Setting for sending anonymized usage data, such as what languages you're using V-Agent with.
 - Setting: `metrics`
 - Default: `true`
 
@@ -4848,7 +4848,7 @@ Example command to set the title: `echo -e "\e]2;New Title\007";`
 
 ## Theme
 
-- Description: The theme setting can be specified in two forms - either as the name of a theme or as an object containing the `mode`, `dark`, and `light` themes for the Zed UI.
+- Description: The theme setting can be specified in two forms - either as the name of a theme or as an object containing the `mode`, `dark`, and `light` themes for the V-Agent UI.
 - Setting: `theme`
 - Default: `One Dark`
 
@@ -4914,7 +4914,7 @@ Example command to set the title: `echo -e "\e]2;New Title\007";`
 
 ### Dark
 
-- Description: The name of the dark Zed theme to use for the UI.
+- Description: The name of the dark V-Agent theme to use for the UI.
 - Setting: `dark`
 - Default: `One Dark`
 
@@ -4924,7 +4924,7 @@ Run the {#action theme_selector::Toggle} action in the command palette to see a 
 
 ### Light
 
-- Description: The name of the light Zed theme to use for the UI.
+- Description: The name of the light V-Agent theme to use for the UI.
 - Setting: `light`
 - Default: `One Light`
 
@@ -4964,7 +4964,7 @@ Run the {#action theme_selector::Toggle} action in the command palette to see a 
 - `show_user_menu`: Whether to show the user menu button in the titlebar (the one that displays your avatar by default and contains options like Settings, Keymap, Themes, etc.)
 - `show_sign_in`: Whether to show the sign in button in the titlebar
 - `show_menus`: Whether to show the menus in the titlebar
-- `button_layout`: The layout of window control buttons in the title bar (Linux only). Can be set to `"platform_default"` to follow the system setting, `"standard"` to use Zed's built-in layout, or a custom format like `"close:minimize,maximize"`
+- `button_layout`: The layout of window control buttons in the title bar (Linux only). Can be set to `"platform_default"` to follow the system setting, `"standard"` to use V-Agent's built-in layout, or a custom format like `"close:minimize,maximize"`
 
 ## Vim
 
@@ -5448,7 +5448,7 @@ Visit [AI Quick Start](../ai/quick-start.md) under the AI section to learn more 
 }
 ```
 
-See the [debugger page](../debugger.md) for more information about debugging support within Zed.
+See the [debugger page](../debugger.md) for more information about debugging support within V-Agent.
 
 ## Git Panel
 
@@ -5628,7 +5628,7 @@ Float values between `0.0` and `0.9`, where:
 
 **Options**
 
-The name of any font family installed on the system, `".ZedSans"` to use the Zed-provided default, or `".SystemUIFont"` to use the system's default UI font (on macOS and Windows).
+The name of any font family installed on the system, `".ZedSans"` to use the V-Agent-provided default, or `".SystemUIFont"` to use the system's default UI font (on macOS and Windows).
 
 ## UI Font Features
 
@@ -5648,7 +5648,7 @@ The name of any font family installed on the system, `".ZedSans"` to use the Zed
 
 **Options**
 
-Zed supports all OpenType features that can be enabled or disabled for a given UI font, as well as setting values for font features.
+V-Agent supports all OpenType features that can be enabled or disabled for a given UI font, as well as setting values for font features.
 
 For example, to disable font ligatures, add the following to your settings:
 
@@ -5714,7 +5714,7 @@ For example, to use `Nerd Font` as a fallback, add the following to your setting
 - Default: `{}`
 
 In your `settings.json` file, add the `profiles` object.
-Each key within this object is the name of a settings profile. Each profile has an optional `base` field (`"user"` or `"default"`) and a `settings` object containing any of Zed's settings.
+Each key within this object is the name of a settings profile. Each profile has an optional `base` field (`"user"` or `"default"`) and a `settings` object containing any of V-Agent's settings.
 
 Example:
 

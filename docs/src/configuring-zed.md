@@ -1,17 +1,17 @@
 ---
-title: Configuring Zed - Settings and Preferences
-description: Configure Zed with the Settings Editor, JSON files, and project-specific overrides. Covers all settings options.
+title: Configuring V-Agent - Settings and Preferences
+description: Configure V-Agent with the Settings Editor, JSON files, and project-specific overrides. Covers all settings options.
 ---
 
-# Configuring Zed
+# Configuring V-Agent
 
-This guide explains how Zed's settings system works, including the Settings Editor, JSON configuration files, and project-specific settings.
+This guide explains how V-Agent's settings system works, including the Settings Editor, JSON configuration files, and project-specific settings.
 
 For visual customization (themes, fonts, icons), see [Appearance](./appearance.md).
 
 ## Settings Editor
 
-The **Settings Editor** ({#kb zed::OpenSettings}) is the primary way to configure Zed. It provides a searchable interface where you can browse available settings, see their current values, and make changes.
+The **Settings Editor** ({#kb zed::OpenSettings}) is the primary way to configure V-Agent. It provides a searchable interface where you can browse available settings, see their current values, and make changes.
 
 To open it:
 
@@ -63,7 +63,7 @@ You can also add settings files in subdirectories for more granular control.
 
 Settings are applied in layers:
 
-1. **Default settings** — Zed's built-in defaults
+1. **Default settings** — V-Agent's built-in defaults
 2. **User settings** — Your global preferences
 3. **Project settings** — Project-specific overrides
 
@@ -71,7 +71,7 @@ Later layers override earlier ones. For object settings (like `terminal`), prope
 
 ## Per-file Settings
 
-Zed has some compatibility support for Emacs and Vim [modelines](./modelines.md), so you can set some settings per-file.
+V-Agent has some compatibility support for Emacs and Vim [modelines](./modelines.md), so you can set some settings per-file.
 
 ## Per-Release Channel Overrides
 
@@ -101,7 +101,7 @@ Changes made in the Settings Editor apply across all channels.
 
 ## Settings Deep Links
 
-Zed supports deep links that open specific settings directly:
+V-Agent supports deep links that open specific settings directly:
 
 ```
 zed://settings/theme

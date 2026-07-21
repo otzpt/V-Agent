@@ -1,11 +1,11 @@
 ---
 title: Shell Script
-description: "Configure Shell Script language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Shell Script language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Shell Scripts
 
-Shell Scripts (bash, zsh, dash, sh) are supported natively by Zed.
+Shell Scripts (bash, zsh, dash, sh) are supported natively by V-Agent.
 
 - Tree-sitter: [tree-sitter/tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash)
 
@@ -24,7 +24,7 @@ Configure settings in Settings ({#kb zed::OpenSettings}) under Languages > Shell
 
 ### Formatting
 
-Zed supports auto-formatting Shell Scripts using external tools like [`shfmt`](https://github.com/mvdan/sh).
+V-Agent supports auto-formatting Shell Scripts using external tools like [`shfmt`](https://github.com/mvdan/sh).
 
 1. Install `shfmt`:
 
@@ -63,5 +63,5 @@ shfmt --version
 
 ## See also:
 
-- [Zed Docs: Language Support: Bash](./bash.md)
-- [Zed Docs: Language Support: Fish](./fish.md)
+- [V-Agent Docs: Language Support: Bash](./bash.md)
+- [V-Agent Docs: Language Support: Fish](./fish.md)

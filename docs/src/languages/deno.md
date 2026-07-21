@@ -1,6 +1,6 @@
 ---
 title: Deno
-description: "Configure Deno language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Deno language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Deno
@@ -58,7 +58,7 @@ Configure language servers and formatters in Settings ({#kb zed::OpenSettings}) 
 }
 ```
 
-See [Configuring supported languages](../configuring-languages.md) in the Zed documentation for more information.
+See [Configuring supported languages](../configuring-languages.md) in the V-Agent documentation for more information.
 
 <!--
 TBD: Deno TypeScript REPL instructions [docs/repl#typescript-deno](../repl.md#typescript-deno)

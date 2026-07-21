@@ -1,11 +1,11 @@
 ---
 title: Visual Customization
-description: "Various aspects of Zed's visual layout can be configured in the Settings Editor or settings file."
+description: "Various aspects of V-Agent's visual layout can be configured in the Settings Editor or settings file."
 ---
 
 # Visual Customization
 
-Various aspects of Zed's visual layout can be configured in the Settings Editor ({#kb zed::OpenSettings}) or in your settings file ({#kb zed::OpenSettingsFile}).
+Various aspects of V-Agent's visual layout can be configured in the Settings Editor ({#kb zed::OpenSettings}) or in your settings file ({#kb zed::OpenSettingsFile}).
 
 See [All Settings](./reference/all-settings.md) for additional information and other non-visual settings.
 
@@ -86,7 +86,7 @@ If you would like to use distinct themes for light mode/dark mode that can be se
 
 ### Font ligatures
 
-By default Zed enables font ligatures which will visually combine certain adjacent characters.
+By default V-Agent enables font ligatures which will visually combine certain adjacent characters.
 
 For example `=>` will be displayed as `→` and `!=` will be `≠`.
 This is purely cosmetic and the individual characters remain unchanged.
@@ -522,7 +522,7 @@ Project panel can be shown/hidden with {#action project_panel::ToggleFocus} ({#k
 }
 ```
 
-See [Zed AI Documentation](./ai/overview.md) for additional non-visual AI settings.
+See [V-Agent AI Documentation](./ai/overview.md) for additional non-visual AI settings.
 
 ## Terminal Panel
 

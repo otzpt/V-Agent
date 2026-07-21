@@ -1,13 +1,13 @@
 ---
 title: Rules (Replaced by Skills)
-description: Rules have been replaced by Skills and Instructions in Zed.
+description: Rules have been replaced by Skills and Instructions in V-Agent.
 ---
 
 # Rules {#rules}
 
 Rules have been replaced by [Skills](./skills.md) and [Instructions](./instructions.md).
 
-> **Note:** Starting in Zed v1.4.0, on-demand Rules and the Rules Library have been replaced by [Skills](./skills.md). Skills are the recommended way to package reusable agent instructions.
+> **Note:** Starting in V-Agent v1.4.0, on-demand Rules and the Rules Library have been replaced by [Skills](./skills.md). Skills are the recommended way to package reusable agent instructions.
 
 Use [Skills](./skills.md) for reusable task instructions that can be invoked by name or selected by the model. Use [Instructions](./instructions.md) for always-on personal and project context.
 
@@ -35,4 +35,4 @@ Existing Rules migrate automatically:
 - Default Rules are appended to your global `AGENTS.md` file (`~/.config/zed/AGENTS.md` on macOS and Linux, `%APPDATA%\Zed\AGENTS.md` on Windows).
 - Git commit prompt customizations are also appended to the global `AGENTS.md` file.
 
-Rules Library content is not deleted, so downgrading to an earlier version of Zed leaves your Rules intact.
+Rules Library content is not deleted, so downgrading to an earlier version of V-Agent leaves your Rules intact.

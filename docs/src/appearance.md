@@ -1,17 +1,17 @@
 ---
-title: Appearance and Visual Customization - Zed
-description: Customize Zed's themes, fonts, icons, UI density, and other visual settings to match your preferences.
+title: Appearance and Visual Customization - V-Agent
+description: Customize V-Agent's themes, fonts, icons, UI density, and other visual settings to match your preferences.
 ---
 
 # Appearance
 
-Customize Zed's visual appearance to match your preferences. This guide covers themes, fonts, icons, and other visual settings.
+Customize V-Agent's visual appearance to match your preferences. This guide covers themes, fonts, icons, and other visual settings.
 
 For information on how the settings system works, see [All Settings](./reference/all-settings.md).
 
-## Customize Zed in 5 Minutes
+## Customize V-Agent in 5 Minutes
 
-Here's how to make Zed feel like home:
+Here's how to make V-Agent feel like home:
 
 1. **Pick a theme**: Press {#kb theme_selector::Toggle} to open the Theme Selector. Arrow through the list to preview themes in real time, and press Enter to apply.
 
@@ -23,13 +23,13 @@ Here's how to make Zed feel like home:
 
 5. **Adjust font size**: In the same Settings Editor, search for `buffer_font_size` and `ui_font_size` to tweak the editor and interface text sizes.
 
-That's it. You now have a personalized Zed setup.
+That's it. You now have a personalized V-Agent setup.
 
 ## Themes
 
 Install themes from the Extensions page ({#action zed::Extensions}), then switch between them with the Theme Selector ({#kb theme_selector::Toggle}).
 
-Zed supports separate themes for light and dark mode with automatic switching based on your system preference:
+V-Agent supports separate themes for light and dark mode with automatic switching based on your system preference:
 
 ```json [settings]
 {
@@ -65,7 +65,7 @@ Like color themes, icon themes support separate light and dark variants:
 
 ## Fonts
 
-Zed uses three font settings for different contexts:
+V-Agent uses three font settings for different contexts:
 
 | Setting                | Used for                  |
 | ---------------------- | ------------------------- |
@@ -110,7 +110,7 @@ Adjust line spacing with `buffer_line_height`:
 
 ## UI Elements
 
-Zed provides extensive control over UI elements including:
+V-Agent provides extensive control over UI elements including:
 
 - **Tab bar** — Show/hide, navigation buttons, file icons, git status
 - **Status bar** — Language selector, cursor position, line endings

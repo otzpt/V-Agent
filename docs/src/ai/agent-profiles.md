@@ -1,6 +1,6 @@
 ---
-title: Agent Profiles - Zed
-description: Configure Zed Agent profiles for model selection, built-in tool availability, and MCP tool availability.
+title: Agent Profiles - V-Agent
+description: Configure V-Agent Agent profiles for model selection, built-in tool availability, and MCP tool availability.
 ---
 
 # Agent Profiles
@@ -11,7 +11,7 @@ Profiles do not decide whether a tool call is allowed automatically. Use [Tool P
 
 ## Built-in Profiles {#built-in-profiles}
 
-Zed includes three built-in profiles:
+V-Agent includes three built-in profiles:
 
 - `Write`: enables tools for reading, editing, and running commands.
 - `Ask`: focuses on read-only codebase questions.
@@ -69,8 +69,8 @@ The exact model IDs and provider IDs depend on your configured [LLM Providers](.
 | Agent profile    | Whether a tool is available in a profile                              | Disable `terminal` in a read-only profile |
 | Tool permissions | Whether a permission-gated tool call is allowed, denied, or confirmed | Always confirm `terminal` commands        |
 
-If a tool is not available in the active profile, the Zed Agent cannot use it. If the tool is available and permission-gated, [Tool Permissions](./tool-permissions.md) still controls whether the tool call requires approval.
+If a tool is not available in the active profile, the V-Agent Agent cannot use it. If the tool is available and permission-gated, [Tool Permissions](./tool-permissions.md) still controls whether the tool call requires approval.
 
 ## Agent Path Boundaries {#agent-path-boundaries}
 
-Agent profiles apply to the Zed Agent. External Agents and Terminal Threads do not use Zed Agent profiles unless their integration explicitly supports similar behavior.
+Agent profiles apply to the V-Agent Agent. External Agents and Terminal Threads do not use V-Agent Agent profiles unless their integration explicitly supports similar behavior.

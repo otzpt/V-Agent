@@ -1,18 +1,18 @@
 ---
 title: Markdown
-description: "Configure Markdown language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Markdown language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Markdown
 
-Markdown support is available natively in Zed.
+Markdown support is available natively in V-Agent.
 
 - Tree-sitter: [tree-sitter-markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown)
 - Language Server: N/A
 
 ## Syntax Highlighting Code Blocks
 
-Zed supports language-specific syntax highlighting of markdown code blocks by leveraging [tree-sitter language grammars](../extensions/languages.md#grammar). All [Zed supported languages](../languages.md), including those provided by official or community extensions, are available for use in markdown code blocks. All you need to do is provide a language name after the opening <kbd>```</kbd> code fence like so:
+V-Agent supports language-specific syntax highlighting of markdown code blocks by leveraging [tree-sitter language grammars](../extensions/languages.md#grammar). All [V-Agent supported languages](../languages.md), including those provided by official or community extensions, are available for use in markdown code blocks. All you need to do is provide a language name after the opening <kbd>```</kbd> code fence like so:
 
 ````python
 ```python

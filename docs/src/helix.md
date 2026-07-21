@@ -1,13 +1,13 @@
 ---
-title: Helix Mode - Zed
-description: Helix-style keybindings and modal editing in Zed. Selection-first editing built on top of Vim mode.
+title: Helix Mode - V-Agent
+description: Helix-style keybindings and modal editing in V-Agent. Selection-first editing built on top of Vim mode.
 ---
 
 # Helix Mode
 
 _Work in progress. Not all Helix keybindings are implemented yet._
 
-Zed's Helix mode is an emulation layer that brings Helix-style keybindings and modal editing to Zed. It builds upon Zed's [Vim mode](./vim.md), so much of the core functionality is shared. Enabling `helix_mode` will also enable `vim_mode`.
+V-Agent's Helix mode is an emulation layer that brings Helix-style keybindings and modal editing to V-Agent. It builds upon V-Agent's [Vim mode](./vim.md), so much of the core functionality is shared. Enabling `helix_mode` will also enable `vim_mode`.
 
 For a guide on Vim-related features that are also available in Helix mode, please refer to our [Vim mode documentation](./vim.md).
 

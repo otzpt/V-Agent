@@ -1,21 +1,21 @@
 ---
-title: AI Agent Tools - Zed
-description: Built-in tools for Zed's AI agent including file editing, code search, terminal commands, web search, skills, and diagnostics.
+title: AI Agent Tools - V-Agent
+description: Built-in tools for V-Agent's AI agent including file editing, code search, terminal commands, web search, skills, and diagnostics.
 ---
 
 # Tools
 
-Zed's built-in agent has access to these tools for reading, searching, and editing your codebase. These tools are used in the [Agent Panel](./agent-panel.md) during conversations with AI agents.
+V-Agent's built-in agent has access to these tools for reading, searching, and editing your codebase. These tools are used in the [Agent Panel](./agent-panel.md) during conversations with AI agents.
 
-The exact tool list can vary by [Agent Profile](./agent-profiles.md), selected model provider, and Zed version.
+The exact tool list can vary by [Agent Profile](./agent-profiles.md), selected model provider, and V-Agent version.
 
 You can configure permissions for tool actions, including situations where they are automatically approved, automatically denied, or require your confirmation on a case-by-case basis. See [Tool Permissions](./tool-permissions.md) for the list of permission-gated tools and details.
 
 To add custom tools beyond these built-in ones, see [MCP servers](./mcp.md).
 
-To choose which built-in tools and MCP tools are available in a Zed Agent thread, use [Agent Profiles](./agent-profiles.md). Profiles control tool availability; tool permissions control allow, deny, and confirm behavior.
+To choose which built-in tools and MCP tools are available in a V-Agent Agent thread, use [Agent Profiles](./agent-profiles.md). Profiles control tool availability; tool permissions control allow, deny, and confirm behavior.
 
-The terminal tool can also run with additional OS-level restrictions when [Zed Agent sandboxing](./sandboxing.md) is enabled.
+The terminal tool can also run with additional OS-level restrictions when [V-Agent Agent sandboxing](./sandboxing.md) is enabled.
 
 ## Read & Search Tools
 
@@ -61,7 +61,7 @@ Searches the web for information, providing results with snippets and links from
 
 **Example:** Looking up whether a known bug in a dependency has been patched in a recent release, or finding the current API signature for a third-party library when the local docs are out of date.
 
-> **Note:** The built-in `search_web` tool is only available to [Zed Pro](https://zed.dev/pricing) subscribers using the Zed provider. If you're on a free plan or using a different provider, you can get equivalent functionality by connecting an MCP server that provides web search capabilities. See [MCP servers](./mcp.md) for details.
+> **Note:** The built-in `search_web` tool is only available to [Zed Pro](https://zed.dev/pricing) subscribers using the V-Agent provider. If you're on a free plan or using a different provider, you can get equivalent functionality by connecting an MCP server that provides web search capabilities. See [MCP servers](./mcp.md) for details.
 
 ## Edit Tools
 

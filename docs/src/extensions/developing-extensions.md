@@ -1,11 +1,11 @@
 ---
 title: Developing Extensions
-description: "Create Zed extensions: languages, themes, debuggers, and more."
+description: "Create V-Agent extensions: languages, themes, debuggers, and more."
 ---
 
 # Developing Extensions {#developing-extensions}
 
-Zed extensions are Git repositories containing an `extension.toml` manifest. They can provide languages, themes, debuggers, snippets, and MCP servers.
+V-Agent extensions are Git repositories containing an `extension.toml` manifest. They can provide languages, themes, debuggers, snippets, and MCP servers.
 
 ## Extension Features {#extension-features}
 
@@ -20,21 +20,21 @@ Extensions can provide:
 
 ## Developing an Extension Locally
 
-Before starting to develop an extension for Zed, be sure to [install Rust via rustup](https://www.rust-lang.org/tools/install).
+Before starting to develop an extension for V-Agent, be sure to [install Rust via rustup](https://www.rust-lang.org/tools/install).
 
 > Rust must be installed via rustup. If you have Rust installed via homebrew or otherwise, installing dev extensions will not work.
 
-When developing an extension, you can use it in Zed without needing to publish it by installing it as a _dev extension_.
+When developing an extension, you can use it in V-Agent without needing to publish it by installing it as a _dev extension_.
 
 From the extensions page, click the `Install Dev Extension` button (or the {#action zed::InstallDevExtension} action) and select the directory containing your extension.
 
-If you need to troubleshoot, check Zed.log ({#action zed::OpenLog}) for additional output. For debug output, close and relaunch Zed from the command line with `zed --foreground`, which shows more verbose INFO-level logs.
+If you need to troubleshoot, check Zed.log ({#action zed::OpenLog}) for additional output. For debug output, close and relaunch V-Agent from the command line with `zed --foreground`, which shows more verbose INFO-level logs.
 
 If you already have the published version of the extension installed, the published version will be uninstalled prior to the installation of the dev extension. After successful installation, the `Extensions` page will indicate that the upstream extension is "Overridden by dev extension".
 
-## Directory Structure of a Zed Extension
+## Directory Structure of a V-Agent Extension
 
-A Zed extension is a Git repository that contains an `extension.toml`. This file must contain some
+A V-Agent extension is a Git repository that contains an `extension.toml`. This file must contain some
 basic information about the extension:
 
 ```toml
@@ -47,7 +47,7 @@ description = "Example extension"
 repository = "https://github.com/your-name/my-zed-extension"
 ```
 
-In addition to this, there are several other optional files and directories that can be used to add functionality to a Zed extension. An example directory structure of an extension that provides all capabilities is as follows:
+In addition to this, there are several other optional files and directories that can be used to add functionality to a V-Agent extension. An example directory structure of an extension that provides all capabilities is as follows:
 
 ```
 my-extension/
@@ -85,7 +85,7 @@ crate-type = ["cdylib"]
 zed_extension_api = "0.1.0"
 ```
 
-Use the latest version of the [`zed_extension_api`](https://crates.io/crates/zed_extension_api) available on crates.io. Make sure it's still [compatible with Zed versions](https://github.com/zed-industries/zed/blob/main/crates/extension_api#compatible-zed-versions) you want to support.
+Use the latest version of the [`zed_extension_api`](https://crates.io/crates/zed_extension_api) available on crates.io. Make sure it's still [compatible with V-Agent versions](https://github.com/zed-industries/zed/blob/main/crates/extension_api#compatible-zed-versions) you want to support.
 
 In the `src/lib.rs` file in your Rust crate you will need to define a struct for your extension and implement the `Extension` trait, as well as use the `register_extension!` macro to register your extension:
 
@@ -107,13 +107,13 @@ zed::register_extension!(MyExtension);
 
 ### Debugging your Rust extension
 
-`stdout`/`stderr` is forwarded directly to the Zed process. In order to see `println!`/`dbg!` output from your extension, you can start Zed in your terminal with a `--foreground` flag.
+`stdout`/`stderr` is forwarded directly to the V-Agent process. In order to see `println!`/`dbg!` output from your extension, you can start V-Agent in your terminal with a `--foreground` flag.
 
 ## Forking and cloning the repo
 
 1. Fork the repo
 
-> **Note:** It is very helpful if you fork the `zed-industries/extensions` repo to a personal GitHub account instead of a GitHub organization, as this allows Zed staff to push any needed changes to your PR to expedite the publishing process.
+> **Note:** It is very helpful if you fork the `zed-industries/extensions` repo to a personal GitHub account instead of a GitHub organization, as this allows V-Agent staff to push any needed changes to your PR to expedite the publishing process.
 
 2. Clone the repo to your local machine
 
@@ -157,15 +157,15 @@ Also, ensure that you have filled out all the required fields in the manifest.
 
 Furthermore, please make sure that your extension fulfills the following preconditions before you move on to publishing your extension:
 
-- Extension IDs and names must not contain the words `zed`, `Zed` or `extension`, since they are all Zed extensions.
+- Extension IDs and names must not contain the words `zed`, `Zed` or `extension`, since they are all V-Agent extensions.
 - Your extension ID should provide some information on what your extension tries to accomplish. E.g. for themes, it should be suffixed with `-theme`, snippet extensions should be suffixed with `-snippets` and so on. An exception to that rule is an extension that provides support for languages or popular tooling that people would expect to find under that ID. You can take a look at the list of [existing extensions](https://github.com/zed-industries/extensions/blob/main/extensions.toml) to get a grasp on how this usually is enforced.
 - Your extension must only include the resources it requires to function and nothing else.
-  - See the [directory structure of a Zed extension](#directory-structure-of-a-zed-extension) and the [Rust and WebAssembly](#rust-and-webassembly) sections for more information.
-- Extensions must in no way attempt to read nor modify the environment outside of the environment designated to them by Zed. Should they need to read the environment, they should use methods as provided by the [Zed Rust Extension API](https://docs.rs/zed_extension_api/latest/zed_extension_api/) and may fall back to appropriate methods from the Rust standard library. Should they need changes to the environment, they must instead ask the user to perform these for them using an appropriate method within the context (e.g. provide information for doing so using the `ContextServerConfiguration` for context servers).
+  - See the [directory structure of a V-Agent extension](#directory-structure-of-a-zed-extension) and the [Rust and WebAssembly](#rust-and-webassembly) sections for more information.
+- Extensions must in no way attempt to read nor modify the environment outside of the environment designated to them by V-Agent. Should they need to read the environment, they should use methods as provided by the [V-Agent Rust Extension API](https://docs.rs/zed_extension_api/latest/zed_extension_api/) and may fall back to appropriate methods from the Rust standard library. Should they need changes to the environment, they must instead ask the user to perform these for them using an appropriate method within the context (e.g. provide information for doing so using the `ContextServerConfiguration` for context servers).
   - Please make sure to have read the [Rust and WebAssembly section above](#rust-and-webassembly) for more information and help regarding this topic.
 - Extensions should provide something that is not yet available in the marketplace as opposed to fixing something that could be resolved within an existing extension. For example, if you find that an existing extension's support for a language server is not functioning properly, first try contributing a fix to the existing extension as opposed to submitting a new extension immediately.
-  - If you receive no response or reaction within the upstream repository within a reasonable amount of time, feel free to submit a pull request that aims to fix said issue. Please ensure that you provide your previous efforts within the pull request to the extensions repository for adding your extension. Zed maintainers will then decide on how to proceed on a case by case basis.
-- Extensions that intend to provide a language, debugger or MCP server must not ship the language server as part of the extension. Instead, the extension should either download the language server or check for the availability of the language server in the user's environment using the APIs as provided by the [Zed Rust Extension API](https://docs.rs/zed_extension_api/latest/zed_extension_api/).
+  - If you receive no response or reaction within the upstream repository within a reasonable amount of time, feel free to submit a pull request that aims to fix said issue. Please ensure that you provide your previous efforts within the pull request to the extensions repository for adding your extension. V-Agent maintainers will then decide on how to proceed on a case by case basis.
+- Extensions that intend to provide a language, debugger or MCP server must not ship the language server as part of the extension. Instead, the extension should either download the language server or check for the availability of the language server in the user's environment using the APIs as provided by the [V-Agent Rust Extension API](https://docs.rs/zed_extension_api/latest/zed_extension_api/).
 - Themes and icon themes should not be published as part of extensions that provide other features, e.g. language support. Instead, they should be published as a distinct extension. This also applies to themes and icon themes living in the same repository.
 
 Non-compliance with these rules will be raised during the publishing process by reviewers. If you fail to comply with the laid out guidelines, the publishing of your extension will either be delayed or rejected.
@@ -208,7 +208,7 @@ version = "0.0.1"
 
 3. Run `pnpm sort-extensions` to ensure `extensions.toml` and `.gitmodules` are sorted
 
-Once your PR is merged, the extension will be packaged and published to the Zed extension registry.
+Once your PR is merged, the extension will be packaged and published to the V-Agent extension registry.
 
 ## Updating an extension
 

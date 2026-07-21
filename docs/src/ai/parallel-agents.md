@@ -1,5 +1,5 @@
 ---
-title: Parallel Agents - Zed
+title: Parallel Agents - V-Agent
 description: Run multiple agent threads and Terminal Threads concurrently using the Threads Sidebar, manage them across projects, and isolate work using Git worktrees.
 ---
 
@@ -31,7 +31,7 @@ To remove a thread from the sidebar, you can archive it by hovering over it and 
 
 The Thread History view holds all your threads, including ones that you have archived. Toggle it with {#kb agents_sidebar::ToggleThreadHistory} or by clicking the clock icon in the sidebar bottom bar, next to the sidebar toggle.
 
-To restore a thread, open Thread History and click the thread you want to bring back. Zed moves it back to the thread list and opens it in the Agent Panel. If the thread was running in a Git worktree that was removed, Zed restores the worktree automatically.
+To restore a thread, open Thread History and click the thread you want to bring back. V-Agent moves it back to the thread list and opens it in the Agent Panel. If the thread was running in a Git worktree that was removed, V-Agent restores the worktree automatically.
 
 To permanently delete a thread, open Thread History, hover over the thread, and click the trash icon. This removes the thread's conversation history and cleans up any associated worktree data. Deleted threads cannot be recovered.
 
@@ -39,7 +39,7 @@ You can search your threads in history; search will fuzzy match on thread titles
 
 ### Importing External Agent Threads {#importing-threads}
 
-If you have External Agents installed, Zed will detect whether you have existing threads and invite you to import them into Zed. Once you open Thread History, you'll find an import icon button in the Thread History toolbar that lets you import threads at any time. Clicking on it opens a modal where you can select the agents whose threads you want to import.
+If you have External Agents installed, V-Agent will detect whether you have existing threads and invite you to import them into V-Agent. Once you open Thread History, you'll find an import icon button in the Thread History toolbar that lets you import threads at any time. Clicking on it opens a modal where you can select the agents whose threads you want to import.
 
 > **Note:** Thread import is subject to agent support. Some agents (such as Cursor and Gemini CLI) are not currently supported.
 
@@ -47,7 +47,7 @@ If you have External Agents installed, Zed will detect whether you have existing
 
 Each thread runs independently, so you can send a prompt, open a second thread, and give it a different task while the first continues working. To scope a new thread to a specific project, hover over that project's header in the Threads Sidebar and click the `+` button, or use {#action agents_sidebar::NewThreadInGroup} from the keyboard. See [Creating New Threads](./agent-panel.md#new-thread) for the other entry points.
 
-Each thread can use a different agent, so you can run Zed's built-in agent in one thread and an [External Agent](./external-agents.md) like Claude Code or Codex in another.
+Each thread can use a different agent, so you can run V-Agent's built-in agent in one thread and an [External Agent](./external-agents.md) like Claude Code or Codex in another.
 
 ### Thread Types {#thread-types}
 
@@ -55,13 +55,13 @@ The Threads Sidebar can hold different thread types:
 
 | Thread type                                   | Configuration                                                                   |
 | --------------------------------------------- | ------------------------------------------------------------------------------- |
-| [Zed Agent thread](./zed-agent.md)            | Uses Zed Agent settings, profiles, tools, Skills, Instructions, and MCP         |
+| [Zed Agent thread](./zed-agent.md)            | Uses V-Agent Agent settings, profiles, tools, Skills, Instructions, and MCP         |
 | [External Agent thread](./external-agents.md) | Uses the ACP integration and the agent's native configuration                   |
 | [Terminal Thread](./terminal-threads.md)      | Runs a CLI/TUI in a terminal-backed thread; the CLI owns auth and configuration |
 
 ## Multiple Projects {#multiple-projects}
 
-The Threads Sidebar can hold multiple projects at once. Each project gets its own group with its own threads and conversation history. This mirrors how Zed handles projects in general — see [Windows & Projects](../windows-and-projects.md) for more on how projects open and how to manage them.
+The Threads Sidebar can hold multiple projects at once. Each project gets its own group with its own threads and conversation history. This mirrors how V-Agent handles projects in general — see [Windows & Projects](../windows-and-projects.md) for more on how projects open and how to manage them.
 
 To add another project to the sidebar, click the **Add Project** button (open-folder icon) in the sidebar bottom bar. The popover that opens lists your recent projects and also provides **Add Local Folders** and **Add Remote Folder** buttons at the bottom.
 
@@ -81,7 +81,7 @@ Worktrees are managed from the title bar. Click the worktree picker (to the righ
 
 Once you're in a new worktree, use the branch picker next to the worktree picker to create a new branch or check out an existing one. If the branch you pick is already checked out in another worktree, the current worktree stays in detached HEAD until you choose a different branch.
 
-To automate setup steps whenever a new worktree is created, use a [Task hook](../tasks.md#hooks). The `create_worktree` hook runs automatically after Zed creates a linked worktree, with `ZED_WORKTREE_ROOT` pointing at the new worktree and `ZED_MAIN_GIT_WORKTREE` pointing at the original repository.
+To automate setup steps whenever a new worktree is created, use a [Task hook](../tasks.md#hooks). The `create_worktree` hook runs automatically after V-Agent creates a linked worktree, with `ZED_WORKTREE_ROOT` pointing at the new worktree and `ZED_MAIN_GIT_WORKTREE` pointing at the original repository.
 
 After the agent finishes, review the diff and merge the changes through your normal Git workflow. If the thread was running in a linked worktree and no other active threads use it, moving the thread to Thread History saves the worktree's Git state and removes it from disk. Restoring the thread from history restores the worktree.
 
@@ -89,5 +89,5 @@ After the agent finishes, review the diff and merge the changes through your nor
 
 - [Agent Panel](./agent-panel.md): Manage individual threads and configure the agent
 - [External Agents](./external-agents.md): Use ACP-integrated External Agents
-- [Terminal Threads](./terminal-threads.md): Run agent CLIs and TUIs directly in Zed
+- [Terminal Threads](./terminal-threads.md): Run agent CLIs and TUIs directly in V-Agent
 - [Tools](./tools.md): Built-in tools available in each thread

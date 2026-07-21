@@ -1,6 +1,6 @@
 ---
 title: GLSL
-description: "Configure GLSL language support in Zed, including language servers, formatting, and debugging."
+description: "Configure GLSL language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # GLSL

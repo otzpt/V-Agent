@@ -1,6 +1,6 @@
 ---
-title: Agent Skills - Zed
-description: Extend Zed's AI agent with reusable, on-demand skill files for specialized tasks.
+title: Agent Skills - V-Agent
+description: Extend V-Agent's AI agent with reusable, on-demand skill files for specialized tasks.
 ---
 
 # Skills {#skills}
@@ -13,11 +13,11 @@ A skill is a folder containing a `SKILL.md` file with metadata and instructions.
 
 ### Create your own {#create-your-own}
 
-Zed includes a built-in `create-skill` skill — invoke it with `/create-skill` and the agent walks you through the process.
+V-Agent includes a built-in `create-skill` skill — invoke it with `/create-skill` and the agent walks you through the process.
 
 You can also open the Skills Manager from the Agent Panel using {#kb agent::ManageSkills}, or by clicking `...` and selecting **Skills**. Outside the panel, use the {#action agent::OpenSkillCreator} action from the command palette, or click **Create Skill** on the **AI > Skills** settings page. The creator opens as a page in the settings window where you fill in the skill's name, description, body, and optionally toggle `disable-model-invocation`. The skill is saved to the scope of the settings file selected in the settings window — the **User** tab creates a global skill, while a **Project** tab creates a project-local skill — and the form shows exactly where the file will be written.
 
-Lastly, it's also possible to add a skill through importing it from an existing GitHub Markdown file. Open the command palette and look for the {#action agent::CreateSkillFromUrl} action. If your clipboard contains a supported GitHub `.md` URL, Zed pre-fills and fetches it automatically.
+Lastly, it's also possible to add a skill through importing it from an existing GitHub Markdown file. Open the command palette and look for the {#action agent::CreateSkillFromUrl} action. If your clipboard contains a supported GitHub `.md` URL, V-Agent pre-fills and fetches it automatically.
 
 See [Skill format](#skill-format) below for the full format reference.
 
@@ -50,7 +50,7 @@ In the skills page, you'll see a **Create Skill** button that opens the settings
 You can hand a skill to a teammate without hosting it anywhere. In the Skills settings page, click the **link** icon on a skill row to copy a `zed://skill?data=…` link to your clipboard.
 The link is self-contained: it embeds the full `SKILL.md` contents (base64url-encoded), so the recipient doesn't need access to your project or any registry.
 
-When someone opens that link (for example by pasting it into their browser or clicking it in a chat), Zed opens the "Create Skill" page in the settings window, pre-filled with the shared skill.
+When someone opens that link (for example by pasting it into their browser or clicking it in a chat), V-Agent opens the "Create Skill" page in the settings window, pre-filled with the shared skill.
 The recipient can review the name, description, and full body, choose a scope by selecting the **User** tab (global) or a **Project** tab, and click **Save** to install it.
 Nothing is written to disk until they explicitly save, so a shared link can never silently install instructions into someone's agent.
 
@@ -58,7 +58,7 @@ Nothing is written to disk until they explicitly save, so a shared link can neve
 
 By default, the agent picks up skills autonomously. It sees a catalog of every installed skill (name and description) in its system prompt, and calls the `skill` tool when a task matches a skill's description.
 
-When the agent invokes a skill you created or installed, Zed prompts you to allow or deny it, using the same permission flow as other tools. Skills built into Zed do not prompt. You can set per-skill defaults in [Tool Permissions](./tool-permissions.md) so you're not prompted for skills you always trust.
+When the agent invokes a skill you created or installed, V-Agent prompts you to allow or deny it, using the same permission flow as other tools. Skills built into V-Agent do not prompt. You can set per-skill defaults in [Tool Permissions](./tool-permissions.md) so you're not prompted for skills you always trust.
 
 ### Manual Invocation {#manual-invocation}
 
@@ -165,7 +165,7 @@ See the [Agent Skills specification](https://agentskills.io/specification) for t
 
 ## Where Skills Live {#where-skills-live}
 
-Zed loads skills from two locations:
+V-Agent loads skills from two locations:
 
 | Scope         | Path                         | When it applies          |
 | ------------- | ---------------------------- | ------------------------ |
@@ -190,13 +190,13 @@ The agent cannot edit `SKILL.md` files or their bundled resources without your e
 
 ## Agent Path Boundaries {#agent-path-boundaries}
 
-Zed Skills apply to the Zed Agent. External Agents and Terminal Threads may have their own native skills, prompts, or instruction systems. Configure those in the External Agent or CLI.
+V-Agent Skills apply to the V-Agent Agent. External Agents and Terminal Threads may have their own native skills, prompts, or instruction systems. Configure those in the External Agent or CLI.
 
 ## Limitations {#limitations}
 
 - **Flat layout only.** Skills must be direct children of the skills root. Nested folders like `~/.agents/skills/group/my-skill/` are not discovered.
 - **50KB catalog budget.** The total size of all skill names and descriptions is capped at 50KB. Skills that don't fit are dropped from the catalog with a warning in the UI. Keep descriptions concise.
-- **No remote registry.** Zed does not discover or load skills from remote locations at runtime, and custom search paths are not supported. (You can still import a skill once from a GitHub URL — see [Create your own](#create-your-own).) Skills are loaded from `~/.agents/skills/` and `<worktree>/.agents/skills/` only. Use a symlink if you need to point at another location.
+- **No remote registry.** V-Agent does not discover or load skills from remote locations at runtime, and custom search paths are not supported. (You can still import a skill once from a GitHub URL — see [Create your own](#create-your-own).) Skills are loaded from `~/.agents/skills/` and `<worktree>/.agents/skills/` only. Use a symlink if you need to point at another location.
 - **Live reload.** Adding, removing, or editing a `SKILL.md` takes effect immediately without restarting your session. Changes to a skill's `name` or `description` invalidate the model's prompt cache for the current session.
 
 ## See also

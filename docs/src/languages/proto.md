@@ -1,6 +1,6 @@
 ---
 title: Proto
-description: "Configure Proto language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Proto language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Proto

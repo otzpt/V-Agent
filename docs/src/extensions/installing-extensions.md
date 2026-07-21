@@ -1,13 +1,13 @@
 ---
 title: Installing Extensions
-description: "Browse, install, and manage extensions from the Zed Extension Gallery."
+description: "Browse, install, and manage extensions from the V-Agent Extension Gallery."
 ---
 
 # Installing Extensions {#installing-extensions}
 
-Extensions add functionality to Zed, including languages, themes, and AI tools. Browse and install them from the Extension Gallery.
+Extensions add functionality to V-Agent, including languages, themes, and AI tools. Browse and install them from the Extension Gallery.
 
-Open the Extension Gallery with {#kb zed::Extensions}, or select "Zed > Extensions" from the menu bar.
+Open the Extension Gallery with {#kb zed::Extensions}, or select "V-Agent > Extensions" from the menu bar.
 
 ## Installation Location
 

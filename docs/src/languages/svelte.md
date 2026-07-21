@@ -1,6 +1,6 @@
 ---
 title: Svelte
-description: "Configure Svelte language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Svelte language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Svelte
@@ -29,7 +29,7 @@ You can modify how certain styles, such as directives and modifiers, appear in a
 
 ## Inlay Hints
 
-When inlay hints are enabled in Zed, to make the language server send them back, Zed sets the following initialization options:
+When inlay hints are enabled in V-Agent, to make the language server send them back, V-Agent sets the following initialization options:
 
 ```json
 "inlayHints": {

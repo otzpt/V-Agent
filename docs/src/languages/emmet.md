@@ -1,6 +1,6 @@
 ---
 title: Emmet
-description: "Configure Emmet language support in Zed, including language servers, formatting, and debugging."
+description: "Configure Emmet language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # Emmet

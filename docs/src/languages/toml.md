@@ -1,6 +1,6 @@
 ---
 title: TOML
-description: "Configure TOML language support in Zed, including language servers, formatting, and debugging."
+description: "Configure TOML language support in V-Agent, including language servers, formatting, and debugging."
 ---
 
 # TOML

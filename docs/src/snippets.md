@@ -1,6 +1,6 @@
 ---
-title: Snippets - Zed
-description: Create and use code snippets in Zed with tab stops, placeholders, variables, and language-scoped triggers.
+title: Snippets - V-Agent
+description: Create and use code snippets in V-Agent with tab stops, placeholders, variables, and language-scoped triggers.
 ---
 
 # Snippets
