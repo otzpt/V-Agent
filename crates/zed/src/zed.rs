@@ -445,6 +445,9 @@ pub fn initialize_workspace(app_state: Arc<AppState>, cx: &mut App) {
 
         // V-Agent: offer to install a missing compiler/runtime when a file opens.
         crate::vagent_toolchain::watch(_multi_workspace.workspace(), cx);
+        // V-Agent: report coding activity to Hackatime/WakaTime (opt-in; no-op
+        // unless wakatime-cli and ~/.wakatime.cfg are both present).
+        crate::vagent_hackatime::watch(_multi_workspace.workspace(), cx);
 
         #[cfg(feature = "track-project-leak")]
         {

@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod reliability;
+mod vagent_hackatime;
 mod vagent_toolchain;
 mod zed;
 
