@@ -1,0 +1,7 @@
+id = "vagent-icons"
+name = "V-Agent Material Icons"
+version = "0.1.0"
+schema_version = 1
+description = "Colorful VS Code-style file icons for V-Agent (Material Icon Theme, MIT)."
+authors = ["V-Agent"]
+icon_themes = ["icon_themes/vagent-material.json"]

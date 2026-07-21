@@ -1,0 +1,20 @@
+# Local no-op replacement for msvc_spectre_libs 0.1.3, patched in via
+# [patch.crates-io]. The upstream build script panics on Windows when VS's
+# Spectre-mitigated CRT libs aren't installed (its "error" feature is enabled
+# transitively by the `pet` crates). Nothing here is actually compiled with
+# /Qspectre, so skipping the Spectre link-search is safe — this makes the crate
+# a no-op and lets the workspace build without modifying the VS installation.
+[package]
+edition = "2021"
+name = "msvc_spectre_libs"
+version = "0.1.3"
+description = "No-op replacement (see comment) — links against the normal MSVC CRT."
+license = "MIT OR Apache-2.0"
+build = "build.rs"
+
+[features]
+error = []
+
+[lib]
+name = "msvc_spectre_libs"
+path = "src/lib.rs"

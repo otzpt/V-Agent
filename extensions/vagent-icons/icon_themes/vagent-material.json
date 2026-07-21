@@ -1,0 +1,202 @@
+{
+  "name": "V-Agent Material",
+  "author": "V-Agent (icons: Material Icon Theme, MIT)",
+  "themes": [
+    {
+      "name": "V-Agent Material",
+      "appearance": "dark",
+      "directory_icons": {
+        "collapsed": "icons/folder.svg",
+        "expanded": "icons/folder-open.svg"
+      },
+      "file_stems": {
+        "package.json": "nodejs",
+        "package-lock.json": "nodejs",
+        "yarn.lock": "nodejs",
+        ".nvmrc": "nodejs",
+        "Cargo.toml": "rust",
+        "Cargo.lock": "rust",
+        "tsconfig.json": "typescript",
+        ".gitignore": "git",
+        ".gitattributes": "git",
+        ".gitmodules": "git",
+        ".gitconfig": "git"
+      },
+      "file_suffixes": {
+        "rs": "rust",
+        "js": "javascript",
+        "mjs": "javascript",
+        "cjs": "javascript",
+        "ts": "typescript",
+        "mts": "typescript",
+        "cts": "typescript",
+        "jsx": "react",
+        "tsx": "react",
+        "py": "python",
+        "pyw": "python",
+        "pyi": "python",
+        "go": "go",
+        "c": "c",
+        "h": "c",
+        "cpp": "cpp",
+        "cc": "cpp",
+        "cxx": "cpp",
+        "c++": "cpp",
+        "hpp": "cpp",
+        "hh": "cpp",
+        "hxx": "cpp",
+        "ino": "cpp",
+        "cs": "csharp",
+        "java": "java",
+        "kt": "kotlin",
+        "kts": "kotlin",
+        "swift": "swift",
+        "rb": "ruby",
+        "php": "php",
+        "lua": "lua",
+        "html": "html",
+        "htm": "html",
+        "xhtml": "html",
+        "css": "css",
+        "scss": "sass",
+        "sass": "sass",
+        "json": "json",
+        "jsonc": "json",
+        "json5": "json",
+        "md": "markdown",
+        "markdown": "markdown",
+        "mdx": "markdown",
+        "toml": "toml",
+        "yaml": "yaml",
+        "yml": "yaml",
+        "xml": "xml",
+        "svg": "svg",
+        "png": "image",
+        "jpg": "image",
+        "jpeg": "image",
+        "gif": "image",
+        "webp": "image",
+        "bmp": "image",
+        "ico": "image",
+        "tiff": "image",
+        "sql": "database",
+        "db": "database",
+        "sqlite": "database",
+        "sqlite3": "database",
+        "sh": "console",
+        "bash": "console",
+        "zsh": "console",
+        "fish": "console",
+        "bat": "console",
+        "cmd": "console",
+        "ps1": "console",
+        "txt": "document",
+        "text": "document",
+        "log": "document",
+        "pdf": "document",
+        "rtf": "document",
+        "doc": "document",
+        "docx": "document",
+        "csv": "table",
+        "tsv": "table",
+        "xls": "table",
+        "xlsx": "table"
+      },
+      "file_icons": {
+        "rust": {
+          "path": "icons/rust.svg"
+        },
+        "javascript": {
+          "path": "icons/javascript.svg"
+        },
+        "typescript": {
+          "path": "icons/typescript.svg"
+        },
+        "react": {
+          "path": "icons/react.svg"
+        },
+        "python": {
+          "path": "icons/python.svg"
+        },
+        "go": {
+          "path": "icons/go.svg"
+        },
+        "c": {
+          "path": "icons/c.svg"
+        },
+        "cpp": {
+          "path": "icons/cpp.svg"
+        },
+        "csharp": {
+          "path": "icons/csharp.svg"
+        },
+        "java": {
+          "path": "icons/java.svg"
+        },
+        "kotlin": {
+          "path": "icons/kotlin.svg"
+        },
+        "swift": {
+          "path": "icons/swift.svg"
+        },
+        "ruby": {
+          "path": "icons/ruby.svg"
+        },
+        "php": {
+          "path": "icons/php.svg"
+        },
+        "lua": {
+          "path": "icons/lua.svg"
+        },
+        "html": {
+          "path": "icons/html.svg"
+        },
+        "css": {
+          "path": "icons/css.svg"
+        },
+        "sass": {
+          "path": "icons/sass.svg"
+        },
+        "json": {
+          "path": "icons/json.svg"
+        },
+        "markdown": {
+          "path": "icons/markdown.svg"
+        },
+        "nodejs": {
+          "path": "icons/nodejs.svg"
+        },
+        "toml": {
+          "path": "icons/toml.svg"
+        },
+        "yaml": {
+          "path": "icons/yaml.svg"
+        },
+        "xml": {
+          "path": "icons/xml.svg"
+        },
+        "svg": {
+          "path": "icons/svg.svg"
+        },
+        "image": {
+          "path": "icons/image.svg"
+        },
+        "database": {
+          "path": "icons/database.svg"
+        },
+        "git": {
+          "path": "icons/git.svg"
+        },
+        "console": {
+          "path": "icons/console.svg"
+        },
+        "document": {
+          "path": "icons/document.svg"
+        },
+        "table": {
+          "path": "icons/table.svg"
+        }
+      }
+    }
+  ]
+}

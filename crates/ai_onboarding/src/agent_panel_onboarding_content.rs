@@ -1,0 +1,88 @@
+use std::sync::Arc;
+
+use client::{Client, UserStore};
+use gpui::{Entity, IntoElement, ParentElement};
+use language_model::{LanguageModelRegistry, ZED_CLOUD_PROVIDER_ID};
+use ui::prelude::*;
+
+use crate::{AgentPanelOnboardingCard, ApiKeysWithoutProviders};
+
+pub struct AgentPanelOnboarding {
+    user_store: Entity<UserStore>,
+    client: Arc<Client>,
+    has_configured_providers: bool,
+    continue_with_zed_ai: Arc<dyn Fn(&mut Window, &mut App)>,
+}
+
+impl AgentPanelOnboarding {
+    pub fn new(
+        user_store: Entity<UserStore>,
+        client: Arc<Client>,
+        continue_with_zed_ai: impl Fn(&mut Window, &mut App) + 'static,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        cx.subscribe(
+            &LanguageModelRegistry::global(cx),
+            |this: &mut Self, _registry, event: &language_model::Event, cx| match event {
+                language_model::Event::ProviderStateChanged(_)
+                | language_model::Event::AddedProvider(_)
+                | language_model::Event::RemovedProvider(_)
+                | language_model::Event::ProvidersChanged => {
+                    this.has_configured_providers = Self::has_configured_providers(cx)
+                }
+                _ => {}
+            },
+        )
+        .detach();
+
+        Self {
+            user_store,
+            client,
+            has_configured_providers: Self::has_configured_providers(cx),
+            continue_with_zed_ai: Arc::new(continue_with_zed_ai),
+        }
+    }
+
+    fn has_configured_providers(cx: &App) -> bool {
+        LanguageModelRegistry::read_global(cx)
+            .visible_providers()
+            .iter()
+            .any(|provider| provider.is_authenticated(cx) && provider.id() != ZED_CLOUD_PROVIDER_ID)
+    }
+}
+
+impl Render for AgentPanelOnboarding {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        // `user_store`/`client` fed the removed Zed AI upsell; the constructor
+        // signature is shared with the panel, so keep the fields but ignore them.
+        let _ = (&self.user_store, &self.client, self.has_configured_providers);
+        let dismiss = self.continue_with_zed_ai.clone();
+
+        AgentPanelOnboardingCard::new()
+            .child(
+                v_flex()
+                    .gap_1()
+                    .child(Label::new("Set up V-Agent AI").size(LabelSize::Large))
+                    .child(
+                        Label::new(
+                            "Run models locally with Ollama — free and private — or bring your \
+                             own API key (Groq, OpenAI, Anthropic). No account needed.",
+                        )
+                        .color(Color::Muted),
+                    )
+                    .child(
+                        Button::new("vagent-get-ollama", "Get Ollama · local & free")
+                            .full_width()
+                            .style(ButtonStyle::Filled)
+                            .on_click(|_, _, cx| cx.open_url("https://ollama.com/download")),
+                    )
+                    .child(
+                        Button::new("vagent-skip-ai-setup", "Skip for now")
+                            .full_width()
+                            .style(ButtonStyle::Subtle)
+                            .on_click(move |_, window, cx| dismiss(window, cx)),
+                    ),
+            )
+            .child(ApiKeysWithoutProviders::new())
+    }
+}
