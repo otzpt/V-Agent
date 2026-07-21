@@ -16,28 +16,29 @@ actions!(
     ]
 );
 
-const ZED_REPO_URL: &str = "https://github.com/zed-industries/zed";
+// Feedback belongs to V-Agent, not upstream. Sending it to Zed Industries'
+// tracker or inbox would put V-Agent's bugs in front of people who did not
+// write V-Agent and cannot fix it.
+const ZED_REPO_URL: &str = "https://github.com/otzpt/V-Agent";
 
-const REQUEST_FEATURE_URL: &str = "https://github.com/zed-industries/zed/discussions/new/choose";
+const REQUEST_FEATURE_URL: &str = "https://github.com/otzpt/V-Agent/issues/new";
 
 fn file_bug_report_url(specs: &SystemSpecs) -> String {
+    // No `template=` parameter: V-Agent does not ship upstream's issue forms.
     format!(
         concat!(
-            "https://github.com/zed-industries/zed/issues/new",
+            "https://github.com/otzpt/V-Agent/issues/new",
             "?",
-            "template=10_bug_report.yml",
-            "&",
-            "environment={}"
+            "body={}"
         ),
-        urlencoding::encode(&specs.to_string())
+        email_body(specs)
     )
 }
 
+/// V-Agent has no support inbox, so "email us" opens the issue tracker with
+/// the same system information prefilled.
 fn email_zed_url(specs: &SystemSpecs) -> String {
-    format!(
-        concat!("mailto:hi@zed.dev", "?", "body={}"),
-        email_body(specs)
-    )
+    file_bug_report_url(specs)
 }
 
 fn email_body(specs: &SystemSpecs) -> String {

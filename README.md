@@ -87,8 +87,28 @@ language, a timestamp, and whether it was a save. Your file *contents* are never
 sent. Sending is handled by `wakatime-cli` itself, the same agent every other
 WakaTime editor plugin uses.
 
+**What V-Agent does, precisely:** on save, and on opening or switching files
+(throttled to one heartbeat per file per two minutes), it runs `wakatime-cli`
+with the file path and a timestamp. That is the entire integration. V-Agent
+does not read your config, does not hold your API key, and makes no network
+requests of its own.
+
+**What `wakatime-cli` does beyond that — worth knowing, and not V-Agent's
+doing.** The agent is a separate program with its own behaviour. From version
+2.21 it scans local transcript logs from AI coding tools (Claude Code, Codex,
+Amp, Continue, Cody, Roo Code) to attribute AI-assisted line changes, and
+reports a *count* of changed lines. It reads those transcripts on your machine
+whether the editor is V-Agent, VS Code, or anything else with a WakaTime
+plugin. If you would rather it did not, that is a conversation with WakaTime,
+not with V-Agent — but you should know it happens rather than discover it.
+
+`wakatime-cli` also maintains an offline queue and its own logs under
+`~/.wakatime/`. Run it with `--verbose --log-file <path>` to see exactly what
+it collects and sends.
+
 **To turn it off:** delete or rename `~/.wakatime.cfg`. V-Agent then does
-nothing at all — no network calls, no prompts.
+nothing at all — no network calls, no prompts, and `wakatime-cli` is never
+invoked.
 
 ## Building from source
 
