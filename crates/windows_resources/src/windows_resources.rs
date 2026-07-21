@@ -22,7 +22,15 @@ fn git_sha() -> Option<String> {
 fn product_version() -> String {
     let commit_sha = git_sha();
     let pkg_version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
-    let channel = std::env::var("RELEASE_CHANNEL").unwrap_or_else(|_| "dev".into());
+    // Same source as the app's own version and the product name: the
+    // RELEASE_CHANNEL file, not an unset env var that defaulted to "dev" and
+    // stamped a stable build's file properties "1.0.0+dev.<sha>".
+    let channel = std::fs::read_to_string(RELEASE_CHANNEL_FILE)
+        .map(|s| s.trim().to_string())
+        .ok()
+        .filter(|s| !s.is_empty())
+        .or_else(|| std::env::var("RELEASE_CHANNEL").ok())
+        .unwrap_or_else(|| "dev".into());
     let build_id = std::env::var("GITHUB_RUN_NUMBER").ok();
 
     let mut metadata = channel;
