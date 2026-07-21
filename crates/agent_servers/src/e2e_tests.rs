@@ -27,7 +27,7 @@ where
     let thread = new_test_thread(server(&fs, cx).await, project.clone(), "/private/tmp", cx).await;
 
     thread
-        .update(cx, |thread, cx| thread.send_raw("Hello from Zed!", cx))
+        .update(cx, |thread, cx| thread.send_raw("Hello from V-Agent!", cx))
         .await
         .unwrap();
 

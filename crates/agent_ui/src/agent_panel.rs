@@ -977,7 +977,7 @@ pub struct CreateThreadOptions {
     /// Agent to use. Defaults to the panel's selected agent.
     pub agent: Option<Agent>,
     /// Model override, as `provider/model-id`. Only applied when the thread
-    /// uses the native Zed agent.
+    /// uses the native V-Agent agent.
     pub model: Option<String>,
     /// Working directories to attach to the new thread (e.g., the path of a
     /// freshly-created sibling worktree). When `None`, the thread inherits
@@ -4872,7 +4872,7 @@ impl agent::SiblingThreadHost for AgentPanelSiblingHost {
 
         let mut agents = Vec::new();
 
-        // Native Zed agent — always available, and we can enumerate models
+        // Native V-Agent agent — always available, and we can enumerate models
         // directly from the language model registry.
         let native_models = {
             let registry = LanguageModelRegistry::read_global(cx);
@@ -6149,7 +6149,7 @@ impl AgentPanel {
             .child(toolbar_content)
     }
 
-    // V-Agent removes upstream's "your Zed Pro trial ended" overlay and its
+    // V-Agent removes upstream's "your V-Agent Pro trial ended" overlay and its
     // plan pricing entirely: there are no accounts, no plans and no hosted
     // inference here, so there is no trial to end and nothing to sell.
 

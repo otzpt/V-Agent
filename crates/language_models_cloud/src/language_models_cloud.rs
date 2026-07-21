@@ -63,7 +63,7 @@ pub trait CloudLlmTokenProvider: Send + Sync {
     fn has_data_retention_consent(&self, cx: &impl AppContext) -> bool;
 }
 
-/// Sends an authenticated request to the Zed LLM service, retrying once with
+/// Sends an authenticated request to the V-Agent LLM service, retrying once with
 /// a refreshed token if the server signals that the cached LLM token is
 /// expired or otherwise rejected. Returns the raw response so callers can
 /// inspect headers and stream the body.
@@ -209,7 +209,7 @@ struct ApiError {
     headers: HeaderMap<HeaderValue>,
 }
 
-/// Represents error responses from Zed's cloud API.
+/// Represents error responses from V-Agent's cloud API.
 ///
 /// Example JSON for an upstream HTTP error:
 /// ```json
@@ -1046,7 +1046,7 @@ mod tests {
             ),
         }
 
-        // Regular 500 error without upstream_http_error should remain ApiInternalServerError for Zed
+        // Regular 500 error without upstream_http_error should remain ApiInternalServerError for V-Agent
         let error_body = "Regular internal server error";
 
         let api_error = ApiError {

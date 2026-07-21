@@ -1965,7 +1965,7 @@ mod tests {
             KeybindUpdateOperation::add(KeybindUpdateTarget {
                 keystrokes: &parse_keystrokes("ctrl-b"),
                 action_name: "zed::SomeOtherAction",
-                context: Some("Zed > Editor && some_condition = true"),
+                context: Some("V-Agent > Editor && some_condition = true"),
                 action_arguments: Some(r#"{"foo": "bar"}"#),
             }),
             r#"[
@@ -1975,7 +1975,7 @@ mod tests {
                     }
                 },
                 {
-                    "context": "Zed > Editor && some_condition = true",
+                    "context": "V-Agent > Editor && some_condition = true",
                     "bindings": {
                         "ctrl-b": [
                             "zed::SomeOtherAction",

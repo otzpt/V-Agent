@@ -306,7 +306,7 @@ fn seed_thread_metadata(metadata: ThreadMetadata, cx: &mut TestAppContext) {
 /// alive for the duration of the test) and the `RemoteConnectionOptions`
 /// used for the fake server. Passing those options back into
 /// `reuse_opts` on a subsequent call makes the new project share the
-/// same `RemoteConnectionIdentity`, matching how Zed treats multiple
+/// same `RemoteConnectionIdentity`, matching how V-Agent treats multiple
 /// projects on the same SSH host.
 async fn start_remote_project(
     server_fs: &Arc<FakeFs>,
@@ -1801,7 +1801,7 @@ async fn test_closing_last_agent_panel_terminal_restores_empty_header(cx: &mut T
     // placeholder row, so the header reports having threads.
     assert_eq!(
         visible_entries_as_strings(&sidebar, cx),
-        vec!["v [my-project]", "  New Zed Agent Thread"]
+        vec!["v [my-project]", "  New V-Agent Agent Thread"]
     );
     assert_project_header_has_threads(&sidebar, "my-project", true, cx);
 
@@ -14158,7 +14158,7 @@ async fn test_remote_archive_thread_with_active_connection(
     // The mock remote transport only supports one live `RemoteClient` per
     // connection at a time (each client's `start_proxy` replaces the
     // previous server channel), so we can't split the main repo and the
-    // linked worktree across two remote projects the way Zed does in
+    // linked worktree across two remote projects the way V-Agent does in
     // production. Opening both as visible worktrees of a single remote
     // project still exercises every interesting path of the archive flow
     // while staying within the mock's multiplexing limits.
@@ -14269,7 +14269,7 @@ async fn test_remote_archive_thread_with_active_connection(
     // specifically and knows which main repo owns it.
     let remote_connection = project.read_with(cx, |p, cx| p.remote_connection_options(cx));
 
-    // Record the worktree as Zed-created on the client, keyed by the remote
+    // Record the worktree as V-Agent-created on the client, keyed by the remote
     // connection identity, with the creation time of the gitdir on the
     // *remote* filesystem (where the archive flow will re-stat it).
     agent_ui::test_support::record_zed_created_worktree(

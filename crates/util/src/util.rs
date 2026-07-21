@@ -329,7 +329,7 @@ pub fn get_shell_safe_zed_path(shell_kind: shell::ShellKind) -> anyhow::Result<S
 
     zed_path
         .try_shell_safe(shell_kind)
-        .context("Failed to shell-escape Zed executable path.")
+        .context("Failed to shell-escape V-Agent executable path.")
 }
 
 /// Returns a path for the zed cli executable, this function
@@ -347,11 +347,13 @@ pub fn get_zed_cli_path() -> Result<PathBuf> {
         // so here ./cli is for both installed and development builds.
         &["./cli"]
     } else if cfg!(target_os = "windows") {
-        // bin/zed.exe is for installed builds, ./cli.exe is for development builds.
-        &["bin/zed.exe", "./cli.exe"]
+        // bin/v-agent.exe is for installed builds, ./cli.exe is for development
+        // builds. zed.exe is kept last so an in-place upgrade over an older
+        // V-Agent install still resolves.
+        &["bin/v-agent.exe", "./cli.exe", "bin/zed.exe"]
     } else if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
         // bin is the standard, ./cli is for the target directory in development builds.
-        &["../bin/zed", "./cli"]
+        &["../bin/v-agent", "./cli", "../bin/zed"]
     } else {
         anyhow::bail!("unsupported platform for determining zed-cli path");
     };
@@ -388,9 +390,9 @@ pub async fn load_login_shell_environment() -> Result<()> {
         .await
         .with_context(|| format!("capturing environment with {:?}", get_system_shell()))?
     {
-        // Skip SHLVL to prevent it from polluting Zed's process environment.
+        // Skip SHLVL to prevent it from polluting V-Agent's process environment.
         // The login shell used for env capture increments SHLVL, and if we propagate it,
-        // terminals spawned by Zed will inherit it and increment again, causing SHLVL
+        // terminals spawned by V-Agent will inherit it and increment again, causing SHLVL
         // to start at 2 instead of 1 (and increase by 2 on each reload).
         if name == "SHLVL" {
             continue;

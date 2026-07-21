@@ -6,23 +6,23 @@ use std::{collections::HashMap, fmt::Display, time::Duration};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventRequestBody {
-    /// Identifier unique to each system Zed is installed on
+    /// Identifier unique to each system V-Agent is installed on
     pub system_id: Option<String>,
-    /// Identifier unique to each Zed installation (differs for stable, preview, dev)
+    /// Identifier unique to each V-Agent installation (differs for stable, preview, dev)
     pub installation_id: Option<String>,
-    /// Identifier unique to each logged in Zed user (randomly generated on first sign in)
-    /// Identifier unique to each Zed session (differs for each time you open Zed)
+    /// Identifier unique to each logged in V-Agent user (randomly generated on first sign in)
+    /// Identifier unique to each V-Agent session (differs for each time you open V-Agent)
     pub session_id: Option<String>,
     pub metrics_id: Option<String>,
-    /// True for Zed staff, otherwise false
+    /// True for V-Agent staff, otherwise false
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_staff: Option<bool>,
-    /// Zed version number
+    /// V-Agent version number
     pub app_version: String,
     pub os_name: String,
     pub os_version: Option<String>,
     pub architecture: String,
-    /// Zed release channel (stable, preview, dev)
+    /// V-Agent release channel (stable, preview, dev)
     pub release_channel: Option<String>,
     pub events: Vec<EventWrapper>,
 }

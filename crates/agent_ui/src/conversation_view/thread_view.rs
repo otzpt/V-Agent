@@ -1867,7 +1867,8 @@ impl ThreadView {
                 ThreadError::PaymentRequired => (
                     "payment_required",
                     None,
-                    "You reached your free usage limit. Upgrade to Zed Pro for more prompts."
+                    "Your model provider reported a usage or billing limit. Check your plan \
+             with that provider, or switch to a local model."
                         .into(),
                 ),
                 ThreadError::Refusal => {
@@ -5602,7 +5603,7 @@ impl ThreadView {
         let following = self.is_following(cx);
 
         // Upstream inserted "the" for the built-in agent because it was named
-        // "Zed Agent" ("Follow the Zed Agent"). V-Agent reads as a name, so the
+        // "V-Agent Agent" ("Follow the V-Agent Agent"). V-Agent reads as a name, so the
         // article is dropped for every agent alike.
         let tooltip_label = if following {
             format!("Stop Following {}", self.agent_id)
@@ -6699,7 +6700,7 @@ impl ThreadView {
             || {
                 let feedback = self.thread_feedback.feedback;
                 let tooltip_meta =
-                    "Rating the thread sends all of your current conversation to the Zed team.";
+                    "Rating the thread sends all of your current conversation to the V-Agent team.";
 
                 h_flex()
                     .child(
@@ -10915,7 +10916,8 @@ impl ThreadView {
 
     fn render_payment_required_error(&self, cx: &mut Context<Self>) -> Callout {
         const ERROR_MESSAGE: &str =
-            "You reached your free usage limit. Upgrade to Zed Pro for more prompts.";
+            "Your model provider reported a usage or billing limit. Check your plan \
+             with that provider, or switch to a local model.";
 
         Callout::new()
             .severity(Severity::Error)
@@ -11133,7 +11135,7 @@ impl ThreadView {
     }
 
     fn current_model_name(&self, cx: &App) -> SharedString {
-        // For native agent (Zed Agent), use the specific model name (e.g., "Claude 3.5 Sonnet")
+        // For native agent (V-Agent Agent), use the specific model name (e.g., "Claude 3.5 Sonnet")
         // For ACP agents, use the agent name (e.g., "Claude Agent", "Gemini CLI")
         // This provides better clarity about what refused the request
         if self.as_native_connection(cx).is_some() {

@@ -309,23 +309,21 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
                 MenuItem::action("Request Feature...", zed_actions::feedback::RequestFeature),
                 MenuItem::action("Email Us...", zed_actions::feedback::EmailZed),
                 MenuItem::separator(),
+                // These pointed at zed.dev docs, Zed's Twitter and Zed's jobs
+                // page. A fork's Help menu should not send users to another
+                // company's site, and certainly should not recruit for them.
                 MenuItem::action(
                     "Documentation",
                     super::OpenBrowser {
-                        url: "https://zed.dev/docs".into(),
+                        url: "https://github.com/otzpt/V-Agent#readme".into(),
                     },
                 ),
-                MenuItem::action("Zed Repository", feedback::OpenZedRepo),
+                MenuItem::action("V-Agent Repository", feedback::OpenZedRepo),
+                MenuItem::separator(),
                 MenuItem::action(
-                    "Zed Twitter",
+                    "Upstream Project (V-Agent)",
                     super::OpenBrowser {
-                        url: "https://twitter.com/zeddotdev".into(),
-                    },
-                ),
-                MenuItem::action(
-                    "Join the Team",
-                    super::OpenBrowser {
-                        url: "https://zed.dev/jobs".into(),
+                        url: "https://github.com/zed-industries/zed".into(),
                     },
                 ),
             ],

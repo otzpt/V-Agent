@@ -476,7 +476,7 @@ impl LineWrapper {
         // `2^3`, `a~b`, `a=1`, `Self::new`, etc. Trailing punctuation like `,`, `.`, `:`, `;`
         // is included so it stays attached to the preceding word when wrapping.
         matches!(c, '-' | '_' | '.' | '\'' | '’' | '‘' | '$' | '%' | '@' | '#' | '^' | '~' | ',' | '=' | ':' | ';') ||
-        // `⋯` character is special used in Zed, to keep this at the end of the line.
+        // `⋯` character is special used in V-Agent, to keep this at the end of the line.
         matches!(c, '⋯') ||
 
         // Non-breaking glue characters

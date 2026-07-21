@@ -102,9 +102,9 @@ pub struct SessionSettings {
 pub struct NodeBinarySettings {
     /// The path to the Node binary.
     pub path: Option<String>,
-    /// The path to the npm binary Zed should use (defaults to `.path/../npm`).
+    /// The path to the npm binary V-Agent should use (defaults to `.path/../npm`).
     pub npm_path: Option<String>,
-    /// If enabled, Zed will download its own copy of Node.
+    /// If enabled, V-Agent will download its own copy of Node.
     pub ignore_system_version: bool,
 }
 
@@ -615,7 +615,7 @@ pub struct DiagnosticsSettings {
     /// Whether or not to include warning diagnostics.
     pub include_warnings: bool,
 
-    /// Settings for using LSP pull diagnostics mechanism in Zed.
+    /// Settings for using LSP pull diagnostics mechanism in V-Agent.
     pub lsp_pull_diagnostics: LspPullDiagnosticsSettings,
 
     /// Settings for showing inline diagnostics.
@@ -1254,12 +1254,12 @@ impl SettingsObserver {
                                     let zed_tasks = TaskTemplates::try_from(vscode_tasks)
                                         .with_context(|| {
                                             format!(
-                                        "converting VSCode tasks into Zed ones, file {abs_path:?}"
+                                        "converting VSCode tasks into V-Agent ones, file {abs_path:?}"
                                     )
                                         })?;
                                     serde_json::to_string(&zed_tasks).with_context(|| {
                                         format!(
-                                            "serializing Zed tasks into JSON, file {abs_path:?}"
+                                            "serializing V-Agent tasks into JSON, file {abs_path:?}"
                                         )
                                     })
                                 } else if abs_path.ends_with(local_vscode_launch_file_relative_path().as_std_path()) {
@@ -1271,12 +1271,12 @@ impl SettingsObserver {
                                     let zed_tasks = DebugTaskFile::try_from(vscode_tasks)
                                         .with_context(|| {
                                             format!(
-                                        "converting VSCode debug tasks into Zed ones, file {abs_path:?}"
+                                        "converting VSCode debug tasks into V-Agent ones, file {abs_path:?}"
                                     )
                                         })?;
                                     serde_json::to_string(&zed_tasks).with_context(|| {
                                         format!(
-                                            "serializing Zed tasks into JSON, file {abs_path:?}"
+                                            "serializing V-Agent tasks into JSON, file {abs_path:?}"
                                         )
                                     })
                                 } else {

@@ -221,7 +221,7 @@ fn register_language_model_providers(
     credentials_provider: Arc<dyn CredentialsProvider>,
     cx: &mut Context<LanguageModelRegistry>,
 ) {
-    // V-Agent: the Zed-hosted "Zed AI" cloud provider is intentionally not
+    // V-Agent: the V-Agent-hosted "V-Agent AI" cloud provider is intentionally not
     // registered. V-Agent is bring-your-own-key / local (Ollama, LM Studio,
     // llama.cpp) plus the OpenAI-compatible "V-Agent" Groq provider from
     // settings. MCP / context servers are unaffected.

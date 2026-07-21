@@ -148,7 +148,7 @@ impl ContextServer {
         log::debug!("starting context server {}", self.id);
         let protocol = crate::protocol::ModelContextProtocol::new(client);
         let client_info = types::Implementation {
-            name: "Zed".to_string(),
+            name: "V-Agent".to_string(),
             title: None,
             version: env!("CARGO_PKG_VERSION").to_string(),
             description: None,

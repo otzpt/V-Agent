@@ -703,7 +703,7 @@ impl LanguageModelProvider for BedrockLanguageModelProvider {
                     .into()
             })
             .description(InlineDescription::Text(
-                "To use Zed's agent with Bedrock, set a custom authentication strategy in your settings or use static credentials. Mantle-only models (e.g. GPT-5.5, GPT-5.4, Grok 4.3) additionally require IAM permissions for the `bedrock-mantle` endpoint.".into(),
+                "To use V-Agent's agent with Bedrock, set a custom authentication strategy in your settings or use static credentials. Mantle-only models (e.g. GPT-5.5, GPT-5.4, Grok 4.3) additionally require IAM permissions for the `bedrock-mantle` endpoint.".into(),
             )),
         ))
     }
@@ -2295,7 +2295,7 @@ impl Render for ConfigurationView {
             .child(Headline::new("Amazon Bedrock").size(HeadlineSize::Small))
             .child(
                 Label::new(
-                    "To use Zed's agent with Bedrock, you can set a custom authentication strategy through your settings file or use static credentials.",
+                    "To use V-Agent's agent with Bedrock, you can set a custom authentication strategy through your settings file or use static credentials.",
                 )
                 .color(Color::Muted),
             )
@@ -2403,7 +2403,7 @@ impl ConfigurationView {
             )
             .child(
                 Label::new(format!(
-                    "You can also set the {}, {} and {} environment variables (or {} for Bedrock API Key authentication) and restart Zed.",
+                    "You can also set the {}, {} and {} environment variables (or {} for Bedrock API Key authentication) and restart V-Agent.",
                     ZED_BEDROCK_ACCESS_KEY_ID_VAR.name,
                     ZED_BEDROCK_SECRET_ACCESS_KEY_VAR.name,
                     ZED_BEDROCK_REGION_VAR.name,

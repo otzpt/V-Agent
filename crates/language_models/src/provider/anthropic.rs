@@ -28,7 +28,7 @@ const PROVIDER_NAME: LanguageModelProviderName = ANTHROPIC_PROVIDER_NAME;
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct AnthropicSettings {
     pub api_url: String,
-    /// Extend Zed's list of Anthropic models.
+    /// Extend V-Agent's list of Anthropic models.
     pub available_models: Vec<AvailableModel>,
     /// User-configured headers added to every Anthropic request.
     pub custom_headers: CustomHeaders,

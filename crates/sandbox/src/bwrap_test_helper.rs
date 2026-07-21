@@ -161,7 +161,7 @@ mod imp {
         // DNS-rebinding protection would otherwise reject. The proxy only honors
         // this var when built with `http_proxy/nixos-integration-tests` (pulled
         // in by `sandbox/nixos-test`, which this binary requires), so it has no
-        // effect in a real Zed build.
+        // effect in a real V-Agent build.
         // SAFETY: single-threaded at this point.
         unsafe {
             std::env::set_var("ZED_SANDBOX_PROXY_ALLOW_LOCAL_IPS", "1");

@@ -155,7 +155,7 @@ impl Config {
         }
     }
 
-    /// Returns the base Zed Cloud URL.
+    /// Returns the base V-Agent Cloud URL.
     pub fn zed_cloud_url(&self) -> &str {
         match self.zed_environment.as_ref() {
             "development" => "http://localhost:8787",

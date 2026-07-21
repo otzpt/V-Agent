@@ -66,9 +66,22 @@ fn find_rc_exe() -> Option<std::path::PathBuf> {
 const ICON_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../zed/resources/windows");
 const MANIFEST_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/manifest.xml");
 
+const RELEASE_CHANNEL_FILE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../zed/RELEASE_CHANNEL");
+
 pub fn compile(manifest: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let channel = option_env!("RELEASE_CHANNEL").unwrap_or("dev");
-    let (icon_filename, product_name) = match channel {
+    // The release channel lives in crates/zed/RELEASE_CHANNEL, which is what
+    // the running app reads (via release_channel's include_str!). Upstream read
+    // the RELEASE_CHANNEL *env var* here instead, which our builds don't set, so
+    // a stable build was stamped "V-Agent Dev" in its Windows file properties
+    // while the app itself reported stable. Read the same file both use, and
+    // fall back to the env var only if the file is somehow absent.
+    println!("cargo:rerun-if-changed={RELEASE_CHANNEL_FILE}");
+    let channel = std::fs::read_to_string(RELEASE_CHANNEL_FILE)
+        .map(|s| s.trim().to_string())
+        .ok()
+        .or_else(|| option_env!("RELEASE_CHANNEL").map(str::to_string))
+        .unwrap_or_else(|| "dev".to_string());
+    let (icon_filename, product_name) = match channel.as_str() {
         "stable" => ("app-icon.ico", "V-Agent"),
         "preview" => ("app-icon-preview.ico", "V-Agent Preview"),
         "nightly" => ("app-icon-nightly.ico", "V-Agent Nightly"),

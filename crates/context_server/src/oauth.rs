@@ -33,7 +33,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use url::Url;
 
-/// The CIMD URL where Zed's OAuth client metadata document is hosted.
+/// The CIMD URL where V-Agent's OAuth client metadata document is hosted.
 pub const CIMD_URL: &str = "https://zed.dev/oauth/client-metadata.json";
 
 /// Validate that a URL is safe to use as an OAuth endpoint.
@@ -66,7 +66,7 @@ fn require_https_or_loopback(url: &Url) -> Result<()> {
 /// protections against private/reserved IP ranges.
 ///
 /// This wraps [`require_https_or_loopback`] and adds IP-range checks to prevent
-/// an attacker-controlled MCP server from directing Zed to fetch internal
+/// an attacker-controlled MCP server from directing V-Agent to fetch internal
 /// network resources via metadata URLs.
 ///
 /// **Known limitation:** Domain-name URLs that resolve to private IPs are *not*
@@ -507,16 +507,19 @@ pub enum ClientRegistrationStrategy {
     Unavailable,
 }
 
-/// Determine how to register with the authorization server, following the
-/// spec's recommended priority: CIMD first, DCR fallback.
+/// Determine how to register with the authorization server.
+///
+/// Upstream prefers CIMD, handing the server `https://zed.dev/oauth/...` as
+/// the client_id. That document describes Zed's OAuth client — Zed's name and
+/// redirect URIs — which do not match what V-Agent sends, so CIMD logins fail;
+/// it also depends on Zed's server and impersonates their client identity.
+/// V-Agent has no hosted metadata document, so it skips CIMD and uses Dynamic
+/// Client Registration, which registers with each server on the fly (as
+/// `client_name: "V-Agent"`) and needs nothing hosted.
 pub fn determine_registration_strategy(
     auth_server_metadata: &AuthServerMetadata,
 ) -> ClientRegistrationStrategy {
-    if auth_server_metadata.client_id_metadata_document_supported {
-        ClientRegistrationStrategy::Cimd {
-            client_id: CIMD_URL.to_string(),
-        }
-    } else if let Some(ref endpoint) = auth_server_metadata.registration_endpoint {
+    if let Some(ref endpoint) = auth_server_metadata.registration_endpoint {
         ClientRegistrationStrategy::Dcr {
             registration_endpoint: endpoint.clone(),
         }
@@ -703,7 +706,7 @@ pub fn token_refresh_params(
 /// port (e.g. `http://127.0.0.1:12345/callback`). Some auth servers do strict
 /// redirect URI matching even for loopback addresses, so we register the
 /// exact URI we intend to use.
-/// The grant types Zed can use. Intersected with the server's
+/// The grant types V-Agent can use. Intersected with the server's
 /// `grant_types_supported` to build the DCR request.
 const SUPPORTED_GRANT_TYPES: &[&str] = &["authorization_code", "refresh_token"];
 
@@ -724,7 +727,7 @@ pub fn dcr_registration_body(
     };
 
     serde_json::json!({
-        "client_name": "Zed",
+        "client_name": "V-Agent",
         "redirect_uris": [redirect_uri],
         "grant_types": grant_types,
         "response_types": ["code"],
@@ -914,7 +917,13 @@ pub async fn resolve_client_registration(
             .await
         }
         ClientRegistrationStrategy::Unavailable => {
-            bail!("authorization server supports neither CIMD nor DCR")
+            // V-Agent registers via DCR only (it has no hosted client-metadata
+            // document to offer for CIMD), so a server exposing neither a
+            // registration endpoint cannot be connected to.
+            bail!(
+                "this MCP server's authorization server has no dynamic client \
+                 registration endpoint, which V-Agent requires to connect"
+            )
         }
     }
 }
@@ -1655,12 +1664,17 @@ mod tests {
     // -- Client registration strategy tests ----------------------------------
 
     #[test]
-    fn test_registration_strategy_prefers_cimd() {
+    fn test_registration_strategy_uses_dcr_even_when_cimd_offered() {
+        // V-Agent does not use CIMD: upstream handed servers Zed's hosted
+        // client-metadata URL as the client_id, whose name and redirect URIs
+        // do not match V-Agent, so those logins failed. Even when the server
+        // advertises CIMD support, V-Agent registers dynamically instead.
+        let reg_endpoint = Url::parse("https://auth.example.com/register").unwrap();
         let metadata = AuthServerMetadata {
             issuer: Url::parse("https://auth.example.com").unwrap(),
             authorization_endpoint: Url::parse("https://auth.example.com/authorize").unwrap(),
             token_endpoint: Url::parse("https://auth.example.com/token").unwrap(),
-            registration_endpoint: Some(Url::parse("https://auth.example.com/register").unwrap()),
+            registration_endpoint: Some(reg_endpoint.clone()),
             scopes_supported: None,
             code_challenge_methods_supported: Some(vec!["S256".into()]),
             client_id_metadata_document_supported: true,
@@ -1668,8 +1682,8 @@ mod tests {
         };
         assert_eq!(
             determine_registration_strategy(&metadata),
-            ClientRegistrationStrategy::Cimd {
-                client_id: CIMD_URL.to_string(),
+            ClientRegistrationStrategy::Dcr {
+                registration_endpoint: reg_endpoint,
             }
         );
     }
@@ -1897,7 +1911,7 @@ mod tests {
     fn test_dcr_registration_body_without_server_metadata() {
         // When server metadata is unavailable, include all supported grant types.
         let body = dcr_registration_body("http://127.0.0.1:12345/callback", None);
-        assert_eq!(body["client_name"], "Zed");
+        assert_eq!(body["client_name"], "V-Agent");
         assert_eq!(body["redirect_uris"][0], "http://127.0.0.1:12345/callback");
         assert_eq!(body["grant_types"][0], "authorization_code");
         assert_eq!(body["grant_types"][1], "refresh_token");
@@ -2255,8 +2269,12 @@ mod tests {
 
     // -- Full discover integration tests -------------------------------------
 
+    /// A server advertising CIMD support but no DCR registration endpoint can
+    /// no longer be registered with: V-Agent uses DCR only (it has no hosted
+    /// client-metadata document), so this must surface a clear error rather
+    /// than silently handing the server Zed's CIMD identity.
     #[test]
-    fn test_full_discover_with_cimd() {
+    fn test_cimd_only_server_cannot_register() {
         gpui::block_on(async {
             let client = make_fake_http_client(|req| {
                 Box::pin(async move {
@@ -2296,14 +2314,19 @@ mod tests {
             };
 
             let discovery = discover(&client, &server_url, &www_auth).await.unwrap();
-            let registration =
-                resolve_client_registration(&client, &discovery, "http://127.0.0.1:12345/callback")
-                    .await
-                    .unwrap();
-
-            assert_eq!(registration.client_id, CIMD_URL);
-            assert_eq!(registration.client_secret, None);
+            // Discovery still succeeds and scopes are still parsed...
             assert_eq!(discovery.scopes, vec!["mcp:read"]);
+
+            // ...but registration must fail: the server offers only CIMD, which
+            // V-Agent does not use, and no DCR endpoint.
+            let result =
+                resolve_client_registration(&client, &discovery, "http://127.0.0.1:12345/callback")
+                    .await;
+            let err = result.expect_err("CIMD-only server should not resolve a registration");
+            assert!(
+                err.to_string().contains("dynamic client registration"),
+                "unexpected error: {err}"
+            );
         });
     }
 

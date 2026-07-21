@@ -691,7 +691,7 @@ pub fn execute_run(
                     ReqwestClient::proxy_and_user_agent(
                         proxy_url,
                         &format!(
-                            "Zed-Server/{} ({}; {})",
+                            "V-Agent-Server/{} ({}; {})",
                             env!("CARGO_PKG_VERSION"),
                             std::env::consts::OS,
                             std::env::consts::ARCH

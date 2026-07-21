@@ -104,7 +104,7 @@ impl LauncherStatus {
         match self {
             LauncherStatus::BwrapNotFound => "no usable `bwrap` binary was found on PATH",
             LauncherStatus::SetuidRejected => {
-                "the only available `bwrap` is setuid-root, which Zed refuses to run"
+                "the only available `bwrap` is setuid-root, which V-Agent refuses to run"
             }
             LauncherStatus::SandboxProbeFailed => {
                 "`bwrap` is present but failed to create a sandbox (unprivileged user \
@@ -563,7 +563,7 @@ pub fn check_can_create_sandbox(
     prepare_sandbox(permissions).map(|_| ())
 }
 
-/// The host (Zed-side) socket paths for the in-sandbox bind validator.
+/// The host (V-Agent-side) socket paths for the in-sandbox bind validator.
 #[derive(Clone, Copy)]
 pub struct ValidationSocket<'a> {
     /// Host pathname of the listener the validator connects back to.
@@ -575,7 +575,7 @@ pub struct ValidationSocket<'a> {
 
 /// Build the final command line that runs `program` inside Bubblewrap.
 ///
-/// `bridge_program` should be the current Zed executable; it is re-exec'd inside
+/// `bridge_program` should be the current V-Agent executable; it is re-exec'd inside
 /// the sandbox as the launcher whenever bind validation and/or the
 /// restricted-network bridge are needed, running before the real command.
 ///
@@ -1244,7 +1244,7 @@ fn parse_count(value: OsString, what: &str) -> Result<usize> {
 )]
 fn run_wsl_helper(invocation: WslHelperInvocation) -> ! {
     // Capture an `O_PATH` fd per writable bind *here*, inside WSL — this is the
-    // capture-at-validation step that on native Linux happens in the Zed process.
+    // capture-at-validation step that on native Linux happens in the V-Agent process.
     let mut fds = Vec::with_capacity(invocation.writable_paths.len());
     for path in &invocation.writable_paths {
         match open_o_path_fd(path) {

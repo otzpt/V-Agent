@@ -3155,7 +3155,7 @@ impl ThreadEnvironment for NativeThreadEnvironment {
         // Linux, and via WSL on Windows) already mounts a fresh, writable
         // `tmpfs` over `/tmp`, so the environment looks like a normal
         // filesystem with no special `$TMPDIR` (which would only make the
-        // sandbox more obviously Zed-specific). On Windows a per-thread
+        // sandbox more obviously V-Agent-specific). On Windows a per-thread
         // `$TMPDIR` would also be a Windows path that's meaningless inside
         // WSL, and adding it to the writable scope would bind a stray
         // `/mnt/<drive>/...` path.

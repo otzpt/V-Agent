@@ -377,7 +377,7 @@ impl LspLocationsDelegate {
         editor: WeakEntity<Editor>,
     ) -> Self {
         // Match against the line text and the file path, mirroring the fuzzy
-        // matching every other Zed picker uses.
+        // matching every other V-Agent picker uses.
         let candidates = all_matches
             .iter()
             .enumerate()

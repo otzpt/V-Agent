@@ -231,10 +231,10 @@ impl PromptLocalCommand {
     pub fn description(&self) -> &'static str {
         match self {
             Self::ThumbsUp => {
-                "Rate this response as helpful. Sends the current conversation to the Zed team."
+                "Rate this response as helpful. Sends the current conversation to the V-Agent team."
             }
             Self::ThumbsDown => {
-                "Rate this response as not helpful. Sends the current conversation to the Zed team."
+                "Rate this response as not helpful. Sends the current conversation to the V-Agent team."
             }
             Self::SwitchModel => "Switch the model used for this conversation",
             Self::ThinkingEffort => "Change how much the model reasons before answering",

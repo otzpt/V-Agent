@@ -9,7 +9,7 @@ use zed_actions::feedback::{EmailZed, FileBugReport, RequestFeature};
 actions!(
     zed,
     [
-        /// Opens the Zed repository on GitHub.
+        /// Opens the V-Agent repository on GitHub.
         OpenZedRepo,
         /// Copies installed extensions to the clipboard for bug reports.
         CopyInstalledExtensionsIntoClipboard

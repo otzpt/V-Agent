@@ -193,7 +193,7 @@ impl AskPassSession {
     }
 
     /// Path to a script suitable for git's `gpg.program`, routing GnuPG
-    /// passphrase prompts through Zed's askpass UI. `None` if unavailable.
+    /// passphrase prompts through V-Agent's askpass UI. `None` if unavailable.
     pub fn gpg_wrapper_path(&self) -> Option<&std::path::Path> {
         #[cfg(not(target_os = "windows"))]
         return self.askpass_task.gpg_wrapper_path();
@@ -253,7 +253,7 @@ impl PasswordProxy {
         let askpass_socket_path = askpass_socket.clone();
 
         // Create a gpg wrapper script that routes GnuPG passphrase prompts through
-        // the same socket (and thus through Zed's askpass UI). This only works on
+        // the same socket (and thus through V-Agent's askpass UI). This only works on
         // Unix where we control the pinentry via loopback mode. We compute the path
         // before the socket task takes ownership of `temp_dir`, and write the file
         // afterwards.
@@ -373,7 +373,7 @@ impl PasswordProxy {
     }
 }
 
-/// Runs Zed in netcat mode for use in askpass.
+/// Runs V-Agent in netcat mode for use in askpass.
 pub fn main(socket: &str) {
     use std::io::{self, Read};
     use std::process::exit;
@@ -387,7 +387,7 @@ pub fn main(socket: &str) {
     connect_and_write_prompt(socket, buffer)
 }
 
-/// Runs Zed in askpass mode using prompts passed as arguments.
+/// Runs V-Agent in askpass mode using prompts passed as arguments.
 pub fn main_from_args(socket: &str, args: impl IntoIterator<Item = String>) {
     let prompt = args.into_iter().collect::<Vec<_>>().join("\0");
     connect_and_write_prompt(socket, prompt.into_bytes())

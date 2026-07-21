@@ -590,7 +590,7 @@ fn render_registry_agent_button(
 
 /// Local-first AI entry point.
 ///
-/// Upstream shows a sign-in / "Start Free Trial" button for Zed's hosted
+/// Upstream shows a sign-in / "Start Free Trial" button for V-Agent's hosted
 /// agent. V-Agent does not operate that service and has no accounts, so
 /// offering it here would advertise something that does not exist. Local
 /// models need no key and are auto-detected once Ollama is running, so the
@@ -614,6 +614,25 @@ fn render_local_ai_button(_cx: &mut App) -> impl IntoElement {
         })
 }
 
+/// VOIDSEED — V-Agent's own model, in development. Shown disabled with a
+/// "Coming Soon" state; when released this becomes a download entry.
+fn render_voidseed_button(_cx: &mut App) -> impl IntoElement {
+    AgentSetupButton::new("voidseed-onboarding")
+        .icon(
+            Icon::new(IconName::Sparkle)
+                .size(IconSize::XSmall)
+                .color(Color::Muted),
+        )
+        .name("VOIDSEED")
+        .state(
+            Label::new("Coming Soon")
+                .size(LabelSize::XSmall)
+                .color(Color::Muted)
+                .into_any_element(),
+        )
+        .disabled(true)
+}
+
 fn render_ai_section(_user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoElement {
     let registry_agents = AgentRegistryStore::try_global(cx)
         .map(|store| store.read(cx).agents().to_vec())
@@ -624,7 +643,8 @@ fn render_ai_section(_user_store: &Entity<UserStore>, cx: &mut App) -> impl Into
         .get::<AllAgentServersSettings>(None)
         .clone();
 
-    let column_count = 1 + FEATURED_AGENT_IDS.len() as u16;
+    // +2 columns: the local (Ollama) entry and the VOIDSEED "coming soon" entry.
+    let column_count = 2 + FEATURED_AGENT_IDS.len() as u16;
 
     let grid = FEATURED_AGENT_IDS.iter().fold(
         div()
@@ -633,7 +653,8 @@ fn render_ai_section(_user_store: &Entity<UserStore>, cx: &mut App) -> impl Into
             .grid()
             .grid_cols(column_count)
             .gap_2()
-            .child(render_local_ai_button(cx)),
+            .child(render_local_ai_button(cx))
+            .child(render_voidseed_button(cx)),
         |grid, agent_id| {
             let Some(agent) = registry_agents
                 .iter()

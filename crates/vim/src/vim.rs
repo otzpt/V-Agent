@@ -1,4 +1,4 @@
-//! Vim support for Zed.
+//! Vim support for V-Agent.
 
 #[cfg(test)]
 mod test;

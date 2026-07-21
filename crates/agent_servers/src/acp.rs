@@ -654,7 +654,7 @@ pub async fn connect(
 
 const MINIMUM_SUPPORTED_VERSION: ProtocolVersion = ProtocolVersion::V1;
 
-/// Build a `Client` connection over `transport` with Zed's full
+/// Build a `Client` connection over `transport` with V-Agent's full
 /// agent→client handler set wired up.
 ///
 /// All incoming requests and notifications are forwarded to the foreground
@@ -2816,7 +2816,7 @@ mod tests {
                         url_elicitation_id.clone(),
                         "https://auth.example.com/device",
                     ),
-                    "Authorize Zed in your browser",
+                    "Authorize V-Agent in your browser",
                 ),
                 acp::CompleteElicitationNotification::new(url_elicitation_id),
                 cx,

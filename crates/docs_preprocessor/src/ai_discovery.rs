@@ -120,12 +120,12 @@ fn front_matter_comment_regex() -> &'static Regex {
 
 fn write_llms_txt(destination: &Path, site_url: &str, pages: &[DocsPage]) -> Result<()> {
     let mut contents = String::new();
-    contents.push_str("# Zed Docs\n\n");
+    contents.push_str("# V-Agent Docs\n\n");
     contents.push_str(
-        "> Official Zed documentation index with links to Markdown versions of each docs page.\n\n",
+        "> Official V-Agent documentation index with links to Markdown versions of each docs page.\n\n",
     );
     contents.push_str(
-        "Use these links for concise Markdown copies of Zed documentation pages. Each linked page mirrors the corresponding `/docs/*.html` page without site navigation or styling.\n\n",
+        "Use these links for concise Markdown copies of V-Agent documentation pages. Each linked page mirrors the corresponding `/docs/*.html` page without site navigation or styling.\n\n",
     );
     let mut current_section = None;
     for page in pages {
@@ -496,7 +496,7 @@ mod tests {
             DocsPage {
                 section: "Docs".to_string(),
                 title: "Getting Started".to_string(),
-                description: Some("Start using Zed.".to_string()),
+                description: Some("Start using V-Agent.".to_string()),
                 source_path: PathBuf::from("getting-started.md"),
                 content: format!(
                     "{}\n# Getting Started\n",

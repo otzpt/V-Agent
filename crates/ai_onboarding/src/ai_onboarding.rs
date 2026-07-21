@@ -161,15 +161,15 @@ impl ZedAiOnboarding {
             .w_full()
             .relative()
             .gap_1()
-            .child(Headline::new("Welcome to Zed AI"))
+            .child(Headline::new("Welcome to V-Agent AI"))
             .child(
-                Label::new("Sign in to try Zed Pro free for 14 days.")
+                Label::new("Sign in to try V-Agent Pro free for 14 days.")
                     .color(Color::Muted)
                     .mb_2(),
             )
             .child(PlanDefinitions.sign_in_upsell())
             .child(
-                Button::new("sign_in", "Try Zed Pro for Free")
+                Button::new("sign_in", "Try V-Agent Pro for Free")
                     .disabled(signing_in)
                     .full_width()
                     .style(ButtonStyle::Tinted(ui::TintColor::Accent))
@@ -191,7 +191,7 @@ impl ZedAiOnboarding {
                 .relative()
                 .min_w_0()
                 .gap_1()
-                .child(Headline::new("Welcome to Zed AI"))
+                .child(Headline::new("Welcome to V-Agent AI"))
                 .child(YoungAccountBanner)
                 .child(
                     v_flex()
@@ -228,7 +228,7 @@ impl ZedAiOnboarding {
                 .w_full()
                 .relative()
                 .gap_1()
-                .child(Headline::new("Welcome to Zed AI"))
+                .child(Headline::new("Welcome to V-Agent AI"))
                 .child(
                     v_flex()
                         .mt_2()
@@ -294,7 +294,7 @@ impl ZedAiOnboarding {
             .relative()
             .gap_1()
             .child(Self::pro_trial_stamp(cx))
-            .child(Headline::new("Welcome to the Zed Pro Trial"))
+            .child(Headline::new("Welcome to the V-Agent Pro Trial"))
             .child(
                 Label::new("Here's what you get for the next 14 days:")
                     .color(Color::Muted)
@@ -311,7 +311,7 @@ impl ZedAiOnboarding {
             .relative()
             .gap_1()
             .child(Self::certified_user_stamp(cx))
-            .child(Headline::new("Welcome to Zed Pro"))
+            .child(Headline::new("Welcome to V-Agent Pro"))
             .child(
                 Label::new("Here's what you get:")
                     .color(Color::Muted)
@@ -328,7 +328,7 @@ impl ZedAiOnboarding {
             .relative()
             .gap_1()
             .child(Self::business_stamp(cx))
-            .child(Headline::new("Welcome to Zed Business"))
+            .child(Headline::new("Welcome to V-Agent Business"))
             .child(
                 Label::new("Here's what you get:")
                     .color(Color::Muted)
@@ -345,7 +345,7 @@ impl ZedAiOnboarding {
             .relative()
             .gap_1()
             .child(Self::vip_stamp(cx))
-            .child(Headline::new("Welcome to Zed VIP"))
+            .child(Headline::new("Welcome to V-Agent VIP"))
             .child(
                 Label::new("Here's what you get:")
                     .color(Color::Muted)
@@ -362,7 +362,7 @@ impl ZedAiOnboarding {
             .relative()
             .gap_1()
             .child(Self::student_stamp(cx))
-            .child(Headline::new("Welcome to Zed Student"))
+            .child(Headline::new("Welcome to V-Agent Student"))
             .child(
                 Label::new("Here's what you get:")
                     .color(Color::Muted)

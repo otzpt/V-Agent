@@ -860,7 +860,7 @@ pub enum MantleModel {
 }
 
 impl MantleModel {
-    /// The model id Zed uses internally (also used as the `name` in settings).
+    /// The model id V-Agent uses internally (also used as the `name` in settings).
     pub fn id(&self) -> &str {
         match self {
             Self::Gpt5_6Sol => "gpt-5.6-sol",

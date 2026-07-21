@@ -506,9 +506,9 @@ fn probe_script() -> String {
 ///
 /// Successful results are cached per distro for the life of the process —
 /// like `linux_bubblewrap::is_available`, the answers can't realistically
-/// change while Zed runs. Failures are deliberately *not* cached so a user
+/// change while V-Agent runs. Failures are deliberately *not* cached so a user
 /// who installs `bwrap` (or lifts a user-namespace restriction) after seeing
-/// the error can retry the command without restarting Zed.
+/// the error can retry the command without restarting V-Agent.
 async fn probe_environment(wsl_exe: &Path, distro: Option<&str>) -> Result<EnvironmentProbe> {
     static CACHE: OnceLock<Mutex<HashMap<Option<String>, EnvironmentProbe>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -613,7 +613,7 @@ fn parse_probe_output(stdout: &str) -> Result<EnvironmentProbe> {
 /// Successful resolutions are cached per `(distro, channel, version)` for the
 /// life of the process — once provisioned, the path won't change. Failures are
 /// not cached, so a user who installs `curl` (or fixes networking) after an
-/// error can retry without restarting Zed.
+/// error can retry without restarting V-Agent.
 async fn ensure_wsl_zed_helper(
     wsl_exe: &Path,
     distro: Option<&str>,
@@ -1491,7 +1491,7 @@ mod tests {
     #[test]
     fn bwrap_binds_explicit_writable_file_paths() {
         let args = build_bwrap_args(
-            &["/mnt/c/Users/me/AppData/Roaming/Zed/AGENTS.md".to_string()],
+            &["/mnt/c/Users/me/AppData/Roaming/V-Agent/AGENTS.md".to_string()],
             &[],
             SandboxPermissions::default(),
             None,
@@ -1501,8 +1501,8 @@ mod tests {
         assert!(args.windows(3).any(|window| window
             == [
                 "--bind",
-                "/mnt/c/Users/me/AppData/Roaming/Zed/AGENTS.md",
-                "/mnt/c/Users/me/AppData/Roaming/Zed/AGENTS.md"
+                "/mnt/c/Users/me/AppData/Roaming/V-Agent/AGENTS.md",
+                "/mnt/c/Users/me/AppData/Roaming/V-Agent/AGENTS.md"
             ]));
     }
 

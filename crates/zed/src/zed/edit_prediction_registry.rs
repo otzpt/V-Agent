@@ -347,7 +347,7 @@ mod tests {
         });
 
         // Override the default provider to None so the subscribe closure
-        // captures None at init time. (The test default is Zed/Zeta1, which
+        // captures None at init time. (The test default is V-Agent/Zeta1, which
         // is a no-op on project-less editors and would mask the bug.)
         cx.update(|cx| {
             cx.update_global::<SettingsStore, _>(|store: &mut SettingsStore, cx| {

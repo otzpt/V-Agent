@@ -804,7 +804,7 @@ pub struct SiblingThreadRequest {
     pub title: SharedString,
     /// The initial prompt to send to the new thread.
     pub prompt: String,
-    /// Optional agent ID to use. Defaults to the native Zed agent.
+    /// Optional agent ID to use. Defaults to the native V-Agent agent.
     pub agent_id: Option<String>,
     /// Optional model override, as `provider/model-id`.
     /// Defaults to the user's configured default model for the agent.
@@ -848,7 +848,7 @@ pub struct AvailableAgent {
     pub id: String,
     /// Human-readable name shown in the UI.
     pub name: SharedString,
-    /// Whether this is Zed's built-in native agent.
+    /// Whether this is V-Agent's built-in native agent.
     pub is_native: bool,
     /// Models available for this agent. May be empty if models are not
     /// enumerated up front (e.g., external agents that choose their own).

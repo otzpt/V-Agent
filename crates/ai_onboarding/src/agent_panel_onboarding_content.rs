@@ -53,7 +53,7 @@ impl AgentPanelOnboarding {
 
 impl Render for AgentPanelOnboarding {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        // `user_store`/`client` fed the removed Zed AI upsell; the constructor
+        // `user_store`/`client` fed the removed V-Agent AI upsell; the constructor
         // signature is shared with the panel, so keep the fields but ignore them.
         let _ = (&self.user_store, &self.client, self.has_configured_providers);
         let dismiss = self.continue_with_zed_ai.clone();

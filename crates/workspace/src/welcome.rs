@@ -32,7 +32,7 @@ pub struct OpenRecentProject {
 actions!(
     zed,
     [
-        /// Show the Zed welcome screen
+        /// Show the V-Agent welcome screen
         ShowWelcome
     ]
 );
@@ -448,9 +448,9 @@ impl Render for WelcomePage {
         };
 
         let welcome_label = if self.fallback_to_recent_projects {
-            "Welcome back to Zed"
+            "Welcome back to V-Agent"
         } else {
-            "Welcome to Zed"
+            "Welcome to V-Agent"
         };
 
         h_flex()

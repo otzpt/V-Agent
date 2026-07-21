@@ -683,8 +683,8 @@ pub struct GitExcludeOverride {
 }
 
 impl GitExcludeOverride {
-    const START_BLOCK_MARKER: &str = "\n\n#  ====== Auto-added by Zed: =======\n";
-    const END_BLOCK_MARKER: &str = "\n#  ====== End of auto-added by Zed =======\n";
+    const START_BLOCK_MARKER: &str = "\n\n#  ====== Auto-added by V-Agent: =======\n";
+    const END_BLOCK_MARKER: &str = "\n#  ====== End of auto-added by V-Agent =======\n";
 
     pub async fn new(git_exclude_path: PathBuf) -> Result<Self> {
         let original_excludes =
@@ -748,7 +748,7 @@ impl GitExcludeOverride {
             }
         }
 
-        // Older versions of Zed didn't have end-of-block markers,
+        // Older versions of V-Agent didn't have end-of-block markers,
         // so it's impossible to determine auto-generated lines.
         // Conservatively remove the standard list of excludes
         let standard_excludes = format!(
@@ -5300,7 +5300,7 @@ mod tests {
                         sha: "eb0cae33272689bd11030822939dd2701c52f81e".into(),
                         subject: "Add feature".into(),
                         commit_timestamp: 1762948725,
-                        author_name: SharedString::new_static("Zed"),
+                        author_name: SharedString::new_static("V-Agent"),
                         has_parent: true,
                     })
                 },
@@ -5312,7 +5312,7 @@ mod tests {
                         sha: "895951d681e5561478c0acdd6905e8aacdfd2249".into(),
                         subject: "Initial commit".into(),
                         commit_timestamp: 1762948695,
-                        author_name: SharedString::new_static("Zed"),
+                        author_name: SharedString::new_static("V-Agent"),
                         has_parent: false,
                     })
                 }

@@ -54,9 +54,9 @@ pub struct RootPlan {
     /// loaded in any open workspace.
     pub remote_connection: Option<RemoteConnectionOptions>,
     /// The creation time of the worktree's git metadata directory that was
-    /// recorded when Zed created the worktree. [`remove_root`] re-stats the
+    /// recorded when V-Agent created the worktree. [`remove_root`] re-stats the
     /// directory and refuses to delete anything if the time has changed,
-    /// which means the worktree was recreated outside Zed.
+    /// which means the worktree was recreated outside V-Agent.
     pub recorded_created_at: SystemTime,
 }
 
@@ -78,10 +78,10 @@ fn archived_worktree_ref_name(id: i64) -> String {
     format!("refs/archived-worktrees/{}", id)
 }
 
-/// Resolves the Zed-managed worktrees base directory for a given repo.
+/// Resolves the V-Agent-managed worktrees base directory for a given repo.
 ///
 /// This intentionally reads the *global* `git.worktree_directory` setting
-/// rather than any project-local override, because Zed always uses the
+/// rather than any project-local override, because V-Agent always uses the
 /// global value when creating worktrees and the archive check must match.
 fn worktrees_base_for_repo(
     main_repo_path: &Path,
@@ -172,7 +172,7 @@ pub fn build_root_plan(
     let (linked_snapshot, repo) = linked_repo?;
     let main_repo_path = linked_snapshot.main_worktree_abs_path()?.to_path_buf();
 
-    // Only archive worktrees that live inside the Zed-managed worktrees
+    // Only archive worktrees that live inside the V-Agent-managed worktrees
     // directory (configured via `git.worktree_directory`). Worktrees the
     // user created outside that directory should be left untouched.
     let worktrees_base = worktrees_base_for_repo(&main_repo_path, linked_snapshot.path_style, cx)?;
@@ -180,9 +180,9 @@ pub fn build_root_plan(
         return None;
     }
 
-    // Only archive worktrees that Zed explicitly created. The directory
+    // Only archive worktrees that V-Agent explicitly created. The directory
     // check above constrains paths, but the database record is what
-    // distinguishes a Zed-created worktree from one the user manually
+    // distinguishes a V-Agent-created worktree from one the user manually
     // created under the same directory layout. The recorded creation time
     // is re-verified against the filesystem in [`remove_root`] before
     // anything is deleted.
@@ -236,7 +236,7 @@ pub async fn remove_root(root: RootPlan, cx: &mut AsyncApp) -> Result<()> {
     }
 
     // The worktree is gone, so its registry record is now stale. If the
-    // user later creates a new worktree at the same path outside Zed, a
+    // user later creates a new worktree at the same path outside V-Agent, a
     // leftover record would only be saved by the creation time check, so
     // remove it eagerly.
     cx.update(|cx| {
@@ -252,16 +252,16 @@ pub async fn remove_root(root: RootPlan, cx: &mut AsyncApp) -> Result<()> {
     Ok(())
 }
 
-/// Confirms that the worktree on disk is still the one Zed created, by
+/// Confirms that the worktree on disk is still the one V-Agent created, by
 /// comparing the creation time of its git metadata directory against the
-/// time recorded when Zed created it.
+/// time recorded when V-Agent created it.
 ///
 /// Outcomes:
 /// - Creation time matches the recorded one: proceed.
 /// - Worktree directory no longer exists: proceed — there is nothing on
 ///   disk to protect, and removal will only clean up git metadata.
 /// - Creation time differs: the worktree was removed and recreated outside
-///   Zed. The registry record is removed (so subsequent archival attempts
+///   V-Agent. The registry record is removed (so subsequent archival attempts
 ///   skip the worktree entirely) and an error is returned so the caller
 ///   leaves the directory untouched.
 /// - Creation time cannot be read: return an error but keep the record,
@@ -275,7 +275,7 @@ async fn verify_created_by_zed(root: &RootPlan, cx: &mut AsyncApp) -> Result<()>
         .map_err(|_| anyhow!("worktree creation time check was canceled"))?
         .with_context(|| {
             format!(
-                "refusing to delete worktree at {}: failed to verify that Zed created it",
+                "refusing to delete worktree at {}: failed to verify that V-Agent created it",
                 root.root_path.display()
             )
         })?;
@@ -790,7 +790,7 @@ pub async fn restore_worktree_via_git(
     }
 
     if created_new_worktree {
-        // Re-register the restored worktree as Zed-created so it can be
+        // Re-register the restored worktree as V-Agent-created so it can be
         // archived again later.
         git_ui::created_worktrees::record_created_worktree_for_repo(
             &wt_repo,
@@ -1299,7 +1299,7 @@ mod tests {
 
         // Worktree outside the custom managed directory (at the default
         // `../worktrees` location, which is not what the setting says).
-        // It is recorded as Zed-created so that the directory check, not
+        // It is recorded as V-Agent-created so that the directory check, not
         // the registry, is what excludes it below.
         fs.add_linked_worktree_for_repo(
             Path::new("/project/.git"),
@@ -1568,8 +1568,8 @@ mod tests {
         .await;
 
         // Record a creation time that doesn't match the directory on disk,
-        // simulating a worktree that was removed and recreated outside Zed
-        // after Zed recorded the original.
+        // simulating a worktree that was removed and recreated outside V-Agent
+        // after V-Agent recorded the original.
         let worktree_path = Path::new("/worktrees/project/feature/project");
         let actual_created_at = fake_worktree_created_at(&fs, worktree_path).await;
         cx.update(|cx| {
@@ -1620,7 +1620,7 @@ mod tests {
             .await
             .expect_err("remove_root should refuse to delete a recreated worktree");
         assert!(
-            error.to_string().contains("not the worktree Zed created"),
+            error.to_string().contains("not the worktree V-Agent created"),
             "unexpected error: {error:#}"
         );
 
@@ -1713,7 +1713,7 @@ mod tests {
             .expect("should produce a root plan for the linked worktree");
 
         // Make deleting the worktree directory fail, while leaving the
-        // worktree itself intact so the created-by-Zed verification passes.
+        // worktree itself intact so the created-by-V-Agent verification passes.
         let worktree_path = Path::new("/worktrees/project/feature/project");
         fs.set_remove_dir_error(worktree_path, "simulated remove_dir failure".to_string());
 

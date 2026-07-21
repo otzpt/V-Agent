@@ -61,15 +61,15 @@ actions!(
         OpenServerSettings,
         /// Quits the application.
         Quit,
-        /// Shows information about Zed.
+        /// Shows information about V-Agent.
         About,
         /// Opens the documentation website.
         OpenDocs,
         /// Views open source licenses.
         OpenLicenses,
-        /// Opens the Zed status page.
+        /// Opens the V-Agent status page.
         OpenStatusPage,
-        /// Opens the Zed merch store.
+        /// Opens the V-Agent merch store.
         GetMerch,
         /// Opens the telemetry log.
         OpenTelemetryLog,
@@ -309,7 +309,7 @@ pub enum NewWorktreeBranchTarget {
 #[action(namespace = git)]
 #[serde(deny_unknown_fields)]
 pub struct CreateWorktree {
-    /// When this is None, Zed will randomly generate a worktree name.
+    /// When this is None, V-Agent will randomly generate a worktree name.
     pub worktree_name: Option<String>,
     pub branch_target: NewWorktreeBranchTarget,
 }
@@ -423,7 +423,7 @@ pub mod feedback {
     actions!(
         feedback,
         [
-            /// Opens email client to send feedback to Zed support.
+            /// Opens email client to send feedback to V-Agent support.
             EmailZed,
             /// Opens the bug report form.
             FileBugReport,
@@ -775,7 +775,7 @@ pub mod outline {
 actions!(
     zed_predict_onboarding,
     [
-        /// Opens the Zed Predict onboarding modal.
+        /// Opens the V-Agent Predict onboarding modal.
         OpenZedPredictOnboarding
     ]
 );

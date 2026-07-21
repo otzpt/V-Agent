@@ -71,7 +71,7 @@ pub use extension_settings::ExtensionSettings;
 pub const RELOAD_DEBOUNCE_DURATION: Duration = Duration::from_millis(200);
 const FS_WATCH_LATENCY: Duration = Duration::from_millis(100);
 
-/// The current extension [`SchemaVersion`] supported by Zed.
+/// The current extension [`SchemaVersion`] supported by V-Agent.
 const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(1);
 
 /// Extensions that should no longer be loaded or downloaded.
@@ -98,12 +98,12 @@ static SUPPRESSED_EXTENSIONS: LazyLock<FxHashSet<&str>> = LazyLock::new(|| {
     ])
 });
 
-/// Returns the [`SchemaVersion`] range that is compatible with this version of Zed.
+/// Returns the [`SchemaVersion`] range that is compatible with this version of V-Agent.
 pub fn schema_version_range() -> RangeInclusive<SchemaVersion> {
     SchemaVersion::ZERO..=CURRENT_SCHEMA_VERSION
 }
 
-/// Returns whether the given extension version is compatible with this version of Zed.
+/// Returns whether the given extension version is compatible with this version of V-Agent.
 pub fn is_version_compatible(
     release_channel: ReleaseChannel,
     extension_version: &ExtensionMetadata,
@@ -652,7 +652,7 @@ impl ExtensionStore {
         self.fetch_extensions_from_api(&format!("/extensions/{extension_id}"), &[], cx)
     }
 
-    /// Installs any extensions that should be included with Zed by default.
+    /// Installs any extensions that should be included with V-Agent by default.
     ///
     /// This can be used to make certain functionality provided by extensions
     /// available out-of-the-box.

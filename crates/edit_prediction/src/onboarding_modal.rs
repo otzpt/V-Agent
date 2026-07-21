@@ -24,7 +24,7 @@ macro_rules! onboarding_event {
     };
 }
 
-/// Introduces user to Zed's Edit Prediction feature
+/// Introduces user to V-Agent's Edit Prediction feature
 pub struct ZedPredictModal {
     onboarding: Entity<EditPredictionOnboarding>,
     focus_handle: FocusHandle,

@@ -3062,9 +3062,9 @@ mod tests {
 
         let schema = SettingsStore::json_schema(&SettingsJsonSchemaParams {
             language_names: &["Rust".to_string(), "TypeScript".to_string()],
-            font_names: &["Zed Mono".to_string()],
+            font_names: &["V-Agent Mono".to_string()],
             theme_names: &["One Dark".into()],
-            icon_theme_names: &["Zed Icons".into()],
+            icon_theme_names: &["V-Agent Icons".into()],
             lsp_adapter_names: &[
                 "rust-analyzer".to_string(),
                 "typescript-language-server".to_string(),
@@ -3117,9 +3117,9 @@ mod tests {
 
         let schema = SettingsStore::project_json_schema(&SettingsJsonSchemaParams {
             language_names: &["Rust".to_string(), "TypeScript".to_string()],
-            font_names: &["Zed Mono".to_string()],
+            font_names: &["V-Agent Mono".to_string()],
             theme_names: &["One Dark".into()],
-            icon_theme_names: &["Zed Icons".into()],
+            icon_theme_names: &["V-Agent Icons".into()],
             lsp_adapter_names: &[
                 "rust-analyzer".to_string(),
                 "typescript-language-server".to_string(),
@@ -3172,9 +3172,9 @@ mod tests {
 
         let params = SettingsJsonSchemaParams {
             language_names: &["Rust".to_string()],
-            font_names: &["Zed Mono".to_string()],
+            font_names: &["V-Agent Mono".to_string()],
             theme_names: &["One Dark".into()],
-            icon_theme_names: &["Zed Icons".into()],
+            icon_theme_names: &["V-Agent Icons".into()],
             lsp_adapter_names: &["rust-analyzer".to_string()],
             action_names: &[],
             action_documentation: &HashMap::default(),

@@ -405,7 +405,7 @@ impl LanguageModelProvider for CloudLanguageModelProvider {
     }
 
     fn authentication_error_message(&self) -> SharedString {
-        "Failed to sign in with your Zed account (401).".into()
+        "Failed to sign in with your V-Agent account (401).".into()
     }
 
     fn missing_credentials_error_message(&self) -> SharedString {
@@ -416,7 +416,7 @@ impl LanguageModelProvider for CloudLanguageModelProvider {
 
     fn fast_mode_confirmation(&self, _cx: &App) -> Option<FastModeConfirmation> {
         Some(FastModeConfirmation {
-            title: "Enable Fast Mode for Zed?".into(),
+            title: "Enable Fast Mode for V-Agent?".into(),
             message: "Fast mode routes requests through the upstream provider's fast mode or priority tier. The \
                 upstream provider's premium per-token pricing applies and is passed through to \
                 your Zed billing."
@@ -443,32 +443,32 @@ fn zed_ai_description(
     eligible_for_trial: bool,
 ) -> &'static str {
     if !is_connected {
-        return "Sign in to have access to Zed's complete agentic experience with hosted models.";
+        return "Sign in to have access to V-Agent's complete agentic experience with hosted models.";
     }
 
     match plan {
         Some(Plan::ZedPro) => {
-            "You have access to Zed's hosted models through your Pro subscription."
+            "You have access to V-Agent's hosted models through your Pro subscription."
         }
         Some(Plan::ZedProTrial) => "You have access to Zed's hosted models through your Pro trial.",
         Some(Plan::ZedStudent) => {
-            "You have access to Zed's hosted models through your Student subscription."
+            "You have access to V-Agent's hosted models through your Student subscription."
         }
         Some(Plan::ZedBusiness) => {
             if is_zed_model_provider_enabled {
-                "You have access to Zed's hosted models through your organization."
+                "You have access to V-Agent's hosted models through your organization."
             } else {
-                "Zed's hosted models are disabled by your organization's configuration."
+                "V-Agent's hosted models are disabled by your organization's configuration."
             }
         }
         Some(Plan::ZedVip) => {
-            "You have access to Zed's hosted models through your VIP subscription."
+            "You have access to V-Agent's hosted models through your VIP subscription."
         }
         Some(Plan::ZedFree) | None => {
             if eligible_for_trial {
-                "Subscribe for access to Zed's hosted models. Start with a 14 day free trial."
+                "Subscribe for access to V-Agent's hosted models. Start with a 14 day free trial."
             } else {
-                "Subscribe for access to Zed's hosted models."
+                "Subscribe for access to V-Agent's hosted models."
             }
         }
     }
@@ -522,7 +522,7 @@ impl RenderOnce for ZedAiConfiguration {
                 .gap_2()
                 .when(!self.compact, |this| this.child(Label::new(description)))
                 .child(
-                    Button::new("sign_in", "Sign In to use Zed AI")
+                    Button::new("sign_in", "Sign In to use V-Agent AI")
                         .start_icon(
                             Icon::new(IconName::Github)
                                 .size(IconSize::Small)
@@ -1013,7 +1013,7 @@ impl Component for ZedAiConfiguration {
                     }),
                 ),
                 single_example(
-                    "Zed Pro Trial Plan",
+                    "V-Agent Pro Trial Plan",
                     configuration(PreviewConfiguration {
                         plan: Some(Plan::ZedProTrial),
                         is_connected: true,
@@ -1022,7 +1022,7 @@ impl Component for ZedAiConfiguration {
                     }),
                 ),
                 single_example(
-                    "Zed Pro Plan",
+                    "V-Agent Pro Plan",
                     configuration(PreviewConfiguration {
                         plan: Some(Plan::ZedPro),
                         is_connected: true,
@@ -1031,7 +1031,7 @@ impl Component for ZedAiConfiguration {
                     }),
                 ),
                 single_example(
-                    "Business Plan - Zed models enabled",
+                    "Business Plan - V-Agent models enabled",
                     configuration(PreviewConfiguration {
                         plan: Some(Plan::ZedBusiness),
                         is_connected: true,
@@ -1040,7 +1040,7 @@ impl Component for ZedAiConfiguration {
                     }),
                 ),
                 single_example(
-                    "Business Plan - Zed models disabled",
+                    "Business Plan - V-Agent models disabled",
                     configuration(PreviewConfiguration {
                         plan: Some(Plan::ZedBusiness),
                         is_connected: true,
