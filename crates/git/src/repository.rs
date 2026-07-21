@@ -3962,12 +3962,24 @@ fn parse_upstream_track(upstream_track: &str) -> Result<UpstreamTracking> {
     }))
 }
 
+/// Author identity stamped on agent checkpoint commits.
+///
+/// Upstream uses "Zed <hi@zed.dev>", which in a fork would attribute the
+/// user's checkpoints to Zed Industries and write their real support address
+/// into the user's git history. `.invalid` is reserved by RFC 2606 and can
+/// never resolve, so this cannot reach anyone's inbox.
 fn checkpoint_author_envs() -> HashMap<String, String> {
     HashMap::from_iter([
-        ("GIT_AUTHOR_NAME".to_string(), "Zed".to_string()),
-        ("GIT_AUTHOR_EMAIL".to_string(), "hi@zed.dev".to_string()),
-        ("GIT_COMMITTER_NAME".to_string(), "Zed".to_string()),
-        ("GIT_COMMITTER_EMAIL".to_string(), "hi@zed.dev".to_string()),
+        ("GIT_AUTHOR_NAME".to_string(), "V-Agent".to_string()),
+        (
+            "GIT_AUTHOR_EMAIL".to_string(),
+            "v-agent@noreply.invalid".to_string(),
+        ),
+        ("GIT_COMMITTER_NAME".to_string(), "V-Agent".to_string()),
+        (
+            "GIT_COMMITTER_EMAIL".to_string(),
+            "v-agent@noreply.invalid".to_string(),
+        ),
     ])
 }
 

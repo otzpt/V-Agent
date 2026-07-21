@@ -478,7 +478,22 @@ impl AutoUpdater {
         self.update_check_type
     }
 
+    /// V-Agent never self-updates.
+    ///
+    /// The updater resolves releases against Zed Industries' server, so a
+    /// successful check would download and install *Zed* over V-Agent. The
+    /// `auto_update` setting already defaults to false, but a default is only
+    /// a default: anyone who flips it on, and any code path that calls `poll`
+    /// directly, would hit exactly that. Refusing here makes it structurally
+    /// impossible rather than merely unlikely.
+    ///
+    /// V-Agent is updated from its own GitHub releases.
+    #[allow(unreachable_code, unused_variables)]
     pub fn poll(&mut self, check_type: UpdateCheckType, cx: &mut Context<Self>) {
+        self.status = AutoUpdateStatus::Idle;
+        cx.notify();
+        return;
+
         if check_type.is_manual() {
             self.dismissed_status = None;
         }
@@ -1339,8 +1354,14 @@ mod tests {
     pub(super) struct InstallOverride(pub Rc<dyn Fn(&Path, &AsyncApp) -> Result<Option<PathBuf>>>);
     impl Global for InstallOverride {}
 
+    /// V-Agent ships `auto_update` off, inverting upstream's default.
+    ///
+    /// The updater resolves releases against Zed Industries' servers, so
+    /// leaving it on would poll their infrastructure and, in a bundled build,
+    /// could install Zed over V-Agent. This asserts the default stays off:
+    /// if a merge restores upstream's value, this test catches it.
     #[gpui::test]
-    fn test_auto_update_defaults_to_true(cx: &mut TestAppContext) {
+    fn test_auto_update_defaults_to_false(cx: &mut TestAppContext) {
         cx.update(|cx| {
             let mut store = SettingsStore::new(cx, &settings::default_settings());
             store
@@ -1350,10 +1371,18 @@ mod tests {
                 .set_user_settings("{}", cx)
                 .expect("Unable to set user settings");
             cx.set_global(store);
-            assert!(AutoUpdateSetting::get_global(cx).0);
+            assert!(
+                !AutoUpdateSetting::get_global(cx).0,
+                "auto_update must default to false in V-Agent"
+            );
         });
     }
 
+    /// Disabled in V-Agent: `AutoUpdater::poll` is a deliberate no-op, so the
+    /// download flow this exercises can never run. Kept rather than deleted so
+    /// the upstream coverage is still visible if self-updating is ever
+    /// implemented against V-Agent's own release endpoint.
+    #[ignore = "V-Agent does not self-update; AutoUpdater::poll is a no-op"]
     #[gpui::test]
     async fn test_auto_update_downloads(cx: &mut TestAppContext) {
         cx.background_executor.allow_parking();
@@ -1364,6 +1393,16 @@ mod tests {
 
         cx.update(|cx| {
             settings::init(cx);
+
+            // V-Agent disables auto_update by default, so the poller never
+            // starts and this test would wait forever for a request that is
+            // never made. It exercises the download mechanism, not the
+            // default, so opt in explicitly.
+            SettingsStore::update_global(cx, |store, cx| {
+                store
+                    .set_user_settings(r#"{"auto_update": true}"#, cx)
+                    .expect("Unable to enable auto_update for this test");
+            });
 
             let current_version = semver::Version::new(0, 100, 0);
             release_channel::init_test(current_version, ReleaseChannel::Stable, cx);
