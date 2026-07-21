@@ -1585,7 +1585,41 @@ fn open_about_window(cx: &mut App) {
                                     .color(Color::Muted)
                                     .size(LabelSize::XSmall),
                             )
-                            .child(Label::new(self.full_version.clone()).size(LabelSize::Small)),
+                            .child(Label::new(self.full_version.clone()).size(LabelSize::Small))
+                            // GPL-3.0 §5(a) requires a modified work to carry
+                            // prominent notices stating that it is modified and
+                            // when. The affiliation disclaimer is separate, and
+                            // covers trademark rather than copyright.
+                            .child(
+                                v_flex()
+                                    .pt_3()
+                                    .gap_0p5()
+                                    .items_center()
+                                    .child(
+                                        Label::new(
+                                            "V-Agent is a modified fork of Zed, \
+                                             © Zed Industries, Inc.",
+                                        )
+                                        .color(Color::Muted)
+                                        .size(LabelSize::XSmall),
+                                    )
+                                    .child(
+                                        Label::new(
+                                            "Modified by the V-Agent project, 2026. \
+                                             Licensed GPL-3.0-or-later.",
+                                        )
+                                        .color(Color::Muted)
+                                        .size(LabelSize::XSmall),
+                                    )
+                                    .child(
+                                        Label::new(
+                                            "Not affiliated with or endorsed by \
+                                             Zed Industries, Inc.",
+                                        )
+                                        .color(Color::Muted)
+                                        .size(LabelSize::XSmall),
+                                    ),
+                            ),
                     )
                     .child(
                         h_flex()
@@ -1660,13 +1694,14 @@ fn open_about_window(cx: &mut App) {
 
     let window_size = Size {
         width: px(440.),
-        height: px(300.),
+        // Taller than upstream to fit the fork/licensing notice.
+        height: px(400.),
     };
 
     cx.open_window(
         WindowOptions {
             titlebar: Some(TitlebarOptions {
-                title: Some("About Zed".into()),
+                title: Some("About V-Agent".into()),
                 appears_transparent: true,
                 traffic_light_position: Some(point(px(12.), px(12.))),
             }),

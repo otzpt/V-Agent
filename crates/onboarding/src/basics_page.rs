@@ -1,11 +1,9 @@
 use std::sync::Arc;
-use std::time::Duration;
 
-use client::{Client, TelemetrySettings, UserStore, zed_urls};
-use cloud_api_types::Plan;
+use client::{TelemetrySettings, UserStore};
 use collections::HashMap;
 use fs::Fs;
-use gpui::{Action, Animation, AnimationExt, App, Entity, IntoElement, TaskExt, pulsating_between};
+use gpui::{Action, App, Entity, IntoElement};
 use project::agent_server_store::AllAgentServersSettings;
 use project::project_settings::ProjectSettings;
 use project::{AgentRegistryStore, RegistryAgent};
@@ -590,79 +588,33 @@ fn render_registry_agent_button(
         })
 }
 
-fn render_zed_agent_button(user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoElement {
-    let client = Client::global(cx);
-    let status = *client.status().borrow();
-
-    let plan = user_store.read(cx).plan();
-    let is_free = matches!(plan, Some(Plan::ZedFree) | None);
-    let is_pro = matches!(plan, Some(Plan::ZedPro));
-    let is_trial = matches!(plan, Some(Plan::ZedProTrial));
-
-    let is_signed_out = status.is_signed_out()
-        || matches!(
-            status,
-            client::Status::AuthenticationError | client::Status::ConnectionError
-        );
-    let is_signing_in = status.is_signing_in();
-    let is_signed_in = !is_signed_out;
-
-    let state_element = if is_signed_out {
-        Label::new("Sign In")
-            .size(LabelSize::XSmall)
-            .color(Color::Muted)
-            .into_any_element()
-    } else if is_signing_in {
-        Label::new("Signing In…")
-            .size(LabelSize::XSmall)
-            .color(Color::Muted)
-            .with_animation(
-                "signing-in",
-                Animation::new(Duration::from_secs(2))
-                    .repeat()
-                    .with_easing(pulsating_between(0.4, 0.8)),
-                |label, delta| label.alpha(delta),
-            )
-            .into_any_element()
-    } else if is_signed_in && is_free {
-        Label::new("Start Free Trial")
-            .size(LabelSize::XSmall)
-            .color(Color::Muted)
-            .into_any_element()
-    } else {
-        Icon::new(IconName::Check)
-            .size(IconSize::Small)
-            .color(Color::Success)
-            .into_any_element()
-    };
-
-    AgentSetupButton::new("zed-agent-onboarding")
+/// Local-first AI entry point.
+///
+/// Upstream shows a sign-in / "Start Free Trial" button for Zed's hosted
+/// agent. V-Agent does not operate that service and has no accounts, so
+/// offering it here would advertise something that does not exist. Local
+/// models need no key and are auto-detected once Ollama is running, so the
+/// only thing a new user actually needs is Ollama itself.
+fn render_local_ai_button(_cx: &mut App) -> impl IntoElement {
+    AgentSetupButton::new("local-ai-onboarding")
         .icon(
-            Icon::new(IconName::ZedAgent)
+            Icon::new(IconName::Sparkle)
                 .size(IconSize::XSmall)
                 .color(Color::Muted),
         )
-        .name("V-Agent")
-        .state(state_element)
-        .disabled(is_trial || is_pro)
-        .map(|this| {
-            if is_signed_in && is_free {
-                this.on_click(move |_, _window, cx| {
-                    telemetry::event!("Start Trial Clicked", state = "post-sign-in");
-                    cx.open_url(&zed_urls::start_trial_url(cx))
-                })
-            } else {
-                this.on_click(move |_, _, cx| {
-                    telemetry::event!("Welcome Zed Agent Sign In Clicked");
-                    let client = Client::global(cx);
-                    cx.spawn(async move |cx| client.sign_in_with_optional_connect(true, cx).await)
-                        .detach_and_log_err(cx);
-                })
-            }
+        .name("Local (Ollama)")
+        .state(
+            Label::new("Get Ollama")
+                .size(LabelSize::XSmall)
+                .color(Color::Muted)
+                .into_any_element(),
+        )
+        .on_click(move |_, _, cx| {
+            cx.open_url("https://ollama.com/download");
         })
 }
 
-fn render_ai_section(user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoElement {
+fn render_ai_section(_user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoElement {
     let registry_agents = AgentRegistryStore::try_global(cx)
         .map(|store| store.read(cx).agents().to_vec())
         .unwrap_or_default();
@@ -681,7 +633,7 @@ fn render_ai_section(user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoE
             .grid()
             .grid_cols(column_count)
             .gap_2()
-            .child(render_zed_agent_button(user_store, cx)),
+            .child(render_local_ai_button(cx)),
         |grid, agent_id| {
             let Some(agent) = registry_agents
                 .iter()
@@ -698,8 +650,12 @@ fn render_ai_section(user_store: &Entity<UserStore>, cx: &mut App) -> impl IntoE
         .gap_0p5()
         .child(Label::new("Agent Setup"))
         .child(
-            Label::new("Install your favorite agents and start your first thread.")
-                .color(Color::Muted),
+            Label::new(
+                "V-Agent is local-first. Install Ollama and models are detected \
+                 automatically — no account, no API key, nothing leaves your machine. \
+                 Bring your own key or an external agent instead if you prefer.",
+            )
+            .color(Color::Muted),
         )
         .child(grid)
 }

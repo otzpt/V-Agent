@@ -1,4 +1,8 @@
-use std::{ops::Range, sync::Arc};
+use std::{
+    ops::Range,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use acp_thread::{AcpThread, AgentThreadEntry, AssistantMessageChunk};
 use agent::ThreadStore;
@@ -48,6 +52,13 @@ pub struct EntryViewState {
     user_toggled_thinking_blocks: HashSet<(usize, usize)>,
     expanded_compactions: HashSet<usize>,
     expanded_tool_calls: HashSet<acp::ToolCallId>,
+    /// When each thinking block began streaming. Tracked separately from
+    /// `auto_expanded_thinking_block` because that is skipped entirely under
+    /// `AlwaysCollapsed`/`AlwaysExpanded`, and the duration must be recorded
+    /// no matter how the block is displayed.
+    thinking_started_at: HashMap<(usize, usize), Instant>,
+    /// How long each finished thinking block took.
+    thinking_durations: HashMap<(usize, usize), Duration>,
 }
 
 impl EntryViewState {
@@ -70,7 +81,56 @@ impl EntryViewState {
             user_toggled_thinking_blocks: HashSet::default(),
             expanded_compactions: HashSet::default(),
             expanded_tool_calls: HashSet::default(),
+            thinking_started_at: HashMap::default(),
+            thinking_durations: HashMap::default(),
         }
+    }
+
+    /// Time each thinking block, independently of how it is displayed.
+    /// Returns true if a duration was finalized (so the view can repaint).
+    pub(crate) fn record_thinking_activity(&mut self, thread: &AcpThread) -> bool {
+        let last_ix = thread.entries().len().saturating_sub(1);
+        let active = match thread.entries().get(last_ix) {
+            Some(AgentThreadEntry::AssistantMessage(message)) => match message.chunks.last() {
+                Some(AssistantMessageChunk::Thought { .. }) => {
+                    Some((last_ix, message.chunks.len() - 1))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+
+        if let Some(key) = active {
+            self.thinking_started_at.entry(key).or_insert_with(Instant::now);
+        }
+
+        // Anything that was streaming but no longer is has finished.
+        let finished: Vec<(usize, usize)> = self
+            .thinking_started_at
+            .keys()
+            .copied()
+            .filter(|key| Some(*key) != active)
+            .collect();
+        let mut changed = false;
+        for key in finished {
+            if let Some(started) = self.thinking_started_at.remove(&key) {
+                self.thinking_durations.insert(key, started.elapsed());
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    /// Finalize any still-running timers, e.g. when generation stops.
+    pub(crate) fn finalize_thinking_times(&mut self) {
+        for (key, started) in std::mem::take(&mut self.thinking_started_at) {
+            self.thinking_durations.insert(key, started.elapsed());
+        }
+    }
+
+    /// How long this thinking block took, once finished.
+    pub(crate) fn thinking_duration(&self, key: (usize, usize)) -> Option<Duration> {
+        self.thinking_durations.get(&key).copied()
     }
 
     pub(crate) fn is_tool_call_expanded(&self, tool_call_id: &acp::ToolCallId) -> bool {
@@ -458,6 +518,22 @@ impl EntryViewState {
                 .and_then(|(entry_ix, chunk_ix)| {
                     reindex_after_removal(entry_ix, &range).map(|entry_ix| (entry_ix, chunk_ix))
                 });
+        self.thinking_started_at = self
+            .thinking_started_at
+            .iter()
+            .filter_map(|(&(entry_ix, chunk_ix), &started)| {
+                reindex_after_removal(entry_ix, &range)
+                    .map(|entry_ix| ((entry_ix, chunk_ix), started))
+            })
+            .collect();
+        self.thinking_durations = self
+            .thinking_durations
+            .iter()
+            .filter_map(|(&(entry_ix, chunk_ix), &elapsed)| {
+                reindex_after_removal(entry_ix, &range)
+                    .map(|entry_ix| ((entry_ix, chunk_ix), elapsed))
+            })
+            .collect();
     }
 
     pub fn agent_ui_font_size_changed(&mut self, cx: &mut App) {

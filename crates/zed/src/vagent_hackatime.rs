@@ -15,6 +15,8 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use gpui::{App, Context, Entity};
+use notifications::status_toast::StatusToast;
+use ui::{Color, Icon, IconName, IconSize};
 use workspace::{Event, MultiWorkspace, Workspace};
 
 /// Identifies V-Agent to the WakaTime API.
@@ -26,6 +28,13 @@ const THROTTLE: Duration = Duration::from_secs(120);
 
 /// Last heartbeat sent per file, so we respect the throttle.
 static LAST_SENT: Mutex<Option<HashMap<String, SystemTime>>> = Mutex::new(None);
+
+/// Only nag once per session about the missing CLI.
+static PROMPTED_FOR_CLI: Mutex<bool> = Mutex::new(false);
+
+/// Where the official `wakatime-cli` releases live. Shown to the user before
+/// anything is downloaded — we never fetch a binary silently.
+const WAKATIME_CLI_REPO: &str = "https://github.com/wakatime/wakatime-cli";
 
 /// `~/.wakatime.cfg` — presence of this file is what opts the user in.
 fn wakatime_config_present() -> bool {
@@ -135,6 +144,110 @@ fn send_heartbeat(entity: String, is_write: bool) {
     let _ = cmd.spawn();
 }
 
+/// Download `wakatime-cli` from the official WakaTime releases into
+/// `~/.wakatime/`. Deliberately runs in a **visible** console that prints the
+/// URL and destination first — the user sees exactly what is fetched and where.
+fn launch_cli_install() {
+    let Some(home) = dirs_home() else {
+        return;
+    };
+    let dest = home.join(".wakatime");
+    let dest = dest.to_string_lossy().to_string();
+
+    #[cfg(windows)]
+    {
+        let script = format!(
+            "$ErrorActionPreference = 'Stop'\r\n\
+             Write-Host 'V-Agent - installing wakatime-cli' -ForegroundColor Cyan\r\n\
+             Write-Host 'Source      : {repo}/releases/latest'\r\n\
+             Write-Host 'Destination : {dest}'\r\n\
+             Write-Host 'This is the official WakaTime agent. Nothing else is installed.'\r\n\
+             Write-Host ''\r\n\
+             New-Item -ItemType Directory -Force -Path '{dest}' | Out-Null\r\n\
+             $zip = Join-Path '{dest}' 'wakatime-cli.zip'\r\n\
+             Invoke-WebRequest -Uri '{repo}/releases/latest/download/wakatime-cli-windows-amd64.zip' -OutFile $zip\r\n\
+             Expand-Archive -Path $zip -DestinationPath '{dest}' -Force\r\n\
+             Copy-Item (Join-Path '{dest}' 'wakatime-cli-windows-amd64.exe') (Join-Path '{dest}' 'wakatime-cli.exe') -Force\r\n\
+             Remove-Item $zip -Force\r\n\
+             Write-Host ''\r\n\
+             Write-Host 'Done. Restart V-Agent and your coding time will be tracked.' -ForegroundColor Green\r\n\
+             Read-Host 'Press Enter to close'\r\n",
+            repo = WAKATIME_CLI_REPO,
+            dest = dest
+        );
+        let mut path = std::env::temp_dir();
+        path.push("vagent_install_wakatime.ps1");
+        if std::fs::write(&path, script).is_ok()
+            && let Some(p) = path.to_str()
+        {
+            let _ = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-NoExit",
+                    "-File",
+                    p,
+                ])
+                .spawn();
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        // On Unix the official installer script is the documented path; open
+        // the releases page rather than piping a remote script into a shell.
+        let _ = std::process::Command::new("sh")
+            .args(["-c", &format!("xdg-open {WAKATIME_CLI_REPO}/releases/latest || open {WAKATIME_CLI_REPO}/releases/latest")])
+            .spawn();
+    }
+}
+
+/// Hackatime is configured but the agent binary is missing — tell the user
+/// plainly, and offer to fetch it. Shown at most once per session.
+fn prompt_install_cli(workspace: Entity<Workspace>, cx: &mut App) {
+    {
+        let mut prompted = match PROMPTED_FOR_CLI.lock() {
+            Ok(guard) => guard,
+            Err(_) => return,
+        };
+        if *prompted {
+            return;
+        }
+        *prompted = true;
+    }
+
+    workspace.update(cx, |workspace, cx| {
+        let toast = StatusToast::new(
+            "Hackatime is set up, but wakatime-cli is missing — your coding time isn't being tracked.",
+            cx,
+            move |this, _cx| {
+                this.icon(
+                    Icon::new(IconName::Warning)
+                        .size(IconSize::Small)
+                        .color(Color::Warning),
+                )
+                .auto_dismiss(false)
+                .action("Install wakatime-cli", move |_, _| launch_cli_install())
+                .dismiss_button(true)
+            },
+        );
+        workspace.toggle_status_toast(toast, cx);
+    });
+}
+
+/// Report activity, or prompt for the missing agent. Stays completely silent
+/// when the user hasn't opted in (no `~/.wakatime.cfg`).
+fn track_or_prompt(entity: String, is_write: bool, workspace: &Entity<Workspace>, cx: &mut App) {
+    if !wakatime_config_present() {
+        return;
+    }
+    if wakatime_cli().is_none() {
+        prompt_install_cli(workspace.clone(), cx);
+        return;
+    }
+    send_heartbeat(entity, is_write);
+}
+
 /// Absolute path of the item's file, if it has one on disk.
 fn entity_for(item: &dyn workspace::ItemHandle, workspace: &Entity<Workspace>, cx: &App) -> Option<String> {
     let project_path = item.project_path(cx)?;
@@ -157,20 +270,20 @@ pub fn watch(workspace: &Entity<Workspace>, cx: &mut Context<MultiWorkspace>) {
                 if let Some(item) = item.upgrade()
                     && let Some(entity) = entity_for(item.as_ref(), &workspace, cx)
                 {
-                    send_heartbeat(entity, true);
+                    track_or_prompt(entity, true, &workspace, cx);
                 }
             }
             // Opening or switching files is activity too (throttled).
             Event::ItemAdded { item } => {
                 if let Some(entity) = entity_for(item.as_ref(), &workspace, cx) {
-                    send_heartbeat(entity, false);
+                    track_or_prompt(entity, false, &workspace, cx);
                 }
             }
             Event::ActiveItemChanged => {
                 if let Some(item) = workspace.read(cx).active_item(cx)
                     && let Some(entity) = entity_for(item.as_ref(), &workspace, cx)
                 {
-                    send_heartbeat(entity, false);
+                    track_or_prompt(entity, false, &workspace, cx);
                 }
             }
             _ => {}

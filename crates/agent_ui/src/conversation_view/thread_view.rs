@@ -5601,18 +5601,13 @@ impl ThreadView {
     fn render_follow_toggle(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let following = self.is_following(cx);
 
+        // Upstream inserted "the" for the built-in agent because it was named
+        // "Zed Agent" ("Follow the Zed Agent"). V-Agent reads as a name, so the
+        // article is dropped for every agent alike.
         let tooltip_label = if following {
-            if self.agent_id.as_ref() == agent::ZED_AGENT_ID.as_ref() {
-                format!("Stop Following the {}", self.agent_id)
-            } else {
-                format!("Stop Following {}", self.agent_id)
-            }
+            format!("Stop Following {}", self.agent_id)
         } else {
-            if self.agent_id.as_ref() == agent::ZED_AGENT_ID.as_ref() {
-                format!("Follow the {}", self.agent_id)
-            } else {
-                format!("Follow {}", self.agent_id)
-            }
+            format!("Follow {}", self.agent_id)
         };
 
         IconButton::new("follow-agent", IconName::Crosshair)
@@ -6810,10 +6805,22 @@ impl ThreadView {
     fn available_local_commands(&self, cx: &App) -> Vec<PromptLocalCommand> {
         let mut commands = Vec::new();
 
-        // V-Agent: always-available conversation commands, so `/model`,
-        // `/effort` and `/clear` are discoverable straight from the input.
+        // V-Agent: always-available conversation commands, so `/model` and
+        // `/clear` are discoverable straight from the input.
         commands.push(PromptLocalCommand::SwitchModel);
-        commands.push(PromptLocalCommand::ThinkingEffort);
+
+        // `/effort` only when the model actually exposes effort levels. Ollama
+        // exposes none — its API takes a boolean `think` — and the effort
+        // selector is hidden for such models for exactly that reason. Offering
+        // the command anyway hands the user a slash command that does nothing.
+        let supports_effort = self
+            .as_native_thread(cx)
+            .and_then(|thread| thread.read(cx).model().cloned())
+            .is_some_and(|model| !model.supported_effort_levels().is_empty());
+        if supports_effort {
+            commands.push(PromptLocalCommand::ThinkingEffort);
+        }
+
         commands.push(PromptLocalCommand::ClearConversation);
 
         if self.is_thread_feedback_enabled(cx) {
@@ -7249,10 +7256,14 @@ impl ThreadView {
         let thread = self.thread.clone();
         let changed = self.entry_view_state.update(cx, |state, cx| {
             let thread = thread.read(cx);
+            // Timing is recorded regardless of `thinking_display`; the
+            // auto-expand pass below is skipped entirely under the
+            // Always* modes, so it can't be relied on to drive the timer.
+            let timed = state.record_thinking_activity(thread);
             if thread.status() != ThreadStatus::Generating {
-                return false;
+                return timed;
             }
-            state.auto_expand_streaming_thought(thread, cx)
+            state.auto_expand_streaming_thought(thread, cx) || timed
         });
         if changed {
             cx.notify();
@@ -7261,6 +7272,7 @@ impl ThreadView {
 
     pub(crate) fn clear_auto_expand_tracking(&mut self, cx: &mut Context<Self>) {
         self.entry_view_state.update(cx, |state, _cx| {
+            state.finalize_thinking_times();
             state.clear_auto_expand_tracking();
         });
     }
@@ -7294,6 +7306,22 @@ impl ThreadView {
         let entry_view_state = self.entry_view_state.read(cx);
         let (is_open, is_constrained) = entry_view_state.thinking_block_state(key, cx);
         let should_auto_scroll = entry_view_state.is_auto_expanded_thinking_block(key);
+        // Once a block finishes, report how long it took. Local models think
+        // slowly enough that "Thought for 6s" is real information, not noise.
+        let thinking_label: SharedString = match entry_view_state.thinking_duration(key) {
+            Some(elapsed) => {
+                let secs = elapsed.as_secs_f64();
+                if secs >= 60.0 {
+                    format!("Thought for {}m {}s", (secs / 60.0) as u64, (secs % 60.0) as u64)
+                        .into()
+                } else if secs >= 1.0 {
+                    format!("Thought for {secs:.0}s").into()
+                } else {
+                    "Thought for less than a second".into()
+                }
+            }
+            None => "Thinking".into(),
+        };
         let scroll_handle = entry_view_state
             .entry(entry_ix)
             .and_then(|entry| entry.scroll_handle_for_assistant_message_chunk(chunk_ix));
@@ -7330,7 +7358,7 @@ impl ThreadView {
                                 div()
                                     .text_size(self.tool_name_font_size())
                                     .text_color(cx.theme().colors().text_muted)
-                                    .child("Thinking"),
+                                    .child(thinking_label),
                             ),
                     )
                     .child(
