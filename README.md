@@ -1,3 +1,17 @@
+> # ⚠️ Legacy — no longer updated
+>
+> This branch preserves **V-Agent (Tauri edition)** — the original Tauri + React +
+> Rust build, covering releases **v0.9.0 – v0.9.4**. It is kept for reference and
+> for anyone still running those builds.
+>
+> **It receives no further updates, features, or fixes.**
+>
+> V-Agent has since been rebuilt from the ground up on a native, GPU-accelerated
+> editor engine. Active development continues on the
+> [`main`](https://github.com/otzpt/V-Agent/tree/main) branch.
+
+---
+
 <p align="center">
   <img src="src-tauri/icons/icon.svg" width="120" alt="V-Agent logo"/>
 </p>
