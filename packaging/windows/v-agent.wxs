@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  V-Agent Windows installer (WiX v5).
+
+  Per-user install to %LOCALAPPDATA%\Programs\V-Agent — no administrator
+  rights required, and it does not touch a separately installed Zed. Build
+  with packaging/windows/build-msi.ps1, which stages the binary and its
+  runtime DLLs onto an ASCII path first (the repo lives under a path with
+  non-ASCII characters, which some Windows build tools mishandle).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="V-Agent"
+      Manufacturer="V-Agent"
+      Version="1.0.0.0"
+      UpgradeCode="83E8D434-55B4-4A23-811D-231EE457B302"
+      Scope="perUser"
+      InstallerVersion="500"
+      Compressed="yes">
+
+    <MajorUpgrade
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of V-Agent is already installed." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="VAgentIcon" SourceFile="$(var.StageDir)\v-agent.ico" />
+    <Property Id="ARPPRODUCTICON" Value="VAgentIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/otzpt/V-Agent" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/otzpt/V-Agent" />
+
+    <!-- Install root: %LOCALAPPDATA%\Programs\V-Agent -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="V-Agent" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Start Menu folder -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="V-Agent" />
+    </StandardDirectory>
+
+    <!-- Payload: the editor plus its terminal and GPU runtime siblings -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component Id="MainExe">
+        <File Id="VAgentExe" Source="$(var.StageDir)\v-agent.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="ConptyDll">
+        <File Source="$(var.StageDir)\conpty.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="OpenConsoleExe">
+        <File Source="$(var.StageDir)\OpenConsole.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="AmdAgsDll">
+        <File Source="$(var.StageDir)\amd_ags_x64.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Start Menu shortcut. Per-user shortcuts key off an HKCU value. -->
+    <Component Id="StartMenuShortcut" Directory="AppShortcutFolder"
+               Guid="8D1D763C-F7B9-4867-9CC0-30175F7920D6">
+      <Shortcut Id="VAgentShortcut"
+                Name="V-Agent"
+                Description="A native, GPU-accelerated code editor with local-first AI"
+                Target="[INSTALLFOLDER]v-agent.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="VAgentIcon" />
+      <RemoveFolder Id="RemoveAppShortcutFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\V-Agent"
+                     Name="installed" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="Main" Title="V-Agent" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>
