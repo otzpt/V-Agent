@@ -26,6 +26,26 @@ even highlighting:
   interpreter automatically (`.bat`/`.cmd` → cmd, `.ps1` → PowerShell,
   `.sh` → bash — bash already covered).
 
+## Niche languages as a differentiator (positioning)
+
+Programmers of "forgotten" languages — Pascal, Ada, Fortran, Zig, Nim, Crystal,
+Haskell, OCaml, Forth, assembly — skew toward purists who distrust telemetry
+and want a fast, honest tool. VS Code treats these as second-class; Vim/Emacs
+serve them but intimidate newcomers. V-Agent already fits this crowd: **zero
+telemetry** (verified) and **local-first AI**.
+
+The play is not to bundle every language (that bloats the binary). It is:
+
+- Keep the community extension registry (already kept) so Zig/Nim/Haskell/OCaml
+  and friends are one click away.
+- **Curate** a recommended set of niche-language extensions with frictionless
+  install.
+- Bundle a small number the Zed ecosystem underserves but this audience wants.
+  **First concrete target: Pascal / FreePascal** (a maintainer here already
+  uses FPC). Needs a tree-sitter grammar + optional LSP (e.g. pasls).
+
+This pairs naturally with the batch/PowerShell grammar work above.
+
 ## Other tracked items (not blocking use)
 
 - macOS builds in the release workflow (needs a Mac runner + signing).
