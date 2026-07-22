@@ -70,11 +70,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libvulkan1 libwayland-dev libx11-xcb-dev libxkbcommon-x11-dev \
-            libzstd-dev make cmake clang lld llvm jq gettext-base elfutils \
-            libsqlite3-dev musl-tools musl-dev build-essential \
-            pipewire xdg-desktop-portal libstdc++-12-dev \
-            pkg-config libssl-dev
+            libasound2-dev libfontconfig-dev libfreetype6-dev \
+            libgit2-dev libva-dev libglib2.0-dev \
+            libvulkan1 libwayland-dev libx11-xcb-dev libxcb1-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev \
+            libzstd-dev libsqlite3-dev libssl-dev \
+            make cmake clang lld llvm build-essential \
+            curl git jq gettext-base elfutils \
+            musl-tools musl-dev pipewire xdg-desktop-portal \
+            pkg-config libstdc++-12-dev
 
       - name: Install cmake (macOS)
         if: runner.os == 'macOS'
@@ -98,8 +102,19 @@ jobs:
             Write-Warning "rc.exe not found under the Windows SDK"
           }
 
+      # Run under bash on every OS (windows-latest ships git-bash) so the same
+      # error-capture works everywhere. On failure the last lines are echoed as
+      # ::error:: annotations, which are readable without repo-admin log access.
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --bin v-agent
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! cargo build --release --target ${{ matrix.target }} --bin v-agent 2>&1 | tee build.log; then
+            echo "----- build error tail -----"
+            tail -50 build.log
+            tail -50 build.log | sed 's/^/::error::/'
+            exit 1
+          fi
 
       # ---- Package: portable archive per platform -----------------------------
       - name: Package (Windows)
