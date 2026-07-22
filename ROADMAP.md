@@ -46,6 +46,28 @@ The play is not to bundle every language (that bloats the binary). It is:
 
 This pairs naturally with the batch/PowerShell grammar work above.
 
+## The harness, not the model (core thesis)
+
+Small local models are not the bottleneck — the tooling around them is. The
+whole tool-use problem in 1.0 was fixed with ~59 tokens of prompt, not a new
+model. The differentiator is a **better harness around the same small model**,
+with no telemetry. Concrete work, by impact:
+
+1. **Robust `edit_file`.** When `old_text` matches multiple locations (e.g. a
+   file with many identical lines), fall back to line/fuzzy matching, ask the
+   model for more context, or suggest `write_file`. This is the exact failure
+   small models hit today.
+2. **Automatic tool-call retry.** On a failed call, feed the short error back
+   and let the model correct — small models usually fix it on the second try.
+3. **Curated, smaller toolset** for small models — 23 tools confuses them.
+4. **Grammar-constrained decoding** for tool calls (Ollama supports it) so calls
+   are always well-formed.
+5. **Prefer `write_file`** (whole-file rewrite) over surgical `edit_file` for
+   small models on small files — more reliable.
+
+Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
+harness code, not new weights.
+
 ## Other tracked items (not blocking use)
 
 - macOS builds in the release workflow (needs a Mac runner + signing).
