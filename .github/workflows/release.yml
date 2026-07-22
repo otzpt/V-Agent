@@ -1,14 +1,14 @@
 name: Release
 
-# Builds V-Agent for every platform on GitHub's own runners and attaches the
-# archives to a GitHub Release. Triggered by pushing a version tag (v1.0.0), or
-# manually from the Actions tab.
+# Builds V-Agent for Windows and Linux on GitHub runners and attaches the
+# archives to a GitHub Release. Triggered by a version tag (v1.0.0) or manually.
 #
-# This is the baseline matrix: it produces portable archives (.zip / .tar.gz),
-# which build reliably on all platforms with no code-signing. Richer installers
-# (.msi via packaging/windows, .dmg, .AppImage, .deb) can be layered on top once
-# this is green — see packaging/README.md. macOS and Windows artifacts are
-# UNSIGNED; users bypass the OS "unknown publisher" prompt on first run.
+# macOS is intentionally out of scope for now. Windows and Linux cover the
+# current users; macOS can be added back later (it needs a Mac runner and
+# signing setup). Tags with a suffix (v1.0.0-ci1) build without publishing, so
+# the workflow can be exercised safely.
+#
+# Artifacts are UNSIGNED; the OS may warn about an unknown publisher on first run.
 
 on:
   push:
@@ -21,7 +21,6 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  # Fail fast on warnings would be too strict for a fork tracking upstream.
   RUST_BACKTRACE: 1
 
 jobs:
@@ -38,13 +37,13 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             name: linux-x86_64
-          - os: macos-14
-            target: aarch64-apple-darwin
-            name: macos-aarch64
-          - os: macos-13
-            target: x86_64-apple-darwin
-            name: macos-x86_64
     steps:
+      # Zed's git dependencies have paths longer than the Windows 260-char
+      # default; without this, cargo fails while fetching them.
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+
       - uses: actions/checkout@v4
 
       - name: Install Rust
@@ -62,9 +61,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Linux: the exact dependency set from Zed's own script/linux (the
-      # hand-written list this replaced had a non-existent package). Adds
-      # pkg-config and libssl-dev for the build's -sys crates.
+      # Linux: the exact dependency set from Zed's script/linux (fontconfig,
+      # freetype, alsa, libgit2, va, glib, xcb, wayland, vulkan, ...).
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -80,13 +78,7 @@ jobs:
             musl-tools musl-dev pipewire xdg-desktop-portal \
             pkg-config libstdc++-12-dev
 
-      - name: Install cmake (macOS)
-        if: runner.os == 'macOS'
-        run: brew install cmake protobuf || true
-
-      # Windows: the icon-embedding build script needs rc.exe from the Windows
-      # SDK. windows-latest ships the SDK; point the build at its newest x64
-      # rc.exe, mirroring the local ZED_RC_TOOLKIT_PATH setup that builds fine.
+      # Windows: point the icon-embedding build script at the SDK's rc.exe.
       - name: Locate Windows SDK rc.exe
         if: runner.os == 'Windows'
         shell: pwsh
@@ -95,34 +87,29 @@ jobs:
                  Where-Object { Test-Path (Join-Path $_.FullName "x64\rc.exe") } |
                  Sort-Object Name -Descending | Select-Object -First 1
           if ($sdk) {
-            $p = Join-Path $sdk.FullName "x64"
-            "ZED_RC_TOOLKIT_PATH=$p" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Host "RC toolkit: $p"
-          } else {
-            Write-Warning "rc.exe not found under the Windows SDK"
-          }
+            "ZED_RC_TOOLKIT_PATH=$(Join-Path $sdk.FullName 'x64')" | Out-File $env:GITHUB_ENV -Append
+          } else { Write-Warning "rc.exe not found" }
 
-      # Run under bash on every OS (windows-latest ships git-bash) so the same
-      # error-capture works everywhere. On failure the last lines are echoed as
-      # ::error:: annotations, which are readable without repo-admin log access.
+      # On failure, surface only the error-bearing lines as ::error::
+      # annotations (readable without repo-admin log access).
       - name: Build
         shell: bash
         run: |
           set -o pipefail
           if ! cargo build --release --target ${{ matrix.target }} --bin v-agent 2>&1 | tee build.log; then
-            echo "----- build error tail -----"
-            tail -50 build.log
-            tail -50 build.log | sed 's/^/::error::/'
+            echo "----- error lines -----"
+            grep -iE "error(\[|:|s)|cannot find|failed to|undefined|not found|fatal|panicked|no space" build.log | tail -20 || tail -20 build.log
+            grep -iE "error(\[|:|s)|cannot find|failed to|undefined|not found|fatal|panicked|no space" build.log | tail -20 | sed 's/^/::error::/'
             exit 1
           fi
 
-      # ---- Package: portable archive per platform -----------------------------
-      - name: Package (Windows)
+      # ---- Package -----------------------------------------------------------
+      - name: Package Windows (portable zip)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $rel = "target/${{ matrix.target }}/release"
-          $out = "V-Agent-${{ matrix.name }}"
+          $out = "V-Agent-windows-x86_64"
           New-Item -ItemType Directory -Force $out | Out-Null
           Copy-Item "$rel/v-agent.exe" $out
           foreach ($f in @("conpty.dll","OpenConsole.exe")) {
@@ -130,38 +117,101 @@ jobs:
           }
           Compress-Archive -Path "$out/*" -DestinationPath "$out.zip" -Force
 
-      - name: Package (Unix)
-        if: runner.os != 'Windows'
+      - name: Package Windows (MSI)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix 2>&1 | Out-Null
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          pwsh packaging/windows/build-msi.ps1 `
+            -TargetDir (Resolve-Path "target/${{ matrix.target }}").Path `
+            -OutFile "$PWD/V-Agent-1.0.0-x64.msi"
+
+      - name: Package Linux (tar.gz)
+        if: runner.os == 'Linux'
         run: |
           rel="target/${{ matrix.target }}/release"
-          out="V-Agent-${{ matrix.name }}"
+          out="V-Agent-linux-x86_64"
           mkdir -p "$out"
           cp "$rel/v-agent" "$out/"
           tar -czf "$out.tar.gz" "$out"
 
-      - name: Upload build artifact
+      - name: Package Linux (.deb)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          rel="target/${{ matrix.target }}/release"
+          pkg=deb/v-agent
+          mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$pkg/usr/share/applications"
+          cp "$rel/v-agent" "$pkg/usr/bin/v-agent"
+          cat > "$pkg/DEBIAN/control" <<EOF
+          Package: v-agent
+          Version: 1.0.0
+          Architecture: amd64
+          Maintainer: V-Agent <v-agent@noreply.invalid>
+          Description: A native, GPU-accelerated code editor with local-first AI.
+          EOF
+          cat > "$pkg/usr/share/applications/v-agent.desktop" <<EOF
+          [Desktop Entry]
+          Name=V-Agent
+          Exec=/usr/bin/v-agent %U
+          Type=Application
+          Categories=Development;TextEditor;
+          Terminal=false
+          EOF
+          dpkg-deb --build --root-owner-group "$pkg" "V-Agent-1.0.0-amd64.deb"
+
+      - name: Package Linux (AppImage)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          rel="target/${{ matrix.target }}/release"
+          APPDIR=V-Agent.AppDir
+          mkdir -p "$APPDIR/usr/bin"
+          cp "$rel/v-agent" "$APPDIR/usr/bin/v-agent"
+          cat > "$APPDIR/v-agent.desktop" <<EOF
+          [Desktop Entry]
+          Name=V-Agent
+          Exec=v-agent
+          Icon=v-agent
+          Type=Application
+          Categories=Development;
+          EOF
+          cp crates/zed/resources/app-icon.png "$APPDIR/v-agent.png" || touch "$APPDIR/v-agent.png"
+          cat > "$APPDIR/AppRun" <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/v-agent" "$@"
+          EOF
+          chmod +x "$APPDIR/AppRun"
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool
+          chmod +x /tmp/appimagetool
+          ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run "$APPDIR" "V-Agent-1.0.0-x86_64.AppImage"
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: V-Agent-${{ matrix.name }}
           path: |
-            V-Agent-${{ matrix.name }}.zip
-            V-Agent-${{ matrix.name }}.tar.gz
-          if-no-files-found: error
+            V-Agent-windows-x86_64.zip
+            V-Agent-1.0.0-x64.msi
+            V-Agent-linux-x86_64.tar.gz
+            V-Agent-1.0.0-amd64.deb
+            V-Agent-1.0.0-x86_64.AppImage
+          if-no-files-found: warn
 
   release:
     name: Publish release
     needs: build
     runs-on: ubuntu-latest
-    # Publish only for clean version tags (v1.2.3). Tags with a suffix
-    # (v1.0.0-ci1, v1.0.0-rc1, ...) build the matrix but do NOT publish a
-    # release, so the workflow can be exercised without creating a public
-    # download. Manual workflow_dispatch runs never publish either.
+    # Publish only for clean version tags (v1.2.3). Suffixed tags (-ci1) build
+    # but do not publish; manual runs never publish.
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -169,9 +219,10 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: false
           body: |
-            V-Agent release — portable builds for Windows, Linux and macOS.
+            V-Agent release — Windows and Linux builds.
 
-            These archives are **unsigned**. On first launch the OS may warn
-            about an unknown publisher; on Windows choose *More info → Run
-            anyway*, on macOS right-click → Open. A Windows `.msi` can be built
-            locally with `packaging/windows/build-msi.ps1`.
+            **Windows:** `.msi` installer, or the portable `.zip`.
+            **Linux:** `.deb`, `.AppImage`, or the portable `.tar.gz`.
+
+            Unsigned: on first launch the OS may warn about an unknown
+            publisher (Windows: *More info → Run anyway*).
