@@ -1052,7 +1052,9 @@
     // Whether to show the agent panel button in the status bar.
     "button": true,
     // Where to dock the agent panel. Can be 'left', 'right' or 'bottom'.
-    "dock": "left",
+    // V-Agent docks the AI panel on the right by default, so it sits opposite
+    // the file tree instead of fighting it for the left rail.
+    "dock": "right",
     // Whether the agent panel should use flexible (proportional) sizing.
     //
     // Default: true

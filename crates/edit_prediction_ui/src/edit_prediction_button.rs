@@ -1461,7 +1461,10 @@ pub fn set_completion_provider(fs: Arc<dyn Fs>, cx: &mut App, provider: EditPred
 pub fn get_available_providers(cx: &mut App) -> Vec<EditPredictionProvider> {
     let mut providers = Vec::new();
 
-    providers.push(EditPredictionProvider::Zed);
+    // V-Agent does not offer "Zed AI" edit predictions: the Zed provider is
+    // Zed Industries' hosted Zeta model, which needs their servers and a Zed
+    // account. Only providers the user can actually use are listed below
+    // (Copilot, Codestral, Ollama, an OpenAI-compatible endpoint, ...).
 
     let app_state = workspace::AppState::global(cx);
     if copilot::GlobalCopilotAuth::try_get_or_init(app_state, cx)
