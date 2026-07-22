@@ -11,15 +11,20 @@ What already works today:
 
 - The integrated terminal runs any shell via the `terminal.shell` setting —
   point it at `cmd.exe`, `bash`, or `pwsh.exe`.
+- **bash (`.sh`) is already fully native** — bundled tree-sitter grammar
+  (highlighting) *and* bash-language-server (completions, diagnostics).
 
-What this task adds:
+What this task adds — batch and PowerShell have NO native support today, not
+even highlighting:
 
+- Bundle tree-sitter grammars for `.bat`/`.cmd` and `.ps1` (community grammars
+  `tree-sitter-powershell` and a batch grammar exist), or ship them as
+  extensions.
+- Optional: PowerShell LSP (PowerShellEditorServices) for `.ps1` IDE features.
 - Quick shell switching from the terminal UI (a dropdown), not just settings.
 - **Build & Run** detecting script type by extension and invoking the right
   interpreter automatically (`.bat`/`.cmd` → cmd, `.ps1` → PowerShell,
-  `.sh` → bash).
-- Syntax highlighting for `.bat`/`.cmd` and `.ps1` (may need a language
-  extension).
+  `.sh` → bash — bash already covered).
 
 ## Other tracked items (not blocking use)
 
