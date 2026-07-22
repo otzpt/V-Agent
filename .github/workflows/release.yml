@@ -62,20 +62,41 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Linux: the GPU/audio/windowing dev libraries the native build needs.
-      # Zed ships script/install-linux which installs exactly this set.
+      # Linux: the exact dependency set from Zed's own script/linux (the
+      # hand-written list this replaced had a non-existent package). Adds
+      # pkg-config and libssl-dev for the build's -sys crates.
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2-dev libwayland-dev libxcb-dev libxkbcommon-dev \
-            libssl-dev libzstd-dev libvulkan-dev vulkan-tools \
-            libgit2-dev cmake
+            libvulkan1 libwayland-dev libx11-xcb-dev libxkbcommon-x11-dev \
+            libzstd-dev make cmake clang lld llvm jq gettext-base elfutils \
+            libsqlite3-dev musl-tools musl-dev build-essential \
+            pipewire xdg-desktop-portal libstdc++-12-dev \
+            pkg-config libssl-dev
 
       - name: Install cmake (macOS)
         if: runner.os == 'macOS'
         run: brew install cmake protobuf || true
+
+      # Windows: the icon-embedding build script needs rc.exe from the Windows
+      # SDK. windows-latest ships the SDK; point the build at its newest x64
+      # rc.exe, mirroring the local ZED_RC_TOOLKIT_PATH setup that builds fine.
+      - name: Locate Windows SDK rc.exe
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $sdk = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+                 Where-Object { Test-Path (Join-Path $_.FullName "x64\rc.exe") } |
+                 Sort-Object Name -Descending | Select-Object -First 1
+          if ($sdk) {
+            $p = Join-Path $sdk.FullName "x64"
+            "ZED_RC_TOOLKIT_PATH=$p" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Host "RC toolkit: $p"
+          } else {
+            Write-Warning "rc.exe not found under the Windows SDK"
+          }
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --bin v-agent
