@@ -68,6 +68,19 @@ with no telemetry. Concrete work, by impact:
 Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
 harness code, not new weights.
 
+## FreeBSD support (next release)
+
+Add FreeBSD as a build target. It is not from scratch: the codebase already
+carries `#[cfg(target_os = "freebsd")]` branches, and `script/bundle-freebsd`
+exists. Work needed:
+
+- A FreeBSD build job in the release workflow. GitHub has no native FreeBSD
+  runner, so use the `vmactions/freebsd-vm` action (runs the build inside a
+  FreeBSD VM on a Linux runner) or a cross-build.
+- FreeBSD `pkg` dependencies (the equivalents of the Linux GPU/font/wayland
+  set): vulkan-loader, wayland, libxkbcommon, fontconfig, freetype2, etc.
+- Package as a `.pkg` or a portable `.tar.gz`.
+
 ## Other tracked items (not blocking use)
 
 - macOS builds in the release workflow (needs a Mac runner + signing).
