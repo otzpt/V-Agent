@@ -96,6 +96,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          # webrtc-sys (pulled in by LiveKit, for the collaboration feature we
+          # disable) is old C++ that newer GCC rejects. -fpermissive downgrades
+          # those errors to warnings so it still builds. Linux/GCC only.
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            export CXXFLAGS="${CXXFLAGS:-} -fpermissive"
+          fi
           if ! cargo build --release --target ${{ matrix.target }} --bin v-agent 2>&1 | tee build.log; then
             echo "----- error lines -----"
             grep -iE "error(\[|:|s)|cannot find|failed to|undefined|not found|fatal|panicked|no space" build.log | tail -20 || tail -20 build.log
