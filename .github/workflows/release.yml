@@ -1,0 +1,138 @@
+name: Release
+
+# Builds V-Agent for every platform on GitHub's own runners and attaches the
+# archives to a GitHub Release. Triggered by pushing a version tag (v1.0.0), or
+# manually from the Actions tab.
+#
+# This is the baseline matrix: it produces portable archives (.zip / .tar.gz),
+# which build reliably on all platforms with no code-signing. Richer installers
+# (.msi via packaging/windows, .dmg, .AppImage, .deb) can be layered on top once
+# this is green — see packaging/README.md. macOS and Windows artifacts are
+# UNSIGNED; users bypass the OS "unknown publisher" prompt on first run.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  # Fail fast on warnings would be too strict for a fork tracking upstream.
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: windows-x86_64
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            name: linux-x86_64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            name: macos-aarch64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            name: macos-x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Linux: the GPU/audio/windowing dev libraries the native build needs.
+      # Zed ships script/install-linux which installs exactly this set.
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libwayland-dev libxcb-dev libxkbcommon-dev \
+            libssl-dev libzstd-dev libvulkan-dev vulkan-tools \
+            libgit2-dev cmake
+
+      - name: Install cmake (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake protobuf || true
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }} --bin v-agent
+
+      # ---- Package: portable archive per platform -----------------------------
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $rel = "target/${{ matrix.target }}/release"
+          $out = "V-Agent-${{ matrix.name }}"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Copy-Item "$rel/v-agent.exe" $out
+          foreach ($f in @("conpty.dll","OpenConsole.exe")) {
+            if (Test-Path "$rel/$f") { Copy-Item "$rel/$f" $out }
+          }
+          Compress-Archive -Path "$out/*" -DestinationPath "$out.zip" -Force
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          rel="target/${{ matrix.target }}/release"
+          out="V-Agent-${{ matrix.name }}"
+          mkdir -p "$out"
+          cp "$rel/v-agent" "$out/"
+          tar -czf "$out.tar.gz" "$out"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: V-Agent-${{ matrix.name }}
+          path: |
+            V-Agent-${{ matrix.name }}.zip
+            V-Agent-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    # Only publish for tag pushes, not manual test runs.
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          body: |
+            V-Agent release — portable builds for Windows, Linux and macOS.
+
+            These archives are **unsigned**. On first launch the OS may warn
+            about an unknown publisher; on Windows choose *More info → Run
+            anyway*, on macOS right-click → Open. A Windows `.msi` can be built
+            locally with `packaging/windows/build-msi.ps1`.
