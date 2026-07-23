@@ -68,7 +68,13 @@ with no telemetry. Concrete work, by impact:
 Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
 harness code, not new weights.
 
-## FreeBSD support (next release)
+## FreeBSD & Arch Linux packaging (next release)
+
+**Arch:** a `PKGBUILD` / AUR package (`v-agent-bin` from the release, or source).
+The AppImage already runs on Arch; a native package is nicer for Arch users
+(a maintainer here runs Arch).
+
+### FreeBSD
 
 Add FreeBSD as a build target. It is not from scratch: the codebase already
 carries `#[cfg(target_os = "freebsd")]` branches, and `script/bundle-freebsd`
