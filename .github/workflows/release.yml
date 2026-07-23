@@ -143,14 +143,20 @@ jobs:
           cp "$rel/v-agent" "$out/"
           tar -czf "$out.tar.gz" "$out"
 
+      # Icon + .desktop use the app id (io.github.otzpt.VAgent), which is also
+      # the window WM_CLASS. That is what makes the desktop show V-Agent's icon
+      # instead of Zed's (the previous "dev.zed.Zed" id matched an installed
+      # Zed's icon). StartupWMClass ties the running window to this entry.
       - name: Package Linux (.deb)
         if: runner.os == 'Linux'
         continue-on-error: true
         run: |
           rel="target/${{ matrix.target }}/release"
+          appid=io.github.otzpt.VAgent
           pkg=deb/v-agent
-          mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$pkg/usr/share/applications"
+          mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$pkg/usr/share/applications" "$pkg/usr/share/icons/hicolor/512x512/apps"
           cp "$rel/v-agent" "$pkg/usr/bin/v-agent"
+          cp crates/zed/resources/app-icon.png "$pkg/usr/share/icons/hicolor/512x512/apps/$appid.png"
           cat > "$pkg/DEBIAN/control" <<EOF
           Package: v-agent
           Version: 1.0.0
@@ -158,12 +164,14 @@ jobs:
           Maintainer: V-Agent <v-agent@noreply.invalid>
           Description: A native, GPU-accelerated code editor with local-first AI.
           EOF
-          cat > "$pkg/usr/share/applications/v-agent.desktop" <<EOF
+          cat > "$pkg/usr/share/applications/$appid.desktop" <<EOF
           [Desktop Entry]
           Name=V-Agent
           Exec=/usr/bin/v-agent %U
+          Icon=$appid
           Type=Application
           Categories=Development;TextEditor;
+          StartupWMClass=$appid
           Terminal=false
           EOF
           dpkg-deb --build --root-owner-group "$pkg" "V-Agent-amd64.deb"
@@ -173,18 +181,21 @@ jobs:
         continue-on-error: true
         run: |
           rel="target/${{ matrix.target }}/release"
+          appid=io.github.otzpt.VAgent
           APPDIR=V-Agent.AppDir
-          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/icons/hicolor/512x512/apps"
           cp "$rel/v-agent" "$APPDIR/usr/bin/v-agent"
-          cat > "$APPDIR/v-agent.desktop" <<EOF
+          cp crates/zed/resources/app-icon.png "$APPDIR/$appid.png"
+          cp crates/zed/resources/app-icon.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/$appid.png"
+          cat > "$APPDIR/$appid.desktop" <<EOF
           [Desktop Entry]
           Name=V-Agent
           Exec=v-agent
-          Icon=v-agent
+          Icon=$appid
           Type=Application
           Categories=Development;
+          StartupWMClass=$appid
           EOF
-          cp crates/zed/resources/app-icon.png "$APPDIR/v-agent.png" || touch "$APPDIR/v-agent.png"
           cat > "$APPDIR/AppRun" <<'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
@@ -194,6 +205,47 @@ jobs:
           wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool
           chmod +x /tmp/appimagetool
           ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run "$APPDIR" "V-Agent-x86_64.AppImage"
+
+      # Native Arch package (.pkg.tar.zst) — install with `pacman -U`. Built in
+      # an Arch container running makepkg. No AUR involved; the package is
+      # attached to the GitHub release directly.
+      - name: Package Linux (Arch .pkg.tar.zst)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          rel="$(pwd)/target/${{ matrix.target }}/release"
+          appid=io.github.otzpt.VAgent
+          mkdir -p archpkg && cd archpkg
+          cp "$rel/v-agent" v-agent
+          cp "$(pwd)/../crates/zed/resources/app-icon.png" icon.png
+          cat > v-agent.desktop <<EOF
+          [Desktop Entry]
+          Name=V-Agent
+          Exec=/usr/bin/v-agent %U
+          Icon=$appid
+          Type=Application
+          Categories=Development;TextEditor;
+          StartupWMClass=$appid
+          Terminal=false
+          EOF
+          cat > PKGBUILD <<EOF
+          pkgname=v-agent
+          pkgver=1.0.0
+          pkgrel=1
+          pkgdesc="A native, GPU-accelerated code editor with local-first AI"
+          arch=('x86_64')
+          url="https://github.com/otzpt/V-Agent"
+          license=('GPL3')
+          package() {
+            install -Dm755 "\$startdir/v-agent" "\$pkgdir/usr/bin/v-agent"
+            install -Dm644 "\$startdir/v-agent.desktop" "\$pkgdir/usr/share/applications/$appid.desktop"
+            install -Dm644 "\$startdir/icon.png" "\$pkgdir/usr/share/icons/hicolor/512x512/apps/$appid.png"
+          }
+          EOF
+          docker run --rm -v "$(pwd)":/pkg -w /pkg archlinux:base-devel bash -c '
+            useradd -m builder && chown -R builder /pkg &&
+            sudo -u builder makepkg -f --noconfirm --nodeps'
+          cp v-agent-*.pkg.tar.zst "$GITHUB_WORKSPACE/V-Agent-x86_64.pkg.tar.zst" || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -205,6 +257,7 @@ jobs:
             V-Agent-linux-x86_64.tar.gz
             V-Agent-amd64.deb
             V-Agent-x86_64.AppImage
+            V-Agent-x86_64.pkg.tar.zst
           if-no-files-found: warn
 
   release:

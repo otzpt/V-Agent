@@ -68,6 +68,29 @@ with no telemetry. Concrete work, by impact:
 Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
 harness code, not new weights.
 
+## Distro package managers — the honest state
+
+**`pacman -S v-agent` / `apt install v-agent` from official repos: not without
+distro adoption.**
+
+- **Arch official (core/extra):** requires an Arch Package Maintainer to adopt
+  it. The AUR is the community path *around* that; refusing AUR leaves only
+  official adoption, which does not happen for a young fork.
+- **Debian/Ubuntu:** needs a Debian Maintainer + review + the NEW queue
+  (months to years).
+
+What IS achievable without adoption:
+
+- **A self-hosted package repository** you sign and host: users add it once,
+  then `pacman -S` / `apt install` work. This is real infrastructure (hosting +
+  GPG signing + a `repo-add` / `dpkg-scanpackages` pipeline).
+- **Direct install packages** (already the plan): `.pkg.tar.zst` (`pacman -U`),
+  `.deb` (`dpkg -i` / `apt install ./file.deb`), `.AppImage`, attached to the
+  GitHub release. No repo, no AUR.
+
+Recommended order: ship the direct packages now (done in the release workflow);
+consider a self-hosted repo later if demand warrants the hosting cost.
+
 ## FreeBSD & Arch Linux packaging (next release)
 
 **Arch:** a `PKGBUILD` / AUR package (`v-agent-bin` from the release, or source).

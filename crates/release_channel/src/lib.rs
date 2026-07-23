@@ -210,13 +210,16 @@ impl ReleaseChannel {
 
     /// Returns the application ID that's used by Wayland as application ID
     /// and WM_CLASS on X11.
-    /// This also has to match the bundle identifier for V-Agent on macOS.
+    /// Must match the bundle identifier (Cargo.toml) and the Linux .desktop /
+    /// icon name. Upstream returned "dev.zed.Zed"; on Linux that is the window
+    /// app-id / WM_CLASS, so a machine with the real Zed installed showed Zed's
+    /// dock icon for V-Agent. Using V-Agent's own id fixes that.
     pub fn app_id(&self) -> &'static str {
         match self {
-            ReleaseChannel::Dev => "dev.zed.Zed-Dev",
-            ReleaseChannel::Nightly => "dev.zed.Zed-Nightly",
-            ReleaseChannel::Preview => "dev.zed.Zed-Preview",
-            ReleaseChannel::Stable => "dev.zed.Zed",
+            ReleaseChannel::Dev => "io.github.otzpt.VAgent-Dev",
+            ReleaseChannel::Nightly => "io.github.otzpt.VAgent-Nightly",
+            ReleaseChannel::Preview => "io.github.otzpt.VAgent-Preview",
+            ReleaseChannel::Stable => "io.github.otzpt.VAgent",
         }
     }
 
