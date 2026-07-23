@@ -190,16 +190,88 @@ invoked.
 
 ## Building from source
 
-Requirements: [Rust](https://rustup.rs) (stable), `protoc`, CMake, plus the
-Windows 10/11 SDK on Windows (Vulkan and wayland/x11 dev libraries on Linux).
+Everyone needs [Rust](https://rustup.rs) (stable), `protoc` and CMake. Then the
+platform bits below.
+
+### 1. Get the code
 
 ```sh
-git clone <this-repo>
-cd v-agent
-cargo build --release -p zed
+git clone https://github.com/otzpt/V-Agent.git
+cd V-Agent
 ```
 
-The binary is written to `target/release/`.
+### 2. Install build dependencies
+
+**Arch / Manjaro:**
+
+```sh
+sudo pacman -S --needed base-devel rustup cmake clang lld llvm protobuf \
+  vulkan-icd-loader wayland libxkbcommon libxcb fontconfig freetype2 \
+  alsa-lib libgit2 sqlite zstd pipewire
+rustup default stable
+```
+
+**Debian / Ubuntu:**
+
+```sh
+sudo apt update && sudo apt install -y \
+  build-essential cmake clang lld llvm pkg-config protobuf-compiler \
+  libvulkan1 libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+  libx11-xcb-dev libxcb1-dev libfontconfig-dev libfreetype6-dev \
+  libasound2-dev libgit2-dev libsqlite3-dev libzstd-dev libssl-dev \
+  libglib2.0-dev libva-dev pipewire xdg-desktop-portal
+```
+
+(Or just run `script/linux`, which detects your distro and installs the set.)
+
+**Windows:** install the Windows 10/11 SDK (for `rc.exe`), plus `protoc` and
+CMake on `PATH`. If the icon-embedding step cannot find `rc.exe`, point it at
+the SDK:
+
+```powershell
+$env:ZED_RC_TOOLKIT_PATH = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64"
+```
+
+### 3. Build
+
+```sh
+cargo build --release --bin v-agent
+```
+
+The binary lands in `target/release/v-agent` (`v-agent.exe` on Windows).
+A full build takes roughly 15–40 minutes depending on the machine.
+
+Run it straight from the target directory:
+
+```sh
+./target/release/v-agent .
+```
+
+### 4. Optional — build the installers
+
+**Windows `.msi`** (needs the [WiX](https://wixtoolset.org) dotnet tool):
+
+```powershell
+dotnet tool install --global wix
+pwsh packaging/windows/build-msi.ps1 -TargetDir target -OutFile V-Agent.msi
+```
+
+The Linux `.deb`, `.AppImage` and Arch `.pkg.tar.zst` are produced by the
+release workflow — see [`.github/workflows/release.yml`](.github/workflows/release.yml)
+for the exact steps if you want to reproduce them locally.
+
+### Contributing back
+
+```sh
+git checkout -b my-change
+# ... edit ...
+cargo build --release --bin v-agent   # make sure it still builds
+git commit -am "Describe the change"
+git push origin my-change
+```
+
+Then open a pull request. See [CONTRIBUTING.md](./CONTRIBUTING.md) — changes to
+the underlying editor are often better sent upstream to Zed.
 
 ## License
 
