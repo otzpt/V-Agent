@@ -10,6 +10,84 @@ terminal, extensions) and layers on its own identity and workflow.
 > "Zed" is a trademark of Zed Industries, Inc. and is used here only to identify
 > the upstream project this is derived from. See [CREDITS.md](./CREDITS.md).
 
+## Install
+
+All commands below pull the **latest release** — they never go stale.
+[Browse the releases](https://github.com/otzpt/V-Agent/releases) if you prefer
+to download by hand.
+
+### Linux
+
+**Arch, Manjaro, EndeavourOS, CachyOS** — native package:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.pkg.tar.zst
+sudo pacman -U V-Agent-x86_64.pkg.tar.zst
+```
+
+**Debian, Ubuntu, Mint, Pop!_OS** — `.deb`:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-amd64.deb
+sudo apt install ./V-Agent-amd64.deb
+```
+
+**Any distro** — AppImage, no install needed:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.AppImage
+chmod +x V-Agent-x86_64.AppImage
+./V-Agent-x86_64.AppImage
+```
+
+**Portable tarball** — unpack and run:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-linux-x86_64.tar.gz
+tar -xzf V-Agent-linux-x86_64.tar.gz
+./V-Agent-linux-x86_64/v-agent
+```
+
+To uninstall: `sudo pacman -R v-agent` (Arch) or `sudo apt remove v-agent`
+(Debian/Ubuntu). The AppImage and tarball are self-contained — just delete them.
+
+### Windows
+
+**Installer (.msi)** — installs to `%LOCALAPPDATA%\Programs\V-Agent`, no
+administrator rights required:
+
+```powershell
+irm https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x64.msi -OutFile V-Agent.msi
+msiexec /i V-Agent.msi
+```
+
+**Portable (.zip)** — unpack and run `v-agent.exe`:
+
+```powershell
+irm https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-windows-x86_64.zip -OutFile V-Agent.zip
+Expand-Archive V-Agent.zip -DestinationPath V-Agent
+.\V-Agent\v-agent.exe
+```
+
+### macOS
+
+Not built yet — see [ROADMAP.md](./ROADMAP.md). Build from source meanwhile.
+
+### A note on signing
+
+Releases are **not code-signed**. Windows SmartScreen will say "unknown
+publisher" (*More info → Run anyway*), and macOS would require right-click →
+Open. This is the absence of a paid certificate, not a defect. Every file's
+checksum is on the release page if you want to verify it.
+
+### Distro repositories
+
+`pacman -S v-agent` and `apt install v-agent` from the *official* repositories
+are not available: those require the distro's own maintainers to adopt the
+package. The commands above install the same binaries directly. See
+[ROADMAP.md](./ROADMAP.md) for the details and what a self-hosted repository
+would take.
+
 ## What V-Agent adds on top of Zed
 
 - **Activity bar** — a VS Code-style left icon rail (Explorer, Search, Git, AI,
