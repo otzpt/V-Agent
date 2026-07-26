@@ -48,6 +48,44 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
+**Build the Arch package yourself** — from a checkout, if you would rather not
+trust a prebuilt binary:
+
+```bash
+git clone https://github.com/otzpt/V-Agent.git
+cd V-Agent/packaging/arch
+makepkg -si                  # from source (long build)
+makepkg -si -p PKGBUILD-bin  # or repackage the released binary (fast)
+```
+
+#### Runtime dependencies
+
+The `.pkg.tar.zst` and `.deb` declare their dependencies, so `pacman -U` and
+`apt install` pull them in automatically. The **AppImage and tarball do not** —
+they are a bare binary. If V-Agent exits immediately or complains about a
+missing shared library, install the runtime set by hand:
+
+```bash
+# Arch / Manjaro / EndeavourOS / CachyOS
+sudo pacman -S --needed alsa-lib curl fontconfig gcc-libs git glib2 libxcb \
+  libx11 libxkbcommon libxkbcommon-x11 sqlite vulkan-icd-loader wayland zstd
+```
+
+On **Debian/Ubuntu** the runtime libraries ship with any desktop install, so the
+AppImage normally just works. Rather than hand-install them — package names
+moved in Ubuntu 24.04's `t64` transition, and `libasound2` there is now a
+*different* package — let `apt` resolve the real set from the `.deb`:
+
+```bash
+# Debian / Ubuntu / Mint / Pop!_OS
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-amd64.deb
+sudo apt install -y ./V-Agent-amd64.deb   # pulls in every runtime dependency
+```
+
+You also need a working Vulkan driver for GPU acceleration — `vulkan-icd-loader`
+plus `mesa` (AMD/Intel) or `nvidia-utils` (NVIDIA) on Arch; `libvulkan1` plus
+`mesa-vulkan-drivers` on Debian/Ubuntu.
+
 To uninstall: `sudo pacman -R v-agent` (Arch) or `sudo apt remove v-agent`
 (Debian/Ubuntu). The AppImage and tarball are self-contained — just delete them.
 
@@ -84,9 +122,12 @@ checksum is on the release page if you want to verify it.
 
 `pacman -S v-agent` and `apt install v-agent` from the *official* repositories
 are not available: those require the distro's own maintainers to adopt the
-package. The commands above install the same binaries directly. See
-[ROADMAP.md](./ROADMAP.md) for the details and what a self-hosted repository
-would take.
+package. The commands above install the same binaries directly.
+
+For Arch, the AUR PKGBUILDs live in [`packaging/arch/`](./packaging/arch) and
+can be built locally today with `makepkg -si`; publishing them to the AUR is
+still pending. See [ROADMAP.md](./ROADMAP.md) for the details and what a
+self-hosted repository would take.
 
 ## What V-Agent adds on top of Zed
 

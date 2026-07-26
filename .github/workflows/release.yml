@@ -211,41 +211,61 @@ jobs:
       # attached to the GitHub release directly.
       - name: Package Linux (Arch .pkg.tar.zst)
         if: runner.os == 'Linux'
-        continue-on-error: true
         run: |
+          set -euo pipefail
           rel="$(pwd)/target/${{ matrix.target }}/release"
           appid=io.github.otzpt.VAgent
+          # Track the crate version rather than a literal, so the package
+          # version cannot silently drift from the binary it contains.
+          pkgver="$(script/get-crate-version zed)"
           mkdir -p archpkg && cd archpkg
           cp "$rel/v-agent" v-agent
-          cp "$(pwd)/../crates/zed/resources/app-icon.png" icon.png
+          cp "$GITHUB_WORKSPACE/crates/zed/resources/app-icon.png" icon.png
           cat > v-agent.desktop <<EOF
           [Desktop Entry]
           Name=V-Agent
+          GenericName=Code Editor
+          Comment=Native, GPU-accelerated code editor with local-first AI
           Exec=/usr/bin/v-agent %U
           Icon=$appid
           Type=Application
-          Categories=Development;TextEditor;
+          Categories=Development;IDE;TextEditor;
+          MimeType=text/plain;inode/directory;
+          StartupNotify=true
           StartupWMClass=$appid
           Terminal=false
           EOF
+          # depends= mirrors the official Arch `zed` package. Without it the
+          # package installs but the binary fails to start on a clean system,
+          # because nothing pulls in the Wayland/Vulkan/fontconfig stack.
           cat > PKGBUILD <<EOF
           pkgname=v-agent
-          pkgver=1.0.0
+          pkgver=$pkgver
           pkgrel=1
-          pkgdesc="A native, GPU-accelerated code editor with local-first AI"
+          pkgdesc="Native, GPU-accelerated code editor with local-first AI"
           arch=('x86_64')
           url="https://github.com/otzpt/V-Agent"
-          license=('GPL3')
+          license=('GPL-3.0-or-later')
+          depends=('alsa-lib' 'curl' 'fontconfig' 'gcc-libs' 'git' 'glib2'
+                   'glibc' 'libxcb' 'libx11' 'libxkbcommon' 'libxkbcommon-x11'
+                   'sqlite' 'vulkan-icd-loader' 'wayland' 'zstd')
+          optdepends=('nodejs: language servers that ship as npm packages'
+                      'npm: installing language servers at runtime'
+                      'vulkan-driver: GPU acceleration')
+          options=('!strip' '!debug')
           package() {
             install -Dm755 "\$startdir/v-agent" "\$pkgdir/usr/bin/v-agent"
             install -Dm644 "\$startdir/v-agent.desktop" "\$pkgdir/usr/share/applications/$appid.desktop"
             install -Dm644 "\$startdir/icon.png" "\$pkgdir/usr/share/icons/hicolor/512x512/apps/$appid.png"
           }
           EOF
+          # --nodeps is deliberate: the container only assembles an already-built
+          # binary, so it must not install the runtime stack just to package it.
+          # The depends= above is what matters to end users at `pacman -U` time.
           docker run --rm -v "$(pwd)":/pkg -w /pkg archlinux:base-devel bash -c '
             useradd -m builder && chown -R builder /pkg &&
             sudo -u builder makepkg -f --noconfirm --nodeps'
-          cp v-agent-*.pkg.tar.zst "$GITHUB_WORKSPACE/V-Agent-x86_64.pkg.tar.zst" || true
+          cp v-agent-*.pkg.tar.zst "$GITHUB_WORKSPACE/V-Agent-x86_64.pkg.tar.zst"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -260,13 +280,60 @@ jobs:
             V-Agent-x86_64.pkg.tar.zst
           if-no-files-found: warn
 
+  # GitHub has no native FreeBSD runner, so the build runs inside a FreeBSD VM
+  # hosted on a Linux runner. This job is intentionally non-blocking for now:
+  # FreeBSD is a new target and a VM-hosted build is slower and less stable than
+  # the native runners, so a failure here must not hold back a release.
+  build-freebsd:
+    name: build (freebsd-x86_64)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: '14.2'
+          usesh: true
+          # script/freebsd is upstream's own dependency list; reuse it rather
+          # than duplicating package names that would drift.
+          prepare: |
+            pkg install -y bash
+          run: |
+            set -eux
+            ./script/freebsd
+            . "$HOME/.cargo/env" 2>/dev/null || true
+            rustup default stable
+            export ZED_BUNDLE=true
+            export RELEASE_VERSION="$(script/get-crate-version zed)"
+            cargo build --release --package zed --bin v-agent
+            out="V-Agent-freebsd-x86_64"
+            mkdir -p "$out"
+            cp target/release/v-agent "$out/"
+            cp crates/zed/resources/app-icon.png "$out/"
+            tar -czf "$out.tar.gz" "$out"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: V-Agent-freebsd-x86_64
+          path: V-Agent-freebsd-x86_64.tar.gz
+          if-no-files-found: warn
+
   release:
     name: Publish release
-    needs: build
+    # build-freebsd is listed so the release waits for its artifact, but
+    # always() means a FreeBSD failure still publishes the other platforms.
+    needs: [build, build-freebsd]
     runs-on: ubuntu-latest
     # Publish only for clean version tags (v1.2.3). Suffixed tags (-ci1) build
-    # but do not publish; manual runs never publish.
-    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
+    # but do not publish; manual runs never publish. always() must be combined
+    # with an explicit build result check, or the release would publish even
+    # when the main build failed.
+    if: |
+      always() && needs.build.result == 'success'
+      && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
     steps:
       - uses: actions/download-artifact@v4
         with:

@@ -1,0 +1,85 @@
+# Maintainer: otzpt <mrjs10375@gmail.com>
+#
+# AUR package: v-agent-bin
+# Installs the prebuilt x86_64 binary from the GitHub release, so users do not
+# need a ~30 min Rust build. This is the package intended for the AUR; see
+# PKGBUILD in this directory for the from-source variant.
+#
+# To publish/update on the AUR:
+#   updpkgsums && makepkg --printsrcinfo > .SRCINFO
+#   git commit && git push   (to ssh://aur@aur.archlinux.org/v-agent-bin.git)
+
+pkgname=v-agent-bin
+_pkgname=v-agent
+pkgver=1.0.1
+pkgrel=1
+pkgdesc="Native, GPU-accelerated code editor with local-first AI (prebuilt binary)"
+arch=('x86_64')
+url="https://github.com/otzpt/V-Agent"
+license=('GPL-3.0-or-later')
+
+# Runtime dependencies. This list mirrors the official Arch `zed` package,
+# since V-Agent is a Zed fork and links the same GPUI/Wayland/Vulkan stack.
+# Without these the binary installs but fails to start on a clean system.
+depends=(
+  'alsa-lib'
+  'curl'
+  'fontconfig'
+  'gcc-libs'
+  'git'
+  'glib2'
+  'glibc'
+  'libxcb'
+  'libx11'
+  'libxkbcommon'
+  'libxkbcommon-x11'
+  'sqlite'
+  'vulkan-icd-loader'
+  'wayland'
+  'zstd'
+)
+optdepends=(
+  'nodejs: language servers that ship as npm packages'
+  'npm: installing language servers at runtime'
+  'vulkan-driver: GPU acceleration (mesa/nvidia-utils/amdvlk)'
+  'org.freedesktop.secrets: storing credentials in the system keyring'
+)
+
+provides=("$_pkgname=$pkgver")
+conflicts=("$_pkgname")
+options=('!strip' '!debug')
+
+# The release tarball ships the bare binary only, so the icon is fetched from
+# the tagged tree rather than assumed to be inside it.
+source=(
+  "$_pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/V-Agent-linux-x86_64.tar.gz"
+  "$_pkgname-$pkgver.png::$url/raw/v$pkgver/crates/zed/resources/app-icon.png"
+)
+# Regenerate with `updpkgsums` when bumping pkgver; SKIP is not acceptable on
+# the AUR for a versioned release.
+sha256sums=('SKIP'
+            'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/V-Agent-linux-x86_64/$_pkgname" \
+    "$pkgdir/usr/bin/$_pkgname"
+
+  install -Dm644 "$srcdir/$_pkgname-$pkgver.png" \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/io.github.otzpt.VAgent.png"
+
+  install -Dm644 /dev/stdin \
+    "$pkgdir/usr/share/applications/io.github.otzpt.VAgent.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=V-Agent
+GenericName=Code Editor
+Comment=Native, GPU-accelerated code editor with local-first AI
+Exec=/usr/bin/v-agent %U
+Icon=io.github.otzpt.VAgent
+Type=Application
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;inode/directory;
+StartupNotify=true
+StartupWMClass=io.github.otzpt.VAgent
+Terminal=false
+DESKTOP
+}

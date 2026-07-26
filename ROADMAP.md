@@ -75,7 +75,9 @@ distro adoption.**
 
 - **Arch official (core/extra):** requires an Arch Package Maintainer to adopt
   it. The AUR is the community path *around* that; refusing AUR leaves only
-  official adoption, which does not happen for a young fork.
+  official adoption, which does not happen for a young fork. The AUR PKGBUILD
+  is written and lives in `packaging/arch/PKGBUILD-bin`; only publishing is
+  left.
 - **Debian/Ubuntu:** needs a Debian Maintainer + review + the NEW queue
   (months to years).
 
@@ -91,24 +93,45 @@ What IS achievable without adoption:
 Recommended order: ship the direct packages now (done in the release workflow);
 consider a self-hosted repo later if demand warrants the hosting cost.
 
-## FreeBSD & Arch Linux packaging (next release)
+## FreeBSD & Arch Linux packaging
 
-**Arch:** a `PKGBUILD` / AUR package (`v-agent-bin` from the release, or source).
-The AppImage already runs on Arch; a native package is nicer for Arch users
-(a maintainer here runs Arch).
+### Arch — done in 1.0.1
 
-### FreeBSD
+`packaging/arch/` holds two maintained PKGBUILDs:
 
-Add FreeBSD as a build target. It is not from scratch: the codebase already
-carries `#[cfg(target_os = "freebsd")]` branches, and `script/bundle-freebsd`
-exists. Work needed:
+- `PKGBUILD-bin` — the AUR package (`v-agent-bin`), installing the prebuilt
+  binary from the GitHub release. This is the one to publish to the AUR.
+- `PKGBUILD` — from-source build for people who prefer compiling.
 
-- A FreeBSD build job in the release workflow. GitHub has no native FreeBSD
-  runner, so use the `vmactions/freebsd-vm` action (runs the build inside a
-  FreeBSD VM on a Linux runner) or a cross-build.
-- FreeBSD `pkg` dependencies (the equivalents of the Linux GPU/font/wayland
-  set): vulkan-loader, wayland, libxkbcommon, fontconfig, freetype2, etc.
-- Package as a `.pkg` or a portable `.tar.gz`.
+Both declare a real `depends=()` mirroring the official Arch `zed` package.
+The release workflow's `.pkg.tar.zst` previously shipped with **no** `depends`
+at all, so it installed but the binary could not start on a clean system; it
+now carries the same set and derives `pkgver` from `script/get-crate-version`
+instead of a hardcoded literal.
+
+Remaining: publish `v-agent-bin` to the AUR (needs an AUR account and an SSH
+key; `updpkgsums` + `makepkg --printsrcinfo > .SRCINFO` before the first push).
+`sha256sums` are `SKIP` until then — the AUR expects real checksums for a
+versioned release.
+
+### FreeBSD — build job added in 1.0.1, unverified
+
+`build-freebsd` in the release workflow builds inside a FreeBSD 14.2 VM via
+`vmactions/freebsd-vm` (GitHub has no native FreeBSD runner) and reuses
+upstream's own `script/freebsd` for `pkg` dependencies rather than duplicating
+a package list that would drift.
+
+The job is `continue-on-error` and the release gates on `needs.build` only, so
+a FreeBSD failure cannot hold back a release. **It has not run against a real
+tag yet** — expect the first run to need iteration (rustup bootstrap inside the
+VM, build timeouts on a VM-hosted runner).
+
+Remaining:
+
+- Verify the first real run and drop `continue-on-error` once it is reliable.
+- Package as a native `.pkg` rather than only a portable `.tar.gz`.
+- `script/bundle-freebsd` still only builds `remote_server`; most of it is
+  commented out. Either finish it or delete it in favour of the CI job.
 
 ## Other tracked items (not blocking use)
 
