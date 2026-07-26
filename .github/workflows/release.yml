@@ -296,15 +296,24 @@ jobs:
         with:
           release: '14.2'
           usesh: true
-          # script/freebsd is upstream's own dependency list; reuse it rather
-          # than duplicating package names that would drift.
+          # script/freebsd is upstream's own dependency list, but its
+          # finalize() falls back to `curl | sh` to fetch rustup, and curl is
+          # neither in that list nor in the FreeBSD base system (base ships
+          # fetch). Under `set -e` that aborts the whole script, so install
+          # curl here.
           prepare: |
-            pkg install -y bash
+            pkg install -y bash curl
           run: |
             set -eux
             ./script/freebsd
-            . "$HOME/.cargo/env" 2>/dev/null || true
-            rustup default stable
+            # The rustup-init package installs a binary called `rustup-init`,
+            # not `rustup`, so upstream's `which rustup` check never passes.
+            # Drive it directly instead of relying on the network fallback.
+            if ! command -v rustup >/dev/null 2>&1; then
+              rustup-init -y --no-modify-path --default-toolchain stable
+            fi
+            . "$HOME/.cargo/env"
+            rustc --version
             export ZED_BUNDLE=true
             export RELEASE_VERSION="$(script/get-crate-version zed)"
             cargo build --release --package zed --bin v-agent
