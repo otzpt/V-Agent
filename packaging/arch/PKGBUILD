@@ -1,0 +1,106 @@
+# Maintainer: otzpt <mrjs10375@gmail.com>
+#
+# From-source Arch package. Builds V-Agent with cargo; expect a long build
+# (Zed-scale workspace, ~30+ min on a modern desktop) and several GB in
+# $srcdir. Most users want v-agent-bin (PKGBUILD-bin) instead.
+#
+# Local test build:
+#   cd packaging/arch && makepkg -si
+
+pkgname=v-agent
+pkgver=1.0.1
+pkgrel=1
+pkgdesc="Native, GPU-accelerated code editor with local-first AI"
+arch=('x86_64')
+url="https://github.com/otzpt/V-Agent"
+license=('GPL-3.0-or-later')
+
+# Runtime set mirrors the official Arch `zed` package -- V-Agent is a Zed fork
+# and links the same GPUI/Wayland/Vulkan stack.
+depends=(
+  'alsa-lib'
+  'curl'
+  'fontconfig'
+  'gcc-libs'
+  'git'
+  'glib2'
+  'glibc'
+  'libxcb'
+  'libx11'
+  'libxkbcommon'
+  'libxkbcommon-x11'
+  'sqlite'
+  'vulkan-icd-loader'
+  'wayland'
+  'zstd'
+)
+makedepends=(
+  'cargo'
+  'clang'
+  'cmake'
+  'git'
+  'libgit2'
+  'lld'
+  'llvm'
+  'protobuf'
+  'pkgconf'
+)
+optdepends=(
+  'nodejs: language servers that ship as npm packages'
+  'npm: installing language servers at runtime'
+  'vulkan-driver: GPU acceleration (mesa/nvidia-utils/amdvlk)'
+  'org.freedesktop.secrets: storing credentials in the system keyring'
+)
+
+provides=("$pkgname=$pkgver")
+conflicts=("$pkgname-bin")
+options=('!lto')
+
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+_srcdir="V-Agent-$pkgver"
+
+prepare() {
+  cd "$_srcdir"
+  # Vendor dependencies so the build does not reach the network in build(),
+  # which is required for reproducible/offline makepkg runs.
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
+
+build() {
+  cd "$_srcdir"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  # ZED_BUNDLE tells the build it is producing a distributable artifact;
+  # RELEASE_VERSION is compiled into GPUI so the About dialog is correct.
+  export ZED_BUNDLE=true
+  export RELEASE_VERSION="$pkgver"
+  cargo build --release --frozen --package zed --bin v-agent
+}
+
+package() {
+  cd "$_srcdir"
+
+  install -Dm755 "target/release/v-agent" "$pkgdir/usr/bin/v-agent"
+
+  install -Dm644 "crates/zed/resources/app-icon.png" \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/io.github.otzpt.VAgent.png"
+
+  install -Dm644 /dev/stdin \
+    "$pkgdir/usr/share/applications/io.github.otzpt.VAgent.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=V-Agent
+GenericName=Code Editor
+Comment=Native, GPU-accelerated code editor with local-first AI
+Exec=/usr/bin/v-agent %U
+Icon=io.github.otzpt.VAgent
+Type=Application
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;inode/directory;
+StartupNotify=true
+StartupWMClass=io.github.otzpt.VAgent
+Terminal=false
+DESKTOP
+}
