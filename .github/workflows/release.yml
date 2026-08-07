@@ -154,12 +154,16 @@ jobs:
           rel="target/${{ matrix.target }}/release"
           appid=io.github.otzpt.VAgent
           pkg=deb/v-agent
+          # Track the crate version rather than a literal, for the same reason
+          # the Arch package below does: a hardcoded version silently drifts
+          # from the binary it ships (this said 1.0.0 through the 1.0.1 release).
+          pkgver="$(script/get-crate-version zed)"
           mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$pkg/usr/share/applications" "$pkg/usr/share/icons/hicolor/512x512/apps"
           cp "$rel/v-agent" "$pkg/usr/bin/v-agent"
           cp crates/zed/resources/app-icon.png "$pkg/usr/share/icons/hicolor/512x512/apps/$appid.png"
           cat > "$pkg/DEBIAN/control" <<EOF
           Package: v-agent
-          Version: 1.0.0
+          Version: $pkgver
           Architecture: amd64
           Maintainer: V-Agent <v-agent@noreply.invalid>
           Description: A native, GPU-accelerated code editor with local-first AI.
