@@ -14,6 +14,16 @@ high-performance editor by Zed Industries, Inc.
 - Copyright © Zed Industries, Inc. and Zed contributors
 - License: **GPL-3.0-or-later** (see `LICENSE-GPL`); portions such as GPUI and
   other libraries are Apache-2.0 (see `LICENSE-APACHE`)
+- **Currently synced to upstream `v1.14.2` (commit `02abf5b08fa1`).**
+
+V-Agent's history starts from a squashed snapshot rather than a git fork, so
+nothing in the commit graph records which upstream commit it corresponds to.
+The line above is that record, and it is what makes the next sync cheap: add
+`https://github.com/zed-industries/zed` as a remote, fetch it, and diff or
+merge against the commit named there. Without it the base has to be
+re-derived by scanning upstream history for the tree that differs least,
+which is how this one was found. Update the line whenever the fork is
+synced.
 
 Because V-Agent is a derivative work of GPL-3.0 software, **V-Agent is also
 released under GPL-3.0-or-later**, and its complete corresponding source code is
