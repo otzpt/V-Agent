@@ -51,7 +51,7 @@ dotnet tool install --global wix
 # 3. Build the MSI into Downloads
 pwsh packaging/windows/build-msi.ps1 `
     -TargetDir C:\path\to\target `
-    -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.0.1-x64.msi
+    -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.0.2-x64.msi
 ```
 
 The script stages the payload onto an ASCII path first, because the repository
