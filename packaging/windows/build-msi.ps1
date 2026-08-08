@@ -1,8 +1,14 @@
 <#
   Builds the V-Agent Windows MSI from an existing release binary.
 
-  Requires: the WiX v5 dotnet tool (`dotnet tool install --global wix`) and a
-  release build at $TargetDir\release\v-agent.exe.
+  Requires: the WiX dotnet tool (`dotnet tool install --global wix`, currently
+  resolves to v7) and a release build at $TargetDir\release\v-agent.exe.
+
+  WiX v7 refuses to build anything until its Open Source Maintenance Fee EULA
+  is accepted (WIX7015); free below $10k/year in project revenue, but
+  acceptance is still required either way. `-acceptEula wix7` below accepts it
+  for this invocation only -- no state is written, which fits a CI runner
+  that starts from a clean image every time. See https://wixtoolset.org/osmf/.
 
   Runtime siblings (conpty.dll, OpenConsole.exe) come from the same release
   directory. amd_ags_x64.dll is AMD's redistributable GPU-services library; if
@@ -50,7 +56,7 @@ if (Test-Path $amd) {
 
 $wxs = Join-Path $scriptDir "v-agent.wxs"
 Write-Host "Building MSI -> $OutFile"
-& wix build $wxs -arch x64 -d "StageDir=$stage" -o $OutFile
+& wix build $wxs -arch x64 -d "StageDir=$stage" -o $OutFile -acceptEula wix7
 
 if ($LASTEXITCODE -ne 0) { throw "wix build failed ($LASTEXITCODE)" }
 Write-Host ("Done: {0} ({1:N1} MB)" -f $OutFile, ((Get-Item $OutFile).Length / 1MB))

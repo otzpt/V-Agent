@@ -33,7 +33,7 @@ only the Windows build below is produced locally.
 
 ## Windows installer (this directory)
 
-`v-agent.wxs` — a WiX v5 manifest for a **per-user** MSI. It installs to
+`v-agent.wxs` — a WiX manifest for a **per-user** MSI. It installs to
 `%LOCALAPPDATA%\Programs\V-Agent` (no administrator rights) and does not touch
 a separately installed Zed. It bundles the editor plus its runtime siblings:
 `conpty.dll` and `OpenConsole.exe` (terminal), and `amd_ags_x64.dll` (AMD's
@@ -53,6 +53,13 @@ pwsh packaging/windows/build-msi.ps1 `
     -TargetDir C:\path\to\target `
     -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.0.2-x64.msi
 ```
+
+Step 2 currently installs WiX v7, which refuses to build anything until its
+Open Source Maintenance Fee EULA is accepted (error WIX7015) — free unless
+the project clears $10k/year, but acceptance is still required either way.
+`build-msi.ps1` already passes `-acceptEula wix7` to `wix build`, so step 3
+above needs nothing extra; this is only relevant if you ever invoke `wix`
+directly. See https://wixtoolset.org/osmf/.
 
 The script stages the payload onto an ASCII path first, because the repository
 may live under a path containing non-ASCII characters that some Windows build
