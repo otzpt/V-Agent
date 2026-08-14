@@ -1,24 +1,16 @@
 ---
 title: CLI Reference
-description: "Reference for V-Agent's command-line interface (CLI), including opening files and directories, integrating with tools, and controlling V-Agent from scripts."
+description: "Reference for V-Agent's command-line interface, including opening files and directories and controlling V-Agent from scripts."
 ---
 
 # CLI Reference
 
-Use V-Agent's command-line interface (CLI) to open files and directories, integrate with other tools, and control V-Agent from scripts.
-
-## Installation
-
-**macOS:** Run the {#action cli::InstallCliBinary} command from the command palette ({#kb command_palette::Toggle}) to install the `zed` CLI to `/usr/local/bin/zed`.
-
-**Linux:** The CLI is included with V-Agent packages. The binary name may vary by distribution (commonly `zed` or `zeditor`).
-
-**Windows:** The CLI is included with V-Agent. Add V-Agent's installation directory to your PATH, or use the full path to `zed.exe`.
+Upstream Zed ships a separate small CLI wrapper binary (`zed`) alongside the main app, with flags like `--wait`, `--new`/`--add`/`--reuse`/`--existing`, `--uninstall`, and shell completions. That wrapper (`crates/cli`) is not built or packaged by V-Agent's release workflow (`.github/workflows/release.yml`) — released V-Agent builds ship a single `v-agent` binary (`crates/zed`), which has its own, smaller set of command-line flags. This page documents what `v-agent` actually accepts; flags from upstream's `zed` wrapper that aren't listed here are not available.
 
 ## Usage
 
 ```sh
-zed [OPTIONS] [PATHS]...
+v-agent [OPTIONS] [PATHS_OR_URLS]...
 ```
 
 ## Opening Files and Directories
@@ -26,90 +18,37 @@ zed [OPTIONS] [PATHS]...
 Open a file:
 
 ```sh
-zed myfile.txt
+v-agent myfile.txt
 ```
 
 Open a directory as a workspace:
 
 ```sh
-zed ~/projects/myproject
+v-agent ~/projects/myproject
 ```
 
 Open multiple files or directories:
 
 ```sh
-zed file1.txt file2.txt ~/projects/myproject
+v-agent file1.txt file2.txt ~/projects/myproject
 ```
 
-Open a file at a specific line and column:
+Open a file at a specific line and column (existing paths only — the `:line:column` suffix is ignored for paths that don't exist):
 
 ```sh
-zed myfile.txt:42        # Open at line 42
-zed myfile.txt:42:10     # Open at line 42, column 10
+v-agent myfile.txt:42        # Open at line 42
+v-agent myfile.txt:42:10     # Open at line 42, column 10
 ```
 
 ## Options
 
-### `-w`, `--wait`
-
-Wait for all opened files to be closed before the CLI exits. When opening a directory, waits until the window is closed.
-
-This is useful for integrating V-Agent with tools that expect an editor to block until editing is complete (e.g., `git commit`):
-
-```sh
-export EDITOR="zed --wait"
-git commit  # Opens Zed and waits for you to close the commit message file
-```
-
-### `-n`, `--new`
-
-Open paths in a new workspace window, even if the paths are already open in an existing window:
-
-```sh
-zed -n ~/projects/myproject
-```
-
-### `-a`, `--add`
-
-Add paths to the currently focused workspace instead of opening a new window. When multiple workspace windows are open, files open in the focused window:
-
-```sh
-zed -a newfile.txt
-```
-
-### `-r`, `--reuse`
-
-Reuse an existing window, replacing its current workspace with the new paths:
-
-```sh
-zed -r ~/projects/different-project
-```
-
-### `-e`, `--existing`
-
-Open paths in an existing Zed window instead of creating a new one:
-
-```sh
-zed -e myfile.txt
-```
-
-By default (without `-n`, `-a`, `-r`, or `-e`), directories open in the current window's sidebar. You can change this default with the `cli_default_open_behavior` setting. See [Windows & Projects](../windows-and-projects.md) for more details.
-
 ### `--diff <OLD_PATH> <NEW_PATH>`
 
-Open a diff view comparing two files. Can be specified multiple times:
+Open a diff view comparing two files. Can be specified multiple times. When directories are given, recurses into them and shows all changed files in one multi-diff view:
 
 ```sh
-zed --diff file1.txt file2.txt
-zed --diff old.rs new.rs --diff old2.rs new2.rs
-```
-
-### `--foreground`
-
-Run V-Agent in the foreground, keeping the terminal attached. Useful for debugging:
-
-```sh
-zed --foreground
+v-agent --diff file1.txt file2.txt
+v-agent --diff old.rs new.rs --diff old2.rs new2.rs
 ```
 
 ### `--user-data-dir <DIR>`
@@ -117,150 +56,52 @@ zed --foreground
 Use a custom directory for all user data (database, extensions, logs) instead of the default location:
 
 ```sh
-zed --user-data-dir ~/.zed-custom
+v-agent --user-data-dir ~/.v-agent-custom
 ```
 
 Default locations:
 
-- **macOS:** `~/Library/Application Support/Zed`
-- **Linux:** `$XDG_DATA_HOME/zed` (typically `~/.local/share/zed`)
-- **Windows:** `%LOCALAPPDATA%\Zed`
+- **macOS:** `~/Library/Application Support/V-Agent`
+- **Linux:** `$XDG_DATA_HOME/v-agent` (typically `~/.local/share/v-agent`)
+- **Windows:** `%LOCALAPPDATA%\V-Agent`
 
-### `-v`, `--version`
+### `--dev-container`
 
-Print V-Agent's version and exit:
-
-```sh
-zed --version
-```
-
-### `--completions <SHELL>`
-
-Generate shell completions for the `zed` CLI:
-
-#### Bash
-
-Add to `~/.bashrc`:
-
-```bash
-eval "$(zed --completions bash)"
-```
-
-#### Elvish
-
-Add to `~/.config/elvish/rc.elv`:
-
-```elvish
-set edit:completion:arg-completer[zed] = { |@args|
-    eval (zed --completions elvish | slurp)
-    $edit:completion:arg-completer[zed] $@args
-}
-```
-
-#### Fish
-
-Add to `~/.config/fish/config.fish`:
-
-```fish
-zed --completions fish | source
-```
-
-#### Nushell
-
-Add to `~/.config/nushell/config.nu`:
-
-```nu
-mkdir ($nu.data-dir | path join "vendor/autoload")
-^zed --completions nushell | save --force ($nu.data-dir | path join "vendor/autoload/zed.nu")
-```
-
-#### Powershell
-
-Add to `$PROFILE`:
-
-```powershell
-(&zed --completions powershell) | Out-String | Invoke-Expression
-```
-
-#### Zsh
-
-Add to `~/.zshrc`:
-
-```zsh
-eval "$(zed --completions zsh)"
-```
-
-### `--uninstall`
-
-Uninstall V-Agent and remove all related files (macOS and Linux only):
+Open the project in a dev container. Automatically triggers "Reopen in Dev Container" if a `.devcontainer/` configuration is found in the project directory:
 
 ```sh
-zed --uninstall
+v-agent --dev-container ~/projects/myproject
 ```
 
-### `--zed <PATH>`
+### `--system-specs`
 
-Specify a custom path to the V-Agent application or binary:
+Print system specs to the terminal instead of opening a window. Useful for filing a bug report when a graphics initialization error prevents V-Agent from starting, so you can't run {#action zed::CopySystemSpecsIntoClipboard} from inside the app:
 
 ```sh
-zed --zed /path/to/Zed.app myfile.txt
+v-agent --system-specs
 ```
-
-## Reading from Standard Input
-
-Read content from stdin by passing `-` as the path:
-
-```sh
-echo "Hello, World!" | zed -
-cat myfile.txt | zed -
-ps aux | zed -
-```
-
-This creates a temporary file with the stdin content and opens it in V-Agent.
 
 ## URL Handling
 
-The CLI can open `zed://`, `file://`, and `ssh://` URLs:
+`v-agent` can open `zed://`, `file://`, and `ssh://` URLs passed as positional arguments:
 
 ```sh
-zed zed://settings
-zed file:///Users/whatever/.zshrc
-zed ssh://me@example.com/abs/path
-zed ssh://me@example.com:/abs/path
-zed ssh://me@example.com/~/project
-zed ssh://me@example.com:~/project
+v-agent zed://settings
+v-agent file:///home/you/.zshrc
+v-agent ssh://me@example.com/abs/path
+v-agent ssh://me@example.com:/abs/path
+v-agent ssh://me@example.com/~/project
+v-agent ssh://me@example.com:~/project
 ```
 
-## Using V-Agent as Your Default Editor
+## Not Currently Available
 
-Set V-Agent as your default editor for Git and other tools:
+These are documented for upstream Zed's `zed` CLI wrapper but do not apply to V-Agent's `v-agent` binary:
 
-```sh
-export EDITOR="zed --wait"
-export VISUAL="zed --wait"
-```
-
-Add these lines to your shell configuration file (e.g., `~/.bashrc`, `~/.zshrc`).
-
-## macOS: Switching Release Channels
-
-On macOS, you can launch a specific release channel by passing the channel name as the first argument:
-
-```sh
-zed --stable myfile.txt
-zed --preview myfile.txt
-zed --nightly myfile.txt
-```
-
-## WSL Integration (Windows)
-
-On Windows, the CLI supports opening paths from WSL distributions. This is handled automatically when launching V-Agent from within WSL.
-
-## Exit Codes
-
-| Code | Meaning                           |
-| ---- | --------------------------------- |
-| `0`  | Success                           |
-| `1`  | Error (details printed to stderr) |
-
-When using `--wait`, the exit code reflects whether the files were saved before closing.
+- `--wait` / `-w`, and using V-Agent as `$EDITOR`/`$VISUAL` for tools like `git commit` — there's no wrapper process to block on
+- `--new`/`-n`, `--add`/`-a`, `--reuse`/`-r`, `--existing`/`-e` window-reuse controls
+- `--uninstall` — see [Uninstall](../uninstall.md) for the actual `pacman -R` / `apt remove` / delete-the-AppImage commands
+- `--completions <SHELL>` shell completions
+- `--version`/`-v` — check the running version from inside the app instead (see [Update](../update.md))
+- reading from stdin via a bare `-` path
+- `--foreground` on Linux/macOS (Windows-only, undocumented flag used to match the console-attach behavior macOS gets by default)

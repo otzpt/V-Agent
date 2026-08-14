@@ -1,37 +1,19 @@
 ---
 title: V-Agent on macOS
-description: "V-Agent is developed primarily on macOS, making it a first-class platform with full feature support."
+description: "V-Agent doesn't ship prebuilt macOS releases yet. This page covers building from source and what to expect once you do."
 ---
 
 # V-Agent on macOS
 
-V-Agent is developed primarily on macOS, making it a first-class platform with full feature support.
+V-Agent doesn't ship prebuilt macOS releases yet — [`.github/workflows/release.yml`](https://github.com/otzpt/V-Agent/blob/main/.github/workflows/release.yml) only builds Windows and Linux for now (it needs a Mac runner and signing setup; see [ROADMAP.md](https://github.com/otzpt/V-Agent/blob/main/ROADMAP.md)). The upstream Zed engine V-Agent is built on supports macOS, so building from source works today.
 
-## Installing V-Agent
+## Building from Source
 
-Download V-Agent from the [download page](https://zed.dev/download). The download is a `.dmg` file—open it and drag V-Agent to your Applications folder.
-
-For the preview build, which receives updates about a week ahead of stable, visit the [preview releases page](https://zed.dev/releases/preview).
-
-After installation, V-Agent checks for updates automatically and prompts you when a new version is available.
-
-### Homebrew
-
-You can also install V-Agent using Homebrew:
+See the [macOS development documentation](./development/macos.md) for build instructions. Run the built binary with:
 
 ```sh
-brew install --cask zed
+./target/release/v-agent .
 ```
-
-For the preview version:
-
-```sh
-brew install --cask zed@preview
-```
-
-### Building from Source
-
-To build V-Agent from source, see the [macOS development documentation](./development/macos.md).
 
 ## System Requirements
 
@@ -40,95 +22,19 @@ To build V-Agent from source, see the [macOS development documentation](./develo
 
 V-Agent uses Metal for GPU-accelerated rendering, which is available on all supported macOS versions.
 
-## Installing the CLI
-
-V-Agent includes a command-line tool for opening files and projects from Terminal. To install it:
-
-1. Open V-Agent
-2. Open the command palette with `Cmd+Shift+P`
-3. Run {#action cli::InstallCliBinary}
-
-This creates a `zed` command in `/usr/local/bin`. You can then open files and folders:
-
-```sh
-zed .                    # Open current folder
-zed file.txt             # Open a file
-zed project/ file.txt    # Open a folder and a file
-```
-
-See the [CLI Reference](./reference/cli.md) for all available options.
-
 ## Uninstall
 
-1. Quit V-Agent if it's running
-2. Drag V-Agent from Applications to the Trash
-3. Optionally, remove your settings and extensions:
+If you built V-Agent from source and want to remove it, delete your build directory and, optionally, your settings and extensions:
 
 ```sh
-rm -rf ~/.config/zed
-rm -rf ~/Library/Application\ Support/Zed
-rm -rf ~/Library/Caches/Zed
-rm -rf ~/Library/Logs/Zed
-rm -rf ~/Library/Saved\ Application\ State/dev.zed.Zed.savedState
-```
-
-If you installed the CLI, remove it with:
-
-```sh
-rm /usr/local/bin/zed
+rm -rf ~/.config/v-agent
+rm -rf ~/Library/Application\ Support/V-Agent
+rm -rf ~/Library/Caches/V-Agent
+rm -rf ~/Library/Logs/V-Agent
+rm -rf ~/.local/state/V-Agent
 ```
 
 ## Troubleshooting
-
-### V-Agent won't open or shows "damaged" warning
-
-If macOS reports that V-Agent is damaged or can't be opened, it's likely a Gatekeeper issue. Try:
-
-1. Right-click (or Control-click) on V-Agent in Applications
-2. Select "Open" from the context menu
-3. Click "Open" in the dialog that appears
-
-This tells macOS to trust the application.
-
-If that doesn't work, remove the quarantine attribute:
-
-```sh
-xattr -cr /Applications/Zed.app
-```
-
-### CLI command not found
-
-If the `zed` command isn't available after installation:
-
-1. Check that `/usr/local/bin` is in your PATH
-2. Try reinstalling the CLI via {#action cli::InstallCliBinary} in the command palette
-3. Open a new terminal window to reload your PATH
-
-### Can't install CLI {#cant-install-cli}
-
-{#action cli::InstallCliBinary} writes a `zed` symlink to `/usr/local/bin`, which requires administrator privileges. If your macOS account isn't in the `admin` group, V-Agent can't create that symlink and will report that it can't install the CLI automatically.
-
-Instead, you can add an alias pointing to the `cli` binary bundled inside the app. The path depends on where V-Agent is installed:
-
-```sh
-# Default install (Zed in /Applications)
-alias zed="/Applications/Zed.app/Contents/MacOS/cli"
-
-# User install (Zed in ~/Applications)
-alias zed="$HOME/Applications/Zed.app/Contents/MacOS/cli"
-
-# Preview build (Zed Preview in ~/Applications)
-alias zed="$HOME/Applications/Zed Preview.app/Contents/MacOS/cli"
-```
-
-Add the line that matches your install to your shell configuration file. Use `~/.zshrc` for Zsh (the default on modern macOS) or `~/.bashrc` for Bash.
-
-After you restart your shell, you will be able to use `zed` from your terminal:
-
-```sh
-zed .              # Open current folder
-zed file.txt       # Open a file
-```
 
 ### GPU or rendering issues
 
@@ -146,4 +52,4 @@ If V-Agent uses more resources than expected:
 2. Try disabling extensions one by one to identify conflicts
 3. For large projects, consider using [project settings](./reference/all-settings.md#file-scan-exclusions) to exclude unnecessary folders from indexing
 
-For additional help, see the [Troubleshooting guide](./troubleshooting.md) or visit the [V-Agent Discord](https://discord.gg/zed-community).
+For additional help, see the [Troubleshooting guide](./troubleshooting.md) or [open an issue](https://github.com/otzpt/V-Agent/issues).

@@ -44,7 +44,7 @@ If you need to download the MCP server from an external source (GitHub Releases,
 
 ## Available Extensions
 
-See MCP servers published as extensions [on Zed's site](https://zed.dev/extensions?filter=context-servers).
+See MCP servers published as extensions [in the extension marketplace](https://zed.dev/extensions?filter=context-servers) (V-Agent has no marketplace of its own, so this is upstream Zed's).
 
 Review their repositories to see common implementation patterns and structure.
 

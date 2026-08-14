@@ -41,8 +41,8 @@ Anything that you end up doing on the keymap editor also gets reflected on the `
 
 The keymap file is stored in the following locations for each platform:
 
-- macOS/Linux: `~/.config/zed/keymap.json`
-- Windows: `~\AppData\Roaming\Zed/keymap.json`
+- macOS/Linux: `~/.config/v-agent/keymap.json`
+- Windows: `%APPDATA%\V-Agent\keymap.json`
 
 You can open the keymap with the {#action zed::OpenKeymapFile} action from the command palette.
 

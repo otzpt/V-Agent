@@ -18,10 +18,10 @@ Personal instructions apply to every project you open with the V-Agent Agent.
 Create or edit:
 
 ```text
-~/.config/zed/AGENTS.md
+~/.config/v-agent/AGENTS.md
 ```
 
-On Windows, the equivalent file is under `%APPDATA%\Zed\AGENTS.md`.
+On Windows, the equivalent file is under `%APPDATA%\V-Agent\AGENTS.md`.
 
 ## Project Instructions {#project-instructions}
 
@@ -42,9 +42,9 @@ Project instructions override personal `AGENTS.md` when they conflict.
 ## Instruction File Support {#support}
 
 | File                              | V-Agent Agent                                              | External Agents       | Terminal Threads                 |
-| --------------------------------- | ------------------------------------------------------ | --------------------- | -------------------------------- |
-| `~/.config/zed/AGENTS.md`         | Loaded as personal instructions                        | Not generally used    | Not used unless the CLI reads it |
-| Project `AGENTS.md`               | Loaded as project instructions                         | Depends on the agent  | Depends on the CLI               |
+| --------------------------------- | ---------------------------------------------------------- | --------------------- | -------------------------------- |
+| `~/.config/v-agent/AGENTS.md`     | Loaded as personal instructions                            | Not generally used    | Not used unless the CLI reads it |
+| Project `AGENTS.md`               | Loaded as project instructions                             | Depends on the agent  | Depends on the CLI               |
 | `CLAUDE.md`                       | Loaded as compatible project instructions by V-Agent Agent | Claude reads natively | Claude Code CLI reads natively   |
 | `.github/copilot-instructions.md` | Loaded as compatible project instructions by V-Agent Agent | Depends on the agent  | Depends on the CLI               |
 

@@ -18,7 +18,7 @@ You can preview/choose amongst your installed themes and icon themes with {#acti
 ```json [settings]
 {
   "theme": "One Dark",
-  "icon_theme": "Zed (Default)"
+  "icon_theme": "V-Agent (Default)"
 }
 ```
 
@@ -33,8 +33,8 @@ If you would like to use distinct themes for light mode/dark mode that can be se
     "mode": "system"
   },
   "icon_theme": {
-    "dark": "Zed (Default)",
-    "light": "Zed (Default)",
+    "dark": "V-Agent (Default)",
+    "light": "V-Agent (Default)",
     // Mode to use (dark, light) or "system" to follow the OS's light/dark mode (default)
     "mode": "system"
   }
@@ -149,10 +149,10 @@ To disable this behavior use:
 
 ```json [settings]
 {
-  // Force usage of Zed build in path prompts (file and directory pickers)
+  // Force usage of V-Agent build in path prompts (file and directory pickers)
   // instead of OS native pickers (false).
   "use_system_path_prompts": true,
-  // Force usage of Zed built in confirmation prompts ("Do you want to save?")
+  // Force usage of V-Agent built in confirmation prompts ("Do you want to save?")
   // instead of OS native prompts (false). On linux this is ignored (always false).
   "use_system_prompts": true,
 

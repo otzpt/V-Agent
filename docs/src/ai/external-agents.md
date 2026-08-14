@@ -40,7 +40,7 @@ For company-specific setup paths, including Claude, Codex, Gemini, OpenCode, Cop
 
 Use Claude Agent when you want Claude running as an ACP-integrated External Agent in V-Agent.
 
-Install Claude Agent from the [ACP Registry](#registry), then start a Claude Agent thread from the Agent Panel or Threads Sidebar. Claude Agent owns its own authentication and billing. An Anthropic API key configured for [Zed Agent](./zed-agent.md) does not automatically configure Claude Agent.
+Install Claude Agent from the [ACP Registry](#registry), then start a Claude Agent thread from the Agent Panel or Threads Sidebar. Claude Agent owns its own authentication and billing. An Anthropic API key configured for [V-Agent Agent](./zed-agent.md) does not automatically configure Claude Agent.
 
 To choose your billing method, open a Claude Agent thread, run `/login`, and authenticate with an API key or with Claude Code where supported. Claude-specific files such as `CLAUDE.md` may be read by Claude Agent directly.
 
@@ -48,7 +48,7 @@ To choose your billing method, open a Claude Agent thread, run `/login`, and aut
 
 Use Codex when you want Codex running as an ACP-integrated External Agent in V-Agent.
 
-Install Codex from the [ACP Registry](#registry), then start a Codex thread from the Agent Panel or Threads Sidebar. Codex owns its own authentication and billing. An OpenAI API key configured for [Zed Agent](./zed-agent.md) does not automatically configure Codex.
+Install Codex from the [ACP Registry](#registry), then start a Codex thread from the Agent Panel or Threads Sidebar. Codex owns its own authentication and billing. An OpenAI API key configured for [V-Agent Agent](./zed-agent.md) does not automatically configure Codex.
 
 Codex may support ChatGPT login, Codex API keys, OpenAI API keys, or Codex-native configuration depending on the installed version and environment. To change authentication, use the Codex thread's native login/logout flow.
 
@@ -94,18 +94,18 @@ You can also create keybindings for specific agents with {#action agent::NewExte
 
 External Agents run as separate processes that communicate with V-Agent over ACP. This creates a boundary between V-Agent configuration and agent-native configuration.
 
-| Capability                       | Behavior in External Agent threads                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| Model/provider config            | Usually owned by the External Agent                                                        |
-| Auth/API keys/subscriptions      | Usually owned by the External Agent                                                        |
-| V-Agent Agent profiles               | Do not apply unless the integration says otherwise                                         |
-| V-Agent Skills                       | Do not apply as V-Agent Skills                                                                 |
-| Native agent skills/instructions | Depends on the agent                                                                       |
-| V-Agent MCP servers                  | May be forwarded over ACP                                                                  |
-| Native MCP config                | May also be read by the agent                                                              |
+| Capability                       | Behavior in External Agent threads                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Model/provider config            | Usually owned by the External Agent                                                            |
+| Auth/API keys/subscriptions      | Usually owned by the External Agent                                                            |
+| V-Agent Agent profiles           | Do not apply unless the integration says otherwise                                             |
+| V-Agent Skills                   | Do not apply as V-Agent Skills                                                                 |
+| Native agent skills/instructions | Depends on the agent                                                                           |
+| V-Agent MCP servers              | May be forwarded over ACP                                                                      |
+| Native MCP config                | May also be read by the agent                                                                  |
 | Tool permissions                 | V-Agent ACP/tool forwarding permissions may apply; native tool permissions depend on the agent |
 
-For V-Agent's native agent configuration, see [Zed Agent](./zed-agent.md).
+For V-Agent's native agent configuration, see [V-Agent Agent](./zed-agent.md).
 
 ## Agent-Specific Auth and Config {#agent-auth-config}
 

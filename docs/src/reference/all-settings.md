@@ -165,19 +165,19 @@ You can find the names of your currently installed extensions by listing the sub
 On macOS:
 
 ```sh
-ls ~/Library/Application\ Support/Zed/extensions/installed/
+ls ~/Library/Application\ Support/V-Agent/extensions/installed/
 ```
 
 On Linux:
 
 ```sh
-ls ~/.local/share/zed/extensions/installed
+ls ~/.local/share/v-agent/extensions/installed
 ```
 
 On Windows:
 
 ```pwsh
-Get-ChildItem "$env:LOCALAPPDATA\Zed\extensions\installed" -Name
+Get-ChildItem "$env:LOCALAPPDATA\V-Agent\extensions\installed" -Name
 ```
 
 Define extensions which should be installed (`true`) or never installed (`false`).
@@ -1889,7 +1889,7 @@ While other options may be changed at a runtime and should be placed under `sett
 
 - `button`: Whether to show the LSP status button in the status bar
 - `request_timeout`: The maximum amount of time to wait for responses from language servers, in seconds. A value of `0` will result in no timeout being applied (causing all LSP responses to wait indefinitely until completed). Default: `120`
-- `max_buffer_line_length`: The maximum line length a buffer may contain before Zed disables all language server features for that entire buffer. If any line exceeds this value, Zed does not open the buffer with language servers or send them buffer-specific requests. Default: `20000`
+- `max_buffer_line_length`: The maximum line length a buffer may contain before V-Agent disables all language server features for that entire buffer. If any line exceeds this value, V-Agent does not open the buffer with language servers or send them buffer-specific requests. Default: `20000`
 - `notifications`: Notification-related settings.
   - `dismiss_timeout_ms`: Timeout in milliseconds for automatically dismissing language server notifications. Set to 0 to disable auto-dismiss.
 
@@ -2028,7 +2028,7 @@ Similar to `modifications`, but behaves like `on` when range formatting cannot b
 }
 ```
 
-Tools that rewrite files on disk instead of printing the formatted contents to stdout (such as `cargo fmt`) are not compatible with `"external"`: since Zed reads the formatted buffer from stdout, a formatter that emits nothing there will not update the buffer. For Rust, use `"formatter": "language_server"` or invoke `rustfmt` directly (which supports stdin/stdout via `--emit stdout`) instead of `cargo fmt`.
+Tools that rewrite files on disk instead of printing the formatted contents to stdout (such as `cargo fmt`) are not compatible with `"external"`: since V-Agent reads the formatted buffer from stdout, a formatter that emits nothing there will not update the buffer. For Rust, use `"formatter": "language_server"` or invoke `rustfmt` directly (which supports stdin/stdout via `--emit stdout`) instead of `cargo fmt`.
 
 3. External formatters may optionally include a `{buffer_path}` placeholder which at runtime will include the path of the buffer being formatted. Formatters operate by receiving file content via standard input, reformatting it and then outputting it to standard output and so normally don't know the filename of what they are formatting. Tools like Prettier support receiving the file path via a command line argument which can then be used to impact formatting decisions.
 
@@ -2897,10 +2897,10 @@ At this point, the server may or may not return hints depending on its implement
 
 The following languages have inlay hints preconfigured by V-Agent:
 
-- [Go](https://docs.zed.dev/languages/go)
-- [Rust](https://docs.zed.dev/languages/rust)
-- [Svelte](https://docs.zed.dev/languages/svelte)
-- [TypeScript](https://docs.zed.dev/languages/typescript)
+- [Go](../languages/go.md)
+- [Rust](../languages/rust.md)
+- [Svelte](../languages/svelte.md)
+- [TypeScript](../languages/typescript.md)
 
 Use the `lsp` section for the server configuration. Examples are provided in the corresponding language documentation.
 
@@ -5786,7 +5786,7 @@ To preview and enable a settings profile, open the command palette via {#kb comm
 ## An example configuration:
 
 ```json [settings]
-// ~/.config/zed/settings.json
+// ~/.config/v-agent/settings.json
 {
   "theme": "cave-light",
   "tab_size": 2,

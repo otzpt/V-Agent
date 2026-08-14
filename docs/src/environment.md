@@ -18,22 +18,22 @@ To make the best use of these features, it helps to understand where V-Agent get
 
 ## Where does V-Agent get its environment variables from?
 
-How V-Agent starts affects which environment variables it can use. That includes launching from the macOS Dock, a Linux window manager, or the `zed` CLI.
+How V-Agent starts affects which environment variables it can use. That includes launching from the macOS Dock, a Linux window manager, or the command line.
 
-### Launched from the CLI
+### Launched from the Command Line
 
-If V-Agent is opened via the CLI (`zed`), it will inherit the environment variables from the surrounding shell session.
+If V-Agent is opened from a shell (`v-agent`), it will inherit the environment variables from the surrounding shell session.
 
 That means if you do
 
 ```
 $ export MY_ENV_VAR=hello
-$ zed .
+$ v-agent .
 ```
 
 the environment variable `MY_ENV_VAR` is now available inside V-Agent. For example, in the built-in terminal.
 
-Starting with V-Agent 0.152.0, the CLI `zed` will _always_ pass along its environment to V-Agent, regardless of whether a V-Agent instance was previously running or not. Prior to V-Agent 0.152.0 this was not the case and only the first V-Agent instance would inherit the environment variables.
+Upstream Zed's separate CLI wrapper gained a setting in 0.152.0 to always forward its environment to an already-running instance rather than only the first one. V-Agent doesn't ship that wrapper (see [CLI Reference](./reference/cli.md#not-currently-available)), so this doesn't apply — each `v-agent` invocation simply inherits the environment of the shell that launched it.
 
 ### Launched via window manager, Dock, or launcher
 

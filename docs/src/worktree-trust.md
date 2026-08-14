@@ -6,7 +6,7 @@ description: "Configure which folders V-Agent trusts for running code and extens
 # V-Agent and trusted worktrees
 
 A worktree in V-Agent is either a directory or a single file that V-Agent opens as a standalone "project".
-V-Agent opens a worktree each time you run `zed some/path`, drag a file or directory into V-Agent, or open your user settings file.
+V-Agent opens a worktree each time you run `v-agent some/path`, drag a file or directory into V-Agent, or open your user settings file.
 
 > Note: This is broader than a [Git worktree](./git.md#git-worktrees). A Git worktree is a linked checkout managed by Git; V-Agent's trust model applies to every opened file or folder root, including Git worktrees.
 

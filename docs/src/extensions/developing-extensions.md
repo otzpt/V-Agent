@@ -22,15 +22,15 @@ Extensions can provide:
 
 Before starting to develop an extension for V-Agent, be sure to [install Rust via rustup](https://www.rust-lang.org/tools/install).
 
-> Zed uses the `wasm32-wasip2` Rust target to compile extensions. If Rust is installed via rustup, Zed will install the target automatically. If Rust is installed another way (e.g., via Homebrew or Nix), you must make the `wasm32-wasip2` target available yourself — for example, by adding it to the `targets` of a Nix rust-overlay or fenix toolchain.
+> V-Agent uses the `wasm32-wasip2` Rust target to compile extensions. If Rust is installed via rustup, V-Agent will install the target automatically. If Rust is installed another way (e.g., via Homebrew or Nix), you must make the `wasm32-wasip2` target available yourself — for example, by adding it to the `targets` of a Nix rust-overlay or fenix toolchain.
 
-Extensions that provide grammars additionally require the [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) to compile Tree-sitter parsers. Zed downloads it automatically, but you can point Zed at an existing installation by setting the `WASI_SDK_PATH` environment variable to its root directory (the one containing `bin/clang`).
+Extensions that provide grammars additionally require the [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) to compile Tree-sitter parsers. V-Agent downloads it automatically, but you can point V-Agent at an existing installation by setting the `WASI_SDK_PATH` environment variable to its root directory (the one containing `bin/clang`).
 
 When developing an extension, you can use it in V-Agent without needing to publish it by installing it as a _dev extension_.
 
 From the extensions page, click the `Install Dev Extension` button (or the {#action zed::InstallDevExtension} action) and select the directory containing your extension.
 
-If you need to troubleshoot, check Zed.log ({#action zed::OpenLog}) for additional output. For debug output, close and relaunch V-Agent from the command line with `zed --foreground`, which shows more verbose INFO-level logs.
+If you need to troubleshoot, check V-Agent.log ({#action zed::OpenLog}) for additional output. For debug output, close and relaunch V-Agent from the command line with `v-agent` (on Windows, add `--foreground` to attach the console).
 
 If you already have the published version of the extension installed, the published version will be uninstalled prior to the installation of the dev extension. After successful installation, the `Extensions` page will indicate that the upstream extension is "Overridden by dev extension".
 
@@ -115,7 +115,7 @@ zed::register_extension!(MyExtension);
 
 1. Fork the repo
 
-> **Note:** It is very helpful if you fork the `zed-industries/extensions` repo to a personal GitHub account instead of a GitHub organization, as this allows V-Agent staff to push any needed changes to your PR to expedite the publishing process.
+> **Note:** It is very helpful if you fork the `zed-industries/extensions` repo to a personal GitHub account instead of a GitHub organization, as this allows Zed Industries staff (who maintain that repo) to push any needed changes to your PR to expedite the publishing process.
 
 2. Clone the repo to your local machine
 
@@ -159,7 +159,7 @@ Also, ensure that you have filled out all the required fields in the manifest.
 
 Furthermore, please make sure that your extension fulfills the following preconditions before you move on to publishing your extension:
 
-- Extension IDs and names must not contain the words `zed`, `Zed` or `extension`, since they are all V-Agent extensions.
+- Extension IDs and names must not contain the words `zed` or `extension`, since they are all extensions for the extension marketplace (Zed Industries-hosted; see [Installing Extensions](./installing-extensions.md)).
 - Your extension ID should provide some information on what your extension tries to accomplish. E.g. for themes, it should be suffixed with `-theme`, snippet extensions should be suffixed with `-snippets` and so on. An exception to that rule is an extension that provides support for languages or popular tooling that people would expect to find under that ID. You can take a look at the list of [existing extensions](https://github.com/zed-industries/extensions/blob/main/extensions.toml) to get a grasp on how this usually is enforced.
 - Your extension must only include the resources it requires to function and nothing else.
   - See the [directory structure of a V-Agent extension](#directory-structure-of-a-zed-extension) and the [Rust and WebAssembly](#rust-and-webassembly) sections for more information.

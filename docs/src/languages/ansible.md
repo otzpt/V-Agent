@@ -16,7 +16,7 @@ Support for Ansible in V-Agent is provided via a community-maintained [Ansible e
 
 To avoid mishandling non-Ansible YAML files, the Ansible Language is not associated with any file extensions by default.
 
-To change this behavior, you can add a `"file_types"` section to V-Agent settings inside your project (`.zed/settings.json`) or your V-Agent user settings (`~/.config/zed/settings.json`) to match your folder/naming conventions. For example:
+To change this behavior, you can add a `"file_types"` section to V-Agent settings inside your project (`.zed/settings.json`) or your V-Agent user settings (`~/.config/v-agent/settings.json`) to match your folder/naming conventions. For example:
 
 ```json [settings]
 {
@@ -57,7 +57,7 @@ If your inventory file is in the YAML format, you can either:
 # yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/inventory.json
 ```
 
-- or, configure the YAML language server settings to set this schema for all your inventory files that match your inventory pattern, under your V-Agent settings ([ref](https://zed.dev/docs/languages/yaml)):
+- or, configure the YAML language server settings to set this schema for all your inventory files that match your inventory pattern, under your V-Agent settings ([ref](./yaml.md)):
 
 ```json [settings]
 {
@@ -112,7 +112,7 @@ When desired, any of the above default settings can be overridden under the `"ls
 ```json [settings]
 {
   "lsp": {
-    // The Zed Ansible extension prefixes all settings with `ansible`
+    // The V-Agent Ansible extension prefixes all settings with `ansible`
     // so use `ansible.path` instead of `ansible.ansible.path`.
     "ansible-language-server": {
       "settings": {

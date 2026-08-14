@@ -5,83 +5,38 @@ description: "This guide covers how to uninstall V-Agent on different operating 
 
 # Uninstall
 
-This guide covers how to uninstall V-Agent on different operating systems.
-
-## macOS
-
-### Standard Installation
-
-If you installed V-Agent by downloading it from the website:
-
-1. Quit V-Agent if it's running
-2. Open Finder and go to your Applications folder
-3. Drag V-Agent to the Trash (or right-click and select "Move to Trash")
-4. Empty the Trash
-
-### Homebrew Installation
-
-If you installed V-Agent using Homebrew, use the following command:
-
-```sh
-brew uninstall --cask zed
-```
-
-Or for the preview version:
-
-```sh
-brew uninstall --cask zed@preview
-```
-
-### Removing User Data (Optional)
-
-To completely remove all V-Agent configuration files and data:
-
-1. Open Finder
-2. Press `Cmd + Shift + G` to open "Go to Folder"
-3. Delete the following directories if they exist:
-   - `~/Library/Application Support/Zed`
-   - `~/Library/Saved Application State/dev.zed.Zed.savedState`
-   - `~/Library/Logs/Zed`
-   - `~/Library/Caches/dev.zed.Zed`
-   - `~/Library/Caches/Zed`
-   - `~/.config/zed`
-   - `~/.local/state/Zed`
+This guide covers how to uninstall V-Agent on different operating systems. See [Installation](./installation.md) for how V-Agent is packaged on each platform.
 
 ## Linux
 
-### Standard Uninstall
-
-If V-Agent was installed using the default installation script, run:
+### Arch, Manjaro, EndeavourOS, CachyOS
 
 ```sh
-zed --uninstall
+sudo pacman -R v-agent
 ```
 
-You'll be prompted whether to keep or delete your preferences. After making a choice, you should see a message that V-Agent was successfully uninstalled.
-
-If the `zed` command is not found in your PATH, try:
+### Debian, Ubuntu, Mint, Pop!\_OS
 
 ```sh
-$HOME/.local/bin/zed --uninstall
+sudo apt remove v-agent
 ```
 
-or:
+### AppImage or portable tarball
+
+These are self-contained — delete the `.AppImage` file or the extracted tarball directory.
+
+### Removing User Data (Optional)
+
+To completely remove V-Agent's configuration, data, and cache:
 
 ```sh
-$HOME/.local/zed.app/bin/zed --uninstall
+rm -rf ~/.config/v-agent
+rm -rf ~/.local/share/v-agent
+rm -rf ~/.cache/v-agent
+rm -rf ~/.local/state/v-agent
 ```
 
-### Package Manager
-
-If you installed V-Agent using a package manager (such as Flatpak, Snap, or a distribution-specific package manager), consult that package manager's documentation for uninstallation instructions.
-
-### Manual Removal
-
-If the uninstall command fails or V-Agent was installed to a custom location, you can manually remove:
-
-- Installation directory: `~/.local/zed.app` (or your custom installation path)
-- Binary symlink: `~/.local/bin/zed`
-- Configuration and data: `~/.config/zed`
+(Or the equivalents under `$XDG_CONFIG_HOME`, `$XDG_DATA_HOME`, `$XDG_CACHE_HOME`, `$XDG_STATE_HOME` if you've customized those.)
 
 ## Windows
 
@@ -100,22 +55,37 @@ Alternatively, you can:
 2. Right-click on V-Agent
 3. Select "Uninstall"
 
+### Portable (.zip)
+
+Delete the extracted folder — nothing else was installed.
+
 ### Removing User Data (Optional)
 
 To completely remove all V-Agent configuration files and data:
 
 1. Press `Windows key + R` to open Run
 2. Type `%APPDATA%` and press Enter
-3. Delete the `Zed` folder if it exists
+3. Delete the `V-Agent` folder if it exists
 4. Press `Windows key + R` again, type `%LOCALAPPDATA%` and press Enter
-5. Delete the `Zed` folder if it exists
+5. Delete the `V-Agent` folder if it exists
+
+## macOS
+
+V-Agent doesn't ship prebuilt macOS releases yet (see [Installation](./installation.md)). If you built it from source, quit the app and remove:
+
+```sh
+rm -rf ~/.config/v-agent
+rm -rf ~/Library/Application\ Support/V-Agent
+rm -rf ~/Library/Caches/V-Agent
+rm -rf ~/Library/Logs/V-Agent
+rm -rf ~/.local/state/V-Agent
+```
 
 ## Troubleshooting
 
 If you encounter issues during uninstallation:
 
-- **macOS/Windows**: Ensure V-Agent is completely quit before attempting to uninstall. Check Activity Manager (macOS) or Task Manager (Windows) for any running V-Agent processes.
-- **Linux**: If the uninstall script fails, check the error message and consider manual removal of the directories listed above.
+- **macOS/Windows**: Ensure V-Agent is completely quit before attempting to uninstall. Check Activity Monitor (macOS) or Task Manager (Windows) for any running V-Agent processes.
 - **All platforms**: If you want to start fresh while keeping V-Agent installed, you can delete the configuration directories instead of uninstalling the application entirely.
 
-For additional help, see our [Linux-specific documentation](./linux.md) or visit the [V-Agent community](https://zed.dev/community-links).
+For additional help, see the [Linux-specific documentation](./linux.md) or [open an issue](https://github.com/otzpt/V-Agent/issues).

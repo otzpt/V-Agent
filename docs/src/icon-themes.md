@@ -15,7 +15,7 @@ Navigating through the icon theme list by moving up and down will change the ico
 
 ## Installing more Icon Themes
 
-More icon themes are available from the Extensions page, which you can access via the command palette with {#action zed::Extensions} or the [V-Agent website](https://zed.dev/extensions?filter=icon-themes).
+More icon themes are available from the Extensions page, which you can access via the command palette with {#action zed::Extensions} or [directly](https://zed.dev/extensions?filter=icon-themes) — V-Agent doesn't run its own extension marketplace, so this points at the same one upstream Zed uses.
 
 ## Configuring Icon Themes
 

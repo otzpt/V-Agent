@@ -6,9 +6,18 @@ description: Understand how V-Agent handles AI prompts, code context, hosted mod
 # AI Privacy
 
 This page explains the privacy and trust boundaries for AI features in V-Agent,
-including [Zed Agent](./zed-agent.md), [Edit Prediction](./edit-prediction.md),
+including [V-Agent Agent](./zed-agent.md), [Edit Prediction](./edit-prediction.md),
 [Inline Assistant](./inline-assistant.md), and
 [Git commit generation](../git.md#ai-support-in-git).
+
+> **Note:** "V-Agent-hosted models" below means requests routed through Zed
+> Industries' own hosted-model infrastructure — V-Agent hasn't stood up a
+> separate one, so selecting that provider sends requests to Zed's servers
+> under Zed's agreements with model providers. The retention and no-training
+> commitments described in this section are Zed Industries' commitments to
+> Zed users, not something the V-Agent fork has separately negotiated. If
+> you'd rather avoid that, use [your own API key](./use-api-access.md) or
+> [an existing subscription](./use-an-existing-subscription.md) instead.
 
 V-Agent does not retain your prompts or code context by default. For
 V-Agent-hosted models, V-Agent has no-training
@@ -21,16 +30,16 @@ training data collection.
 
 ## AI Request Paths {#ai-request-paths}
 
-| Path                                                         | Who handles model requests                        | What to know                                                                                                                                                                                                                   | Details                                                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| V-Agent-hosted models         | V-Agent routes requests to hosted model providers     | Provider agreements prohibit training on your prompts or code context and require zero data retention for inference requests, except for provider-designated models with safety retention, such as Anthropic's Covered Models. | [V-Agent-hosted model commitments](#data-retention-and-training)                                      |
-| [Provider API keys](./use-api-access.md)                     | The configured provider                           | The provider handles requests under its own terms. Provider keys saved through V-Agent are stored in the system keychain, not in `settings.json`.                                                                                  | [Use API Access](./use-api-access.md)                                                             |
-| [Existing subscriptions](./use-an-existing-subscription.md)  | The subscription provider                         | The provider handles requests under the subscription terms.                                                                                                                                                                    | [Use an Existing Subscription](./use-an-existing-subscription.md)                                 |
-| [Gateways](./use-a-gateway.md)                               | The configured gateway and upstream providers     | The gateway and upstream providers handle requests under their own terms.                                                                                                                                                      | [Use a Gateway](./use-a-gateway.md)                                                               |
-| [Local models](./use-a-local-model.md)                       | The local server or self-hosted endpoint          | The local server handles requests according to how you configured that server.                                                                                                                                                 | [Use a Local Model](./use-a-local-model.md)                                                       |
-| [External Agents](./external-agents.md)                      | The External Agent and its configured providers   | The External Agent handles model requests under its own terms. Tool and MCP behavior depends on agent and ACP configuration.                                                                                                   | [External Agents](./external-agents.md)                                                           |
-| [Terminal Threads](./terminal-threads.md)                    | The CLI or TUI running in the terminal            | The CLI or TUI owns its auth, model routing, tools, instructions, MCP configuration, and data handling.                                                                                                                        | [Terminal Threads](./terminal-threads.md)                                                         |
-| [Edit Prediction](./edit-prediction.md)                      | The selected edit prediction provider             | Each keystroke can send local editing context to the selected provider. Zeta requests are processed transiently unless training data collection is enabled; third-party providers follow their own terms.                      | [Edit Prediction](./edit-prediction.md), Feedback and Training Data        |
+| Path                                                         | Who handles model requests                            | What to know                                                                                                                                                                                                                   | Details                                                                                           |
+| ------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| V-Agent-hosted models                                        | V-Agent routes requests to hosted model providers     | Provider agreements prohibit training on your prompts or code context and require zero data retention for inference requests, except for provider-designated models with safety retention, such as Anthropic's Covered Models. | [V-Agent-hosted model commitments](#data-retention-and-training)                                  |
+| [Provider API keys](./use-api-access.md)                     | The configured provider                               | The provider handles requests under its own terms. Provider keys saved through V-Agent are stored in the system keychain, not in `settings.json`.                                                                              | [Use API Access](./use-api-access.md)                                                             |
+| [Existing subscriptions](./use-an-existing-subscription.md)  | The subscription provider                             | The provider handles requests under the subscription terms.                                                                                                                                                                    | [Use an Existing Subscription](./use-an-existing-subscription.md)                                 |
+| [Gateways](./use-a-gateway.md)                               | The configured gateway and upstream providers         | The gateway and upstream providers handle requests under their own terms.                                                                                                                                                      | [Use a Gateway](./use-a-gateway.md)                                                               |
+| [Local models](./use-a-local-model.md)                       | The local server or self-hosted endpoint              | The local server handles requests according to how you configured that server.                                                                                                                                                 | [Use a Local Model](./use-a-local-model.md)                                                       |
+| [External Agents](./external-agents.md)                      | The External Agent and its configured providers       | The External Agent handles model requests under its own terms. Tool and MCP behavior depends on agent and ACP configuration.                                                                                                   | [External Agents](./external-agents.md)                                                           |
+| [Terminal Threads](./terminal-threads.md)                    | The CLI or TUI running in the terminal                | The CLI or TUI owns its auth, model routing, tools, instructions, MCP configuration, and data handling.                                                                                                                        | [Terminal Threads](./terminal-threads.md)                                                         |
+| [Edit Prediction](./edit-prediction.md)                      | The selected edit prediction provider                 | Each keystroke can send local editing context to the selected provider. Zeta requests are processed transiently unless training data collection is enabled; third-party providers follow their own terms.                      | [Edit Prediction](./edit-prediction.md), Feedback and Training Data                               |
 | [Agent tools](./tools.md), [MCP](./mcp.md), and integrations | V-Agent, configured MCP servers, and external systems | Tools can read, edit, search, run commands, fetch URLs, or call external systems depending on profile, MCP server, and tool permission settings.                                                                               | [Agent Profiles](./agent-profiles.md), [Tool Permissions](./tool-permissions.md), [MCP](./mcp.md) |
 | Project trust and instructions                               | V-Agent and the trusted worktree                      | Project-local instructions and skills are loaded from trusted worktrees. External Agents and Terminal Threads may read their own instruction files.                                                                            | [Worktree Trust](../worktree-trust.md), [Skills](./skills.md), [Instructions](./instructions.md)  |
 
@@ -89,13 +98,6 @@ can be stored in each opt-in case.
 
 ## Controls and Related Privacy Docs {#controls-and-related-privacy-docs}
 
-- Telemetry: What telemetry V-Agent collects and how to control
-  it.
-- Privacy for Business: How V-Agent Business enforces
-  privacy settings across an organization.
-- Admin Controls: How owners and admins control
-  V-Agent-hosted models, Edit Prediction, and feedback sharing.
 - [AI Quick Start](./quick-start.md#turn-ai-off): How to turn AI off.
-- [Privacy Policy](https://zed.dev/privacy-policy): V-Agent's privacy policy.
-- [Subprocessors](https://zed.dev/subprocessors): V-Agent's subprocessors.
-- [Terms of Service](https://zed.dev/terms): Zed's terms.
+
+V-Agent has no privacy policy, subprocessor list, or terms of service of its own — it's a personal fork with no company behind it. When a setting or in-app link (like AI features that route through V-Agent-hosted models) reaches Zed Industries' infrastructure, [Zed's Privacy Policy](https://zed.dev/privacy-policy), [Subprocessors](https://zed.dev/subprocessors), and [Terms of Service](https://zed.dev/terms) are what apply to that request — not any policy of V-Agent's.

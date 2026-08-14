@@ -42,15 +42,15 @@ These constructions reveal AI authorship:
 ### Em Dash Chains
 
 ```
-❌ "Zed is fast — really fast — and it shows in every interaction."
-✅ "Zed is fast. You'll feel it in every interaction."
+❌ "V-Agent is fast — really fast — and it shows in every interaction."
+✅ "V-Agent is fast. You'll feel it in every interaction."
 ```
 
 ### "It's not X, it's Y"
 
 ```
 ❌ "It's not just an editor — it's a complete development environment."
-✅ "Zed combines editing, collaboration, and AI assistance in one workspace."
+✅ "V-Agent combines editing, collaboration, and AI assistance in one workspace."
 ```
 
 ### Triple Parallel Lists
@@ -58,21 +58,21 @@ These constructions reveal AI authorship:
 ```
 ❌ "Fast. Focused. Collaborative."
 ❌ "Write code. Ship faster. Stay in flow."
-✅ "Zed is built for speed and collaboration."
+✅ "V-Agent is built for speed and collaboration."
 ```
 
 ### Colon-Introduced Lists in Prose
 
 ```
-❌ "Three things make Zed different: speed, collaboration, and AI."
-✅ "Zed prioritizes speed, real-time collaboration, and AI integration."
+❌ "Three things make V-Agent different: speed, collaboration, and AI."
+✅ "V-Agent prioritizes speed, real-time collaboration, and AI integration."
 ```
 
 ### Rhetorical Questions as Openers
 
 ```
 ❌ "What if your editor could keep up with your thinking?"
-✅ "Zed renders every keystroke instantly."
+✅ "V-Agent renders every keystroke instantly."
 ```
 
 ---

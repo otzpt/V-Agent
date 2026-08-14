@@ -1,67 +1,72 @@
 ---
 title: Install V-Agent - macOS, Linux, Windows
-description: Download and install V-Agent on macOS, Linux, or Windows. Includes Homebrew, direct download, and package manager options.
+description: Download and install V-Agent on Linux or Windows. Covers native packages, AppImage, portable builds, and building from source.
 ---
 
 # Installing V-Agent
 
 ## Download V-Agent
 
-### macOS
-
-Get the latest stable builds via [the download page](https://zed.dev/download). If you want to download our preview build, you can find it on its [releases page](https://zed.dev/releases/preview). After the first manual installation, V-Agent will periodically check for install updates.
-
-You can also install V-Agent stable via Homebrew:
-
-```sh
-brew install --cask zed
-```
-
-As well as V-Agent preview:
-
-```sh
-brew install --cask zed@preview
-```
-
-### Windows
-
-Get the latest stable builds via [the download page](https://zed.dev/download). If you want to download our preview build, you can find it on its [releases page](https://zed.dev/releases/preview). After the first manual installation, V-Agent will periodically check for install updates.
-
-Additionally, you can install V-Agent using winget:
-
-```sh
-winget install -e --id ZedIndustries.Zed
-```
+All commands below pull the **latest release** from [GitHub Releases](https://github.com/otzpt/V-Agent/releases). V-Agent has no auto-update mechanism yet — re-run the install command (or download a new release manually) to update.
 
 ### Linux
 
-For most Linux users, the easiest way to install V-Agent is through our installation script:
+**Arch, Manjaro, EndeavourOS, CachyOS** — native package:
 
 ```sh
-curl -f https://zed.dev/install.sh | sh
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.pkg.tar.zst
+sudo pacman -U V-Agent-x86_64.pkg.tar.zst
 ```
 
-You can now optionally specify a **version** of V-Agent to install using the `ZED_VERSION` environment variable:
+**Debian, Ubuntu, Mint, Pop!\_OS** — `.deb`:
 
 ```sh
-# Install the latest stable version (default)
-curl -f https://zed.dev/install.sh | sh
-
-# Install a specific version
-curl -f https://zed.dev/install.sh | ZED_VERSION=0.216.0 sh
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-amd64.deb
+sudo apt install ./V-Agent-amd64.deb
 ```
 
-To install the preview build, which receives updates about a week ahead of stable:
+**Any distro** — AppImage, no install needed:
 
 ```sh
-curl -f https://zed.dev/install.sh | ZED_CHANNEL=preview sh
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.AppImage
+chmod +x V-Agent-x86_64.AppImage
+./V-Agent-x86_64.AppImage
 ```
 
-This script supports `x86_64` and `AArch64`, as well as common Linux distributions: Ubuntu, Arch, Debian, RedHat, CentOS, Fedora, and more.
+**Portable tarball** — unpack and run:
 
-If V-Agent is installed using this installation script, it can be uninstalled at any time by running the shell command `zed --uninstall`. The shell will then prompt you whether you'd like to keep your preferences or delete them. After making a choice, you should see a message that V-Agent was successfully uninstalled.
+```sh
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-linux-x86_64.tar.gz
+tar -xzf V-Agent-linux-x86_64.tar.gz
+./V-Agent-linux-x86_64/v-agent
+```
 
-If this script is insufficient for your use case, you run into problems running V-Agent, or there are errors in uninstalling V-Agent, please see our [Linux-specific documentation](./linux.md).
+See [runtime dependencies and uninstall instructions](./linux.md) for the Linux build.
+
+### Windows
+
+**Installer (.msi)** — installs to `%LOCALAPPDATA%\Programs\V-Agent`, no administrator rights required:
+
+```powershell
+irm https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x64.msi -OutFile V-Agent.msi
+msiexec /i V-Agent.msi
+```
+
+**Portable (.zip)** — unpack and run `v-agent.exe`:
+
+```powershell
+irm https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-windows-x86_64.zip -OutFile V-Agent.zip
+Expand-Archive V-Agent.zip -DestinationPath V-Agent
+.\V-Agent\v-agent.exe
+```
+
+### macOS
+
+Not built yet. [`.github/workflows/release.yml`](https://github.com/otzpt/V-Agent/blob/main/.github/workflows/release.yml) only targets Windows and Linux for now — see [ROADMAP.md](https://github.com/otzpt/V-Agent/blob/main/ROADMAP.md). Build from source in the meantime; see the [macOS development docs](./development/macos.md).
+
+### A note on signing
+
+Releases are **not code-signed**. Windows SmartScreen will say "unknown publisher" (_More info → Run anyway_). This is the absence of a paid certificate, not a defect. Every file's checksum is on the release page if you want to verify it.
 
 ## System Requirements
 
@@ -69,7 +74,7 @@ If this script is insufficient for your use case, you run into problems running 
 
 V-Agent supports the following macOS releases:
 
-| Version       | Codename | Apple Status   | V-Agent Status          |
+| Version       | Codename | Apple Status   | V-Agent Status      |
 | ------------- | -------- | -------------- | ------------------- |
 | macOS 26.x    | Tahoe    | Supported      | Supported           |
 | macOS 15.x    | Sequoia  | Supported      | Supported           |
@@ -79,7 +84,7 @@ V-Agent supports the following macOS releases:
 | macOS 11.x    | Big Sur  | EOL 2023-09-26 | Partially Supported |
 | macOS 10.15.x | Catalina | EOL 2022-09-12 | Partially Supported |
 
-The macOS releases labelled "Partially Supported" (Big Sur and Catalina) do not support screen sharing via V-Agent Collaboration. These features use the [LiveKit SDK](https://livekit.io) which relies upon [ScreenCaptureKit.framework](https://developer.apple.com/documentation/screencapturekit/) only available on macOS 12 (Monterey) and newer.
+The macOS releases labelled "Partially Supported" (Big Sur and Catalina) do not support screen sharing via Collaboration, which connects through Zed Industries' collaboration servers — V-Agent doesn't run its own. These features use the [LiveKit SDK](https://livekit.io) which relies upon [ScreenCaptureKit.framework](https://developer.apple.com/documentation/screencapturekit/) only available on macOS 12 (Monterey) and newer.
 
 #### Mac Hardware
 

@@ -250,11 +250,11 @@ For more information on this, please see [win32 docs](https://learn.microsoft.co
 V-Agent currently uses Vulkan as its graphics API on Windows. If V-Agent fails to launch, Vulkan is a common cause.
 
 You can check the V-Agent log at:
-`C:\Users\YOU\AppData\Local\Zed\logs\Zed.log`
+`C:\Users\YOU\AppData\Local\V-Agent\logs\V-Agent.log`
 
 If you see messages like:
 
-- `Zed failed to open a window: NoSupportedDeviceFound`
+- `V-Agent failed to open a window: NoSupportedDeviceFound`
 - `ERROR_INITIALIZATION_FAILED`
 - `GPU Crashed`
 - `ERROR_SURFACE_LOST_KHR`

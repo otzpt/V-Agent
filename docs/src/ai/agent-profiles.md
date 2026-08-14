@@ -5,7 +5,7 @@ description: Configure V-Agent Agent profiles for model selection, built-in tool
 
 # Agent Profiles
 
-Agent profiles control how the [Zed Agent](./zed-agent.md) behaves in a thread. A profile can set a default model and choose which built-in tools and MCP tools are available.
+Agent profiles control how the [V-Agent Agent](./zed-agent.md) behaves in a thread. A profile can set a default model and choose which built-in tools and MCP tools are available.
 
 Profiles do not decide whether a tool call is allowed automatically. Use [Tool Permissions](./tool-permissions.md) to control allow, deny, and confirm behavior.
 

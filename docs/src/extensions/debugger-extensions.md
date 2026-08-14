@@ -113,7 +113,7 @@ Note however that you do _not_ need to go through a 2-phase resolution; if you c
 
 ## Available Extensions
 
-See DAP servers published as extensions [on Zed's site](https://zed.dev/extensions?filter=debug-adapters).
+See DAP servers published as extensions [in the extension marketplace](https://zed.dev/extensions?filter=debug-adapters) (V-Agent has no marketplace of its own, so this is upstream Zed's).
 
 Review their repositories to see common implementation patterns and structure.
 

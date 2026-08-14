@@ -30,12 +30,12 @@ ocamllsp --help
 
 in your terminal. If you get a help message, you're good to go. If not, please revisit the installation instructions for `ocamllsp` and ensure it's properly installed.
 
-With that aside, we can now launch V-Agent. Given how the OCaml package manager works, we require you to run V-Agent from the terminal, so please make sure you install the [Zed cli](https://zed.dev/features#cli) if you haven't already.
+With that aside, we can now launch V-Agent. Given how the OCaml package manager works, we require you to run V-Agent from the terminal so it inherits your opam switch's environment.
 
-Once you have the cli, simply from a terminal, navigate to your project and run
+From a terminal, navigate to your project and run
 
 ```sh
-zed .
+v-agent .
 ```
 
 You should now have V-Agent running with OCaml support, with no additional setup required.

@@ -9,7 +9,7 @@ Use this page to choose the right AI setup path in V-Agent. If you already know 
 
 ## Use the V-Agent Agent {#zed-agent}
 
-Use [Zed Agent](./zed-agent.md) when you want V-Agent's native agent to read, edit, search, and run code in your project.
+Use [V-Agent Agent](./zed-agent.md) when you want V-Agent's native agent to read, edit, search, and run code in your project.
 
 V-Agent Agent uses V-Agent-configured models from [LLM Providers](./llm-providers.md). It also uses V-Agent's built-in tools, [Agent Profiles](./agent-profiles.md), [Skills](./skills.md), [Instructions](./instructions.md), and [MCP servers](./mcp.md).
 
@@ -29,10 +29,10 @@ Start in the [Agent Panel](./agent-panel.md) to prompt the agent, add context, r
 
 Use this path for Claude, Codex, OpenCode, Copilot, Cursor, Pi Coding Agent, Gemini CLI, or another coding agent.
 
-| If the agent...                 | Use                                       |
-| ------------------------------- | ----------------------------------------- |
+| If the agent...                     | Use                                       |
+| ----------------------------------- | ----------------------------------------- |
 | Integrates with V-Agent through ACP | [External Agents](./external-agents.md)   |
-| Runs as a CLI or TUI            | [Terminal Threads](./terminal-threads.md) |
+| Runs as a CLI or TUI                | [Terminal Threads](./terminal-threads.md) |
 
 External Agents and Terminal Threads usually own their own auth, model configuration, subscriptions, tools, instructions, and MCP configuration.
 
@@ -42,7 +42,7 @@ The V-Agent Agent and other model-backed V-Agent AI features use models configur
 
 | If you want to...                                                             | Use                                                               |
 | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Use models billed through V-Agent                                                 | V-Agent-Hosted Models              |
+| Use models billed through V-Agent                                             | V-Agent-Hosted Models                                             |
 | Bring your own provider API key, credits, top-ups, or usage billing           | [Use API Access](./use-api-access.md)                             |
 | Use a subscription you already pay for                                        | [Use an Existing Subscription](./use-an-existing-subscription.md) |
 | Use OpenRouter, Vercel AI Gateway, Amazon Bedrock, or another gateway         | [Use a Gateway](./use-a-gateway.md)                               |
@@ -72,10 +72,10 @@ For general settings mechanics, see [Configuring V-Agent](../configuring-zed.md)
 
 ## Learn More {#learn-more}
 
-| If you want to...                    | Use                                                                                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Understand privacy and data controls | [AI Privacy](./privacy-and-security.md) and Feedback and Training Data                                                  |
-| Understand plans, usage, and billing | Plans & Pricing, V-Agent-Hosted Models, and Billing |
+| If you want to...                    | Use                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Understand privacy and data controls | [AI Privacy](./privacy-and-security.md) and Feedback and Training Data |
+| Understand plans, usage, and billing | Plans & Pricing, V-Agent-Hosted Models, and Billing                    |
 
 ## Turn AI Off {#turn-ai-off}
 

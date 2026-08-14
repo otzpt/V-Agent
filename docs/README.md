@@ -1,8 +1,8 @@
-# Zed Docs
+# V-Agent Docs
 
-Welcome to Zed's documentation.
+Welcome to V-Agent's documentation.
 
-This is built on push to `main` and published automatically to [https://zed.dev/docs](https://zed.dev/docs).
+These docs are built locally with mdBook. This fork does not currently have a CI workflow that publishes them anywhere — there is no `deploy_docs.yml` in `.github/workflows/`, unlike the upstream `zed.dev/docs` pipeline this book was forked from.
 
 To preview the docs locally you will need to install [mdBook](https://rust-lang.github.io/mdBook/) (`cargo install mdbook@0.4.40`), generate the action metadata, and then serve:
 
@@ -40,14 +40,13 @@ If for some reason you need to bypass the docs preprocessor, you can comment out
 
 ## Images and videos
 
-To add images or videos to the docs, upload them to another location (e.g., zed.dev, GitHub's asset storage) and then link out to them from the docs.
+To add images or videos to the docs, upload them to another location (e.g., GitHub's asset storage) and then link out to them from the docs.
 
 Putting binary assets such as images in the Git repository will bloat the repository size over time.
 
 ## Internal notes:
 
-- We have a Cloudflare router called `docs-proxy` that intercepts requests to `zed.dev/docs` and forwards them to the "docs" Cloudflare Pages project.
-- The CI uploads a new version to the Cloudflare Pages project from `.github/workflows/deploy_docs.yml` on every push to `main`.
+- Upstream Zed publishes these docs via a Cloudflare router (`docs-proxy`) that intercepts requests to `zed.dev/docs` and a `.github/workflows/deploy_docs.yml` CI job. This fork has neither — see the note at the top of this file.
 
 ### Table of Contents
 

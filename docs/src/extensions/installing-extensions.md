@@ -11,9 +11,9 @@ Open the Extension Gallery with {#kb zed::Extensions}, or select "V-Agent > Exte
 
 ## Installation Location
 
-- On macOS, extensions are installed in `~/Library/Application Support/Zed/extensions`.
-- On Linux, they are installed in either `$XDG_DATA_HOME/zed/extensions` or `~/.local/share/zed/extensions`.
-- On Windows, the directory is `%LOCALAPPDATA%\Zed\extensions`.
+- On macOS, extensions are installed in `~/Library/Application Support/V-Agent/extensions`.
+- On Linux, they are installed in either `$XDG_DATA_HOME/v-agent/extensions` or `~/.local/share/v-agent/extensions`.
+- On Windows, the directory is `%LOCALAPPDATA%\V-Agent\extensions`.
 
 This directory contains two subdirectories:
 

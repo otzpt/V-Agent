@@ -1,23 +1,17 @@
 ---
 title: V-Agent on Windows
-description: "Get the latest stable builds via the download page. If you want to download our preview build, you can find it on its [releases p..."
+description: "Install V-Agent on Windows via the .msi installer or the portable .zip, both from GitHub Releases."
 ---
 
 # V-Agent on Windows
 
 ## Installing V-Agent
 
-Get the latest stable builds via [the download page](https://zed.dev/download). If you want to download our preview build, you can find it on its [releases page](https://zed.dev/releases/preview). After the first manual installation, V-Agent will periodically check for install updates.
+See [Installation](./installation.md) for the `.msi` installer and portable `.zip` download commands, both from [GitHub Releases](https://github.com/otzpt/V-Agent/releases). There is no preview or nightly channel; every release is a single stable build, and V-Agent does not auto-update (see [Update](./update.md)).
 
-You can also build zed from source, see [these docs](https://zed.dev/docs/development/windows) for instructions.
+You can also build V-Agent from source, see [these docs](./development/windows.md) for instructions.
 
-### Package managers
-
-Additionally, you can install V-Agent using winget:
-
-```sh
-winget install -e --id ZedIndustries.Zed
-```
+V-Agent isn't available via winget or any other package manager yet.
 
 ## Uninstall
 

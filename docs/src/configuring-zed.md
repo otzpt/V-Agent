@@ -30,9 +30,9 @@ Your user settings apply globally across all projects. Open the file with {#kb z
 
 The file is located at:
 
-- macOS: `~/.config/zed/settings.json`
-- Linux: `~/.config/zed/settings.json` (or `$XDG_CONFIG_HOME/zed/settings.json`)
-- Windows: `%APPDATA%\Zed\settings.json`
+- macOS: `~/.config/v-agent/settings.json`
+- Linux: `~/.config/v-agent/settings.json` (or `$XDG_CONFIG_HOME/v-agent/settings.json`)
+- Windows: `%APPDATA%\V-Agent\settings.json`
 
 The syntax is JSON with support for `//` comments.
 

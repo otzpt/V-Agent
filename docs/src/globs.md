@@ -63,9 +63,9 @@ Globs in V-Agent are case-sensitive, so `*.c` will not match `main.C` (even on c
 
 ### Matching directories
 
-If you wanted to search the [zed repository](https://github.com/zed-industries/zed) for examples of [Configuring Language Servers](https://zed.dev/docs/configuring-languages#configuring-language-servers) (under `"lsp"` in V-Agent settings.json) you could search for `"lsp"` and in the "Include" filter specify `docs/**/*.md`. This would only match files whose path was under the `docs` directory or any nested subdirectories `**/` of that folder with a filename that ends in `.md`.
+If you wanted to search the [zed repository](https://github.com/zed-industries/zed) for examples of [Configuring Language Servers](./configuring-languages.md#configuring-language-servers) (under `"lsp"` in V-Agent settings.json) you could search for `"lsp"` and in the "Include" filter specify `docs/**/*.md`. This would only match files whose path was under the `docs` directory or any nested subdirectories `**/` of that folder with a filename that ends in `.md`.
 
-If instead you wanted to restrict yourself only to [V-Agent Language-Specific Documentation](https://zed.dev/docs/languages) pages you could define a narrower pattern of: `docs/src/languages/*.md` this would match [`docs/src/languages/rust.md`](https://github.com/zed-industries/zed/blob/main/docs/src/languages/rust.md) and [`docs/src/languages/cpp.md`](https://github.com/zed-industries/zed/blob/main/docs/src/languages/cpp.md) but not [`docs/src/configuring-languages.md`](https://github.com/zed-industries/zed/blob/main/docs/src/configuring-languages.md).
+If instead you wanted to restrict yourself only to [V-Agent Language-Specific Documentation](./languages.md) pages you could define a narrower pattern of: `docs/src/languages/*.md` this would match [`docs/src/languages/rust.md`](https://github.com/zed-industries/zed/blob/main/docs/src/languages/rust.md) and [`docs/src/languages/cpp.md`](https://github.com/zed-industries/zed/blob/main/docs/src/languages/cpp.md) but not [`docs/src/configuring-languages.md`](https://github.com/zed-industries/zed/blob/main/docs/src/configuring-languages.md).
 
 ### Implicit Wildcards
 

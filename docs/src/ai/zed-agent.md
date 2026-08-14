@@ -34,7 +34,7 @@ Use V-Agent Agent when you want the agent to:
 
 | Agent path                                | Main difference                                                                              |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [Zed Agent](./zed-agent.md)               | Uses V-Agent's model, tool, profile, skill, instruction, and MCP configuration                   |
+| [V-Agent Agent](./zed-agent.md)           | Uses V-Agent's model, tool, profile, skill, instruction, and MCP configuration               |
 | [External Agents](./external-agents.md)   | Use an ACP integration and often own auth, model, tool, and native instruction configuration |
 | [Terminal Threads](./terminal-threads.md) | Run a CLI/TUI in a terminal-backed thread; the CLI owns auth and configuration               |
 

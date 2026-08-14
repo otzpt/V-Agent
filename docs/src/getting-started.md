@@ -22,12 +22,12 @@ To reopen the welcome page, close all items in the center pane or use the comman
 Open a folder from the command line:
 
 ```sh
-zed ~/projects/my-app
+v-agent ~/projects/my-app
 ```
 
 Or use `Cmd+O` (macOS) / `Ctrl+O` (Linux/Windows) to open a folder from within V-Agent.
 
-By default, new projects open in your current window's threads sidebar. To open in a new window instead, use `zed -n ~/projects/my-app` or press `Cmd+Enter` when selecting from Open Recent. See [Windows & Projects](./windows-and-projects.md) for more details.
+By default, new projects open in your current window's threads sidebar. To open in a new window instead, press `Cmd+Enter` when selecting from Open Recent. See [Windows & Projects](./windows-and-projects.md) for more details.
 
 ### 2. Learn the Essential Commands
 
@@ -89,8 +89,6 @@ You can also enable familiar keybindings:
 
 ## Join the Community
 
-V-Agent is open source. Join us on GitHub or in Discord to contribute code, report bugs, or suggest features.
+V-Agent is open source. Contribute code, report bugs, or suggest features via [GitHub Issues](https://github.com/otzpt/V-Agent/issues).
 
-- [Discord](https://discord.com/invite/zedindustries)
-- [GitHub Discussions](https://github.com/zed-industries/zed/discussions)
-- [V-Agent Reddit](https://www.reddit.com/r/ZedEditor)
+V-Agent has no Discord, subreddit, or Discussions forum of its own. For questions about the underlying Zed engine, upstream's [Discord](https://discord.com/invite/zedindustries) and [GitHub Discussions](https://github.com/zed-industries/zed/discussions) are separate communities.

@@ -1,17 +1,15 @@
 ---
 title: Update V-Agent
-description: "V-Agent is designed to keep itself up to date automatically. You can always update this behavior in your settings."
+description: "V-Agent has no auto-updater. Download new releases from GitHub and reinstall to update."
 ---
 
 # Update V-Agent
 
-V-Agent is designed to keep itself up to date automatically. You can always update this behavior in your settings.
+V-Agent does not update itself. Upstream Zed's auto-updater resolves releases against Zed Industries' own server, which would download and install _Zed_ over V-Agent — so V-Agent's updater is disabled at the code level, not just by a setting. Flipping the `auto_update` setting on has no effect.
 
-## Auto-updates
+## How to update
 
-By default, V-Agent checks for updates and installs them automatically the next time you restart the app. You’ll always be running the latest version with no extra steps.
-
-If an update is available, V-Agent will download it in the background and apply it on restart.
+Download the latest release from [GitHub Releases](https://github.com/otzpt/V-Agent/releases) and reinstall, the same way you installed it the first time. See [Installation](./installation.md) for the commands for your platform (`pacman -U`, `apt install`, replacing the AppImage/tarball, etc.).
 
 ## How to check your current version
 
@@ -20,7 +18,3 @@ To check which version of V-Agent you're using:
 Open the Command Palette (Cmd+Shift+P on macOS, Ctrl+Shift+P on Linux/Windows).
 
 Type and select {#action zed::About}. A modal will appear with your version information.
-
-## How to control update behavior
-
-If you want to turn off auto-updates, open the Settings Editor (Cmd ,) and find `Auto Update` under General Settings.

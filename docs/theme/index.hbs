@@ -94,7 +94,7 @@
         <header class="header-bar">
             <div class="left-container">
                 <a href="/" class="logo-nav">
-                    <img src="https://zed.dev/logo_icon.webp" class="icon-logo-img" alt="Zed Industries" style="height: 26px;">
+                    <img src="{{ path_to_root }}vagent-logo.png" class="icon-logo-img" alt="V-Agent" style="height: 26px;">
                 </a>
                 <button id="sidebar-toggle" class="icon-button ib-hidden-desktop" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar" aria-expanded="false">
                     <i class="fa fa-bars"></i>
@@ -130,7 +130,7 @@
                     <i class="fa fa-copy"></i>
                 </button>
 
-                <a class="download-button" href="https://zed.dev/download" title="Download Zed" aria-label="Download Zed">
+                <a class="download-button" href="https://github.com/otzpt/V-Agent/releases" title="Download V-Agent" aria-label="Download V-Agent">
                     Download
                 </a>
                 {{#if git_repository_url}}
@@ -184,38 +184,28 @@
                         <footer class="footer">
                             <a href="/" class="logo-nav">
                                 <img
-                                    src="https://zed.dev/logo_icon.webp"
+                                    src="{{ path_to_root }}vagent-logo.png"
                                     class="footer-logo"
-                                    alt="Zed Industries"
+                                    alt="V-Agent"
                                 />
                             </a>
                             <span class="footer-separator">•</span>
-                            <a class="footer-link" href="https://zed.dev"
-                                >Back to Site</a
-                            >
-                            <span class="footer-separator">•</span>
                             <a
                                 class="footer-link"
-                                href="https://zed.dev/releases"
+                                href="https://github.com/otzpt/V-Agent/releases"
                                 >Releases</a
                             >
                             <span class="footer-separator">•</span>
                             <a
                                 class="footer-link"
-                                href="https://zed.dev/roadmap"
+                                href="https://github.com/otzpt/V-Agent/blob/main/ROADMAP.md"
                                 >Roadmap</a
                             >
                             <span class="footer-separator">•</span>
                             <a
                                 class="footer-link"
-                                href="https://github.com/zed-industries/zed"
+                                href="https://github.com/otzpt/V-Agent"
                                 >GitHub</a
-                            >
-                            <span class="footer-separator">•</span>
-                            <a
-                                class="footer-link"
-                                href="https://zed.dev/blog"
-                                >Blog</a
                             >
                             <span class="footer-separator">•</span>
                             <button
@@ -491,7 +481,7 @@
         <div id="c15t-banner" style="display: none;">
             <div>
                 <p id="c15t-description">
-                    Zed uses cookies to improve your experience and for marketing. Read <a href="https://zed.dev/cookie-policy">our cookie policy</a> for more details.
+                    This documentation site does not use tracking cookies.
                 </p>
             </div>
             <div id="c15t-configure-section" style="display: none">

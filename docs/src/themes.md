@@ -15,16 +15,16 @@ Navigating through the theme list by moving up and down will change the theme in
 
 ## Installing New Themes
 
-You can find hundreds of different theme options in V-Agent's extensions store, which you can access via the command palette with {#action zed::Extensions} or the [V-Agent website](https://zed.dev/extensions?filter=themes).
+You can find hundreds of different theme options in the extension marketplace, which you can access via the command palette with {#action zed::Extensions} or [directly](https://zed.dev/extensions?filter=themes) — V-Agent doesn't run its own extension marketplace, so this points at the same one upstream Zed uses.
 
 Many popular themes have been ported to V-Agent, and if you're struggling to choose one, visit [zed-themes.com](https://zed-themes.com), a third-party gallery with visible previews for many of them.
 
 ## Build Your Theme
 
-You can use [V-Agent's Theme Builder](https://zed.dev/theme-builder) to design your own custom theme based on an existing one.
+You can use [Zed's Theme Builder](https://zed.dev/theme-builder) to design your own custom theme based on an existing one — V-Agent has no Theme Builder of its own.
 
-This tool lets you fine-tune and preview how every surface in the V-Agent app will look.
-You can then export the JSON for [local use](./themes.md#local-themes) or for [publishing in V-Agent's extension store](./extensions/themes.md).
+This tool lets you fine-tune and preview how every surface in the app will look.
+You can then export the JSON for [local use](./themes.md#local-themes) or for [publishing in the extension marketplace](./extensions/themes.md).
 
 ## Configuring a Theme
 
@@ -113,7 +113,7 @@ For example, [assets/themes/one/one.json](https://github.com/zed-industries/zed/
 
 ## Local Themes {#local-themes}
 
-Store new themes locally by placing them in the `~/.config/zed/themes` directory (macOS and Linux) or `%USERPROFILE%\AppData\Roaming\Zed\themes\` (Windows).
+Store new themes locally by placing them in the `~/.config/v-agent/themes` directory (macOS and Linux) or `%APPDATA%\V-Agent\themes\` (Windows).
 
 For example, to create a new theme called `my-cool-theme`, create a file called `my-cool-theme.json` in that directory.
 It will be available in the theme selector the next time V-Agent loads.

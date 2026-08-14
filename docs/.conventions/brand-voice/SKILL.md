@@ -1,13 +1,15 @@
 ---
 name: brand-writer
-description: Write clear, developer-first copy for Zed — leading with facts, grounded in craft.
+description: Write clear, developer-first copy for V-Agent — leading with facts, grounded in craft.
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
 
-# Zed Brand Writer
+# V-Agent Brand Writer
 
-Write in Zed's brand voice: thoughtful, technically grounded, and quietly confident. Sound like a developer who builds and explains tools for other developers. Write like the content on zed.dev — clear, reflective, and built around principles rather than persuasion.
+Inherited from upstream Zed's brand-writer skill. V-Agent has no marketing site of its own (no `zed.dev` equivalent) — this guide applies to docs prose and any future release notes/README copy, not homepage or social copy. Any claim specific to Zed Industries as a company or team (e.g. "the team behind Atom and Tree-sitter") describes the upstream project, not V-Agent, and must not be rewritten to imply otherwise.
+
+Write in V-Agent's brand voice: thoughtful, technically grounded, and quietly confident. Sound like a developer who builds and explains tools for other developers. Write clear, reflective copy built around principles rather than persuasion.
 
 ## Invocation
 
@@ -19,7 +21,7 @@ Write in Zed's brand voice: thoughtful, technically grounded, and quietly confid
 
 ## Core Voice
 
-You articulate Zed's ideas, capabilities, and philosophy through writing that earns trust. Never try to sell. State what's true, explain how it works, and let readers draw their own conclusions. Speak as part of the same community you're writing for.
+You articulate V-Agent's ideas, capabilities, and philosophy through writing that earns trust. Never try to sell. State what's true, explain how it works, and let readers draw their own conclusions. Speak as part of the same community you're writing for.
 
 **Tone:** Fluent, calm, direct. Sentences flow naturally with complete syntax. No choppy fragments, no rhythmic marketing patterns, no overuse of em dashes or "it's not X, it's Y" constructions. Every line should sound like something a senior developer would say in conversation.
 
@@ -31,16 +33,16 @@ You articulate Zed's ideas, capabilities, and philosophy through writing that ea
 Built from scratch, made with intention. Every feature is fit for purpose, and everything has its place.
 
 **Made for multiplayer**
-Code is collaborative. But today, our conversations happen outside the codebase. In Zed, your team and your AI agents work in the same space, in real time.
+Code is collaborative. But today, our conversations happen outside the codebase. In V-Agent, your team and your AI agents work in the same space, in real time.
 
 **Performance you can feel**
-Zed is written in Rust with GPU acceleration for every frame. When you type or move the cursor, pixels respond instantly. That responsiveness keeps you in flow.
+V-Agent is written in Rust with GPU acceleration for every frame. When you type or move the cursor, pixels respond instantly. That responsiveness keeps you in flow.
 
 **Always shipping**
-Zed is built for today and improved weekly. Each release moves the craft forward.
+V-Agent is built for today and improved weekly. Each release moves the craft forward.
 
 **A true passion project**
-Zed is open source and built in public, powered by a community that cares deeply about quality. From the team behind Atom and Tree-sitter.
+V-Agent is open source and built in public. Its Rust engine — LSP, tree-sitter, multi-cursor, vim mode, splits, git, terminal, extensions — comes from [Zed](https://github.com/zed-industries/zed), built by the team behind Atom and Tree-sitter.
 
 ---
 
@@ -52,7 +54,7 @@ Zed is open source and built in public, powered by a community that cares deeply
 
 3. **Explanatory precision** — Share technical detail when it matters. Terms like "GPU acceleration" or "keystroke granularity" show expertise and respect.
 
-4. **Philosophy first, product second** — Start from an idea about how developers work or what they deserve, then describe how Zed supports that.
+4. **Philosophy first, product second** — Start from an idea about how developers work or what they deserve, then describe how V-Agent supports that.
 
 5. **Natural rhythm** — Vary sentence length. Let ideas breathe. Avoid marketing slogans and forced symmetry.
 
@@ -65,7 +67,7 @@ Zed is open source and built in public, powered by a community that cares deeply
 When explaining features or ideas:
 
 1. Lead with the most essential fact or change a developer needs to know.
-2. Explain how Zed addresses it.
+2. Explain how V-Agent addresses it.
 3. Add brand philosophy or context to deepen understanding.
 4. Let the reader infer the benefit — never oversell.
 
@@ -87,7 +89,7 @@ When explaining features or ideas:
 Before finalizing copy, verify:
 
 - Would a senior developer respect this?
-- Does it sound like something from zed.dev?
+- Does it sound grounded and unhyped, the way upstream Zed's docs read?
 - Does it read clearly and naturally aloud?
 - Does it explain more than it sells?
 
@@ -115,7 +117,6 @@ Ask clarifying questions:
    - `voice-examples.md` — transformation patterns and fact preservation rules
 
 2. **Search for relevant context** (if needed):
-   - Existing copy on zed.dev for tone reference
    - Technical details about the feature from docs or code
    - Related announcements or prior messaging
 
@@ -133,7 +134,7 @@ Write initial copy. Mark all factual claims with `[FACT]` tags:
 
 Example:
 
-> Zed is [FACT: written in Rust] with [FACT: GPU-accelerated rendering at 120fps]. Built by [FACT: the team behind Atom and Tree-sitter].
+> V-Agent is [FACT: written in Rust] with [FACT: GPU-accelerated rendering at 120fps].
 
 **Pass 2: Diagnosis**
 
@@ -254,12 +255,12 @@ When invoked with `--review`:
 
 ### Good
 
-> Zed is written in Rust with GPU acceleration for every frame. When you type or move the cursor, pixels respond instantly. That responsiveness keeps you in flow.
+> V-Agent is written in Rust with GPU acceleration for every frame. When you type or move the cursor, pixels respond instantly. That responsiveness keeps you in flow.
 
 ### Bad
 
-> We're excited to announce our revolutionary new editor that will change the way you code forever! Say goodbye to slow, clunky IDEs — Zed is here to transform your workflow.
+> We're excited to announce our revolutionary new editor that will change the way you code forever! Say goodbye to slow, clunky IDEs — V-Agent is here to transform your workflow.
 
 ### Fixed
 
-> Zed is a new kind of editor, built from scratch for speed. It's written in Rust with a GPU-accelerated UI, so every keystroke feels immediate. We designed it for developers who notice when their tools get in the way.
+> V-Agent is a fork of Zed built for speed. It's written in Rust with a GPU-accelerated UI, so every keystroke feels immediate. We designed it for developers who notice when their tools get in the way.

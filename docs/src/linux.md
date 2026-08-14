@@ -1,25 +1,15 @@
 ---
 title: V-Agent on Linux
-description: "The installation script on the download page is the fastest way to install V-Agent:"
+description: "V-Agent ships native packages for Arch-based and Debian-based distros, plus an AppImage and a portable tarball for everyone else."
 ---
 
 # V-Agent on Linux
 
 ## Standard Installation
 
-The installation script on the [download](https://zed.dev/download) page is the fastest way to install V-Agent:
+See [Installation](./installation.md) for the `pacman`/`apt`/AppImage/tarball commands — they all pull the latest release from [GitHub Releases](https://github.com/otzpt/V-Agent/releases). There is no preview or nightly channel; every release is a single stable build.
 
-```sh
-curl -f https://zed.dev/install.sh | sh
-```
-
-We also offer a preview build of V-Agent which receives updates about a week ahead of stable. You can install it with:
-
-```sh
-curl -f https://zed.dev/install.sh | ZED_CHANNEL=preview sh
-```
-
-The V-Agent installed by the script works best on systems that:
+V-Agent works best on systems that:
 
 - have a Vulkan compatible GPU available (for example Linux on an M-series MacBook)
 - have a system-wide glibc
@@ -38,92 +28,11 @@ You will need to build from source for:
 
 V-Agent is open source, and [you can install from source](./development/linux.md).
 
-### Installing via a package manager
-
-There are several third-party V-Agent packages for various Linux distributions and package managers, sometimes under `zed-editor`. Availability varies by distribution, but you may be able to install V-Agent using one of these packages:
-
-- Arch: [`zed`](https://archlinux.org/packages/extra/x86_64/zed/)
-- Arch (AUR): [`zed-git`](https://aur.archlinux.org/packages/zed-git), [`zed-preview`](https://aur.archlinux.org/packages/zed-preview), [`zed-preview-bin`](https://aur.archlinux.org/packages/zed-preview-bin)
-- Fedora/Ultramarine (Terra): [`zed`](https://github.com/terrapkg/packages/tree/frawhide/anda/devs/zed/stable), [`zed-preview`](https://github.com/terrapkg/packages/tree/frawhide/anda/devs/zed/preview), [`zed-nightly`](https://github.com/terrapkg/packages/tree/frawhide/anda/devs/zed/nightly)
-- Manjaro: [`zed`](https://manjaristas.org/branch_compare?q=zed)
-- Conda: [`zed`](https://anaconda.org/conda-forge/zed)
-- Nix: `zed-editor` ([unstable](https://search.nixos.org/packages?channel=unstable&show=zed-editor))
-- Solus: [`zed`](https://github.com/getsolus/packages/tree/main/packages/z/zed)
-- Parabola: [`zed`](https://www.parabola.nu/packages/extra/x86_64/zed/)
-- ALT Linux (Sisyphus): [`zed`](https://packages.altlinux.org/en/sisyphus/srpms/zed/)
-- AOSC OS: [`zed`](https://packages.aosc.io/packages/zed)
-- Flathub: [`dev.zed.Zed`](https://flathub.org/apps/dev.zed.Zed)
-
-See [Repology](https://repology.org/project/zed-editor/versions) for a current list of V-Agent packages in various repositories.
-
-### Community
-
-When installing a third-party package please be aware that it may not be completely up to date and may be slightly different from the V-Agent we package (a common change is to rename the binary to `zedit` or `zeditor` to avoid conflicting with other packages).
-
-We'd love your help making V-Agent available for everyone. If V-Agent is not yet available for your package manager, and you would like to fix that, we have some notes on [how to do it](./development/linux.md#notes-for-packaging-zed).
-
-The packages in this section provide binary installs for V-Agent but are not official packages within the associated distributions. These packages are maintained by community members and as such a higher level of caution should be taken when installing them.
-
-### Downloading manually
-
-If you'd prefer, you can install V-Agent by downloading our pre-built .tar.gz. This is the same artifact that our install script uses, but you can customize the location of your installation by modifying the instructions below:
-
-Download the `.tar.gz` file:
-
-- [zed-linux-x86_64.tar.gz](https://cloud.zed.dev/releases/stable/latest/download?asset=zed&arch=x86_64&os=linux&source=docs)
-  ([preview](https://cloud.zed.dev/releases/preview/latest/download?asset=zed&arch=x86_64&os=linux&source=docs))
-- [zed-linux-aarch64.tar.gz](https://cloud.zed.dev/releases/stable/latest/download?asset=zed&arch=aarch64&os=linux&source=docs)
-  ([preview](https://cloud.zed.dev/releases/preview/latest/download?asset=zed&arch=aarch64&os=linux&source=docs))
-
-Then ensure that the `zed` binary in the tarball is on your path. The easiest way is to unpack the tarball and create a symlink:
-
-```sh
-mkdir -p ~/.local
-# extract zed to ~/.local/zed.app/
-tar -xvf <path/to/download>.tar.gz -C ~/.local
-# link the zed binary to ~/.local/bin (or another directory in your $PATH)
-ln -sf ~/.local/zed.app/bin/zed ~/.local/bin/zed
-```
-
-If you'd like integration with an XDG-compatible desktop environment, you will also need to install the `.desktop` file:
-
-```sh
-install -D ~/.local/zed.app/share/applications/dev.zed.Zed.desktop -t ~/.local/share/applications
-sed -i "s|Icon=zed|Icon=$HOME/.local/zed.app/share/icons/hicolor/512x512/apps/zed.png|g" ~/.local/share/applications/dev.zed.Zed.desktop
-sed -i "s|Exec=zed|Exec=$HOME/.local/zed.app/bin/zed|g" ~/.local/share/applications/dev.zed.Zed.desktop
-```
+V-Agent isn't packaged by any distribution or third-party repository yet — the commands in [Installation](./installation.md) (or building from source) are the only ways to get it today.
 
 ## Uninstalling V-Agent
 
-### Standard Uninstall
-
-If V-Agent was installed using the default installation script, it can be uninstalled by supplying the `--uninstall` flag to the `zed` shell command
-
-```sh
-zed --uninstall
-```
-
-If there are no errors, the shell will then prompt you whether you'd like to keep your preferences or delete them. After making a choice, you should see a message that V-Agent was successfully uninstalled.
-
-In the case that the `zed` shell command was not found in your PATH, you can try one of the following commands
-
-```sh
-$HOME/.local/bin/zed --uninstall
-```
-
-or
-
-```sh
-$HOME/.local/zed.app/bin.zed --uninstall
-```
-
-The first case might fail if a symlink was not properly established between `$HOME/.local/bin/zed` and `$HOME/.local/zed.app/bin.zed`. But the second case should work as long as V-Agent was installed to its default location.
-
-If V-Agent was installed to a different location, you must invoke the `zed` binary stored in that installation directory and pass the `--uninstall` flag to it in the same format as the previous commands.
-
-### Package Manager
-
-If V-Agent was installed using a package manager, please consult the documentation for that package manager on how to uninstall a package.
+See [Uninstall](./uninstall.md) for the `pacman -R` / `apt remove` / delete-the-AppImage-or-tarball instructions.
 
 ## Troubleshooting
 
@@ -149,7 +58,7 @@ vkcube
 
 This should output a line describing your current graphics setup and show a rotating cube. If this does not work, you should be able to fix it by installing Vulkan compatible GPU drivers, however in some cases there is no Vulkan support yet.
 
-You can find out which graphics card V-Agent is using by looking in the V-Agent log (`~/.local/share/zed/logs/Zed.log`) for `Using GPU: ...`.
+You can find out which graphics card V-Agent is using by looking in the V-Agent log (`~/.local/share/v-agent/logs/V-Agent.log`) for `Using GPU: ...`.
 
 If you see errors like `ERROR_INITIALIZATION_FAILED` or `GPU Crashed` or `ERROR_SURFACE_LOST_KHR` then you may be able to work around this by installing different drivers for your GPU, or by selecting a different GPU to run on. (See [#14225](https://github.com/zed-industries/zed/issues/14225))
 
@@ -180,14 +89,14 @@ You can obtain the device ID of your GPU by running `lspci -nn | grep VGA` which
 where the device ID here is `2484`. This value is in hexadecimal, so to force V-Agent to use this specific GPU you would set the environment variable like so:
 
 ```
-ZED_DEVICE_ID=0x2484 zed
+ZED_DEVICE_ID=0x2484 v-agent
 ```
 
 Make sure to export the variable if you choose to define it globally in a `.bashrc` or similar.
 
 ##### Option B
 
-If you are using Mesa, you can run `MESA_VK_DEVICE_SELECT=list zed --foreground` to get a list of available GPUs and then export `MESA_VK_DEVICE_SELECT=xxxx:yyyy` to choose a specific device. Furthermore, you can fallback to xwayland with an additional export of `WAYLAND_DISPLAY=""`.
+If you are using Mesa, you can run `MESA_VK_DEVICE_SELECT=list v-agent` to get a list of available GPUs and then export `MESA_VK_DEVICE_SELECT=xxxx:yyyy` to choose a specific device. Furthermore, you can fallback to xwayland with an additional export of `WAYLAND_DISPLAY=""`.
 
 ##### Option C
 
@@ -195,31 +104,24 @@ Using [vkdevicechooser](https://github.com/jiriks74/vkdevicechooser).
 
 #### Reporting graphics issues
 
-If Vulkan is configured correctly, and V-Agent is still not working for you, please [file an issue](https://github.com/zed-industries/zed) with as much information as possible.
+If Vulkan is configured correctly, and V-Agent is still not working for you, please [open an issue](https://github.com/otzpt/V-Agent/issues) with as much information as possible.
 
 When reporting issues where V-Agent fails to start due to graphics initialization errors on GitHub, it can be impossible to run the {#action zed::CopySystemSpecsIntoClipboard} command like we instruct you to in our issue template. We provide an alternative way to collect the system specs specifically for this situation.
 
 Passing the `--system-specs` flag to V-Agent like
 
 ```sh
-zed --system-specs
+v-agent --system-specs
 ```
 
 will print the system specs to the terminal like so. It is strongly recommended to copy the output verbatim into the issue on GitHub, as it uses markdown formatting to ensure the output is readable.
 
-Additionally, it is extremely beneficial to provide the contents of your V-Agent log when reporting such issues. The log is usually located at `~/.local/share/zed/logs/Zed.log`. The recommended process for producing a helpful log file is as follows:
+Additionally, it is extremely beneficial to provide the contents of your V-Agent log when reporting such issues. The log is usually located at `~/.local/share/v-agent/logs/V-Agent.log`. The recommended process for producing a helpful log file is as follows:
 
 ```sh
-truncate -s 0 ~/.local/share/zed/logs/Zed.log # Clear the log file
-ZED_LOG=wgpu=info zed .
-cat ~/.local/share/zed/logs/Zed.log
-# copy the output
-```
-
-Or, if you have the V-Agent cli setup, you can do
-
-```sh
-ZED_LOG=wgpu=info /path/to/zed/cli --foreground .
+truncate -s 0 ~/.local/share/v-agent/logs/V-Agent.log # Clear the log file
+ZED_LOG=wgpu=info v-agent .
+cat ~/.local/share/v-agent/logs/V-Agent.log
 # copy the output
 ```
 
@@ -228,10 +130,10 @@ It is also highly recommended when pasting the log into a github issue, to do so
 > **_Note_**: The whitespace in the template is important, and will cause incorrect formatting if not preserved.
 
 ````
-<details><summary>Zed Log</summary>
+<details><summary>V-Agent Log</summary>
 
 ```
-{zed log contents}
+{v-agent log contents}
 ```
 
 </details>
@@ -358,7 +260,7 @@ Restart V-Agent for the changes to take effect.
 This V-Agent-specific environment variable directly sets the scale factor, bypassing all automatic detection.
 
 ```sh
-GPUI_X11_SCALE_FACTOR=1.5 zed
+GPUI_X11_SCALE_FACTOR=1.5 v-agent
 ```
 
 You can use decimal values (e.g., `1.25`, `1.5`, `2.0`) or set `GPUI_X11_SCALE_FACTOR=randr` to force RandR-based detection even when `Xft.dpi` is set.
@@ -379,7 +281,7 @@ Replace `192` with your desired DPI value. This affects the system globally and 
 
 ### Font rendering parameters
 
-On Linux, Zed reads `ZED_FONTS_GAMMA` and `ZED_FONTS_GRAYSCALE_ENHANCED_CONTRAST` environment variables for the values to use for font rendering.
+On Linux, V-Agent reads `ZED_FONTS_GAMMA` and `ZED_FONTS_GRAYSCALE_ENHANCED_CONTRAST` environment variables for the values to use for font rendering.
 
 `ZED_FONTS_GAMMA` corresponds to [getgamma](https://learn.microsoft.com/en-us/windows/win32/api/dwrite/nf-dwrite-idwriterenderingparams-getgamma) values.
 Allowed range [1.0, 2.2], other values are clipped.

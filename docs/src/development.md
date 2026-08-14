@@ -112,7 +112,8 @@ Recordings automatically save after 60 seconds if not stopped manually.
 
 ## Contributor links
 
-- [CONTRIBUTING.md](https://github.com/zed-industries/zed/blob/main/CONTRIBUTING.md)
+- [CONTRIBUTING.md](https://github.com/otzpt/V-Agent/blob/main/CONTRIBUTING.md)
 - [Debugging Crashes](./development/debugging-crashes.md)
-- [Code of Conduct](https://zed.dev/code-of-conduct)
-- [V-Agent Contributor License](https://zed.dev/cla)
+- [Code of Conduct](https://zed.dev/code-of-conduct) (adopted as-is; see [CODE_OF_CONDUCT.md](https://github.com/otzpt/V-Agent/blob/main/CODE_OF_CONDUCT.md))
+
+V-Agent has no CLA — [CONTRIBUTING.md](https://github.com/otzpt/V-Agent/blob/main/CONTRIBUTING.md) explicitly says upstream Zed's contribution process and CLA don't apply here.

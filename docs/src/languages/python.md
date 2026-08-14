@@ -100,7 +100,7 @@ Configure language servers in Settings ({#kb zed::OpenSettings}) under Languages
 }
 ```
 
-See: [Working with Language Servers](https://zed.dev/docs/configuring-languages#working-with-language-servers) for more information about how to enable and disable language servers.
+See: [Working with Language Servers](../configuring-languages.md#working-with-language-servers) for more information about how to enable and disable language servers.
 
 ### Basedpyright
 

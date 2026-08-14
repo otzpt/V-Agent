@@ -5,7 +5,7 @@ description: V-Agent Agent tool calls can run in an OS-level sandbox to restrict
 
 # Sandboxing
 
-You can restrict what operations the [Zed Agent](./zed-agent.md) can run in multiple ways. One way to restrict them is
+You can restrict what operations the [V-Agent Agent](./zed-agent.md) can run in multiple ways. One way to restrict them is
 [Tool Permissions](./tool-permissions.md), but these are of limited use when the agent wants to do things like run a
 complicated script in a terminal.
 
@@ -172,7 +172,7 @@ The available options are:
 | `allow_all_hosts`    | Allow sandboxed tools to reach any host without prompting.                                                        |
 | `write_paths`        | Directory subtrees that sandboxed terminal commands may write to without prompting. Paths are absolute.           |
 | `allow_fs_write_all` | Allow sandboxed terminal commands to write anywhere except protected Git metadata without prompting.              |
-| `allow_unsandboxed`  | Turn sandboxing off entirely for V-Agent Agent terminal commands. The fetch tool will have no restrictions.           |
+| `allow_unsandboxed`  | Turn sandboxing off entirely for V-Agent Agent terminal commands. The fetch tool will have no restrictions.       |
 
 Prefer narrow grants, such as a specific host or write path, over `allow_all_hosts`, `allow_fs_write_all`, or
 `allow_unsandboxed`.
@@ -373,7 +373,7 @@ testing, but could not find documentation guaranteeing this behaviour in all
 circumstances, for all Windows/WSL versions past and present, regardless of
 configuration options.
 
-Zed's sandbox has been designed with the aim of being totally unbreakable, even
+V-Agent's sandbox has been designed with the aim of being totally unbreakable, even
 in the presence of a motivated attacker with full control over the files in your
 project running as a standard user. It does _not_ assume a
 mostly-benevolent-but-sometimes-careless agent.

@@ -1,9 +1,9 @@
 [book]
-authors = ["The Zed Team"]
+authors = ["V-Agent Contributors"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Zed"
+title = "V-Agent"
 site-url = "/docs/"
 
 [build]
@@ -19,8 +19,8 @@ extra-watch-dirs = ["../crates/docs_preprocessor"]
 command = "cargo run -p docs_preprocessor -- postprocess"
 # Set here instead of above as we only use it replace the `#description#` we set in the template
 # when no front-matter is provided value
-default-description = "Learn how to use and customize Zed, the fast, collaborative code editor. Official docs on features, configuration, AI tools, and workflows."
-default-title = "Zed Code Editor Documentation"
+default-description = "Learn how to use and customize V-Agent, a native, GPU-accelerated code editor with local-first AI. Docs on features, configuration, AI tools, and workflows."
+default-title = "V-Agent Code Editor Documentation"
 no-section-label = true
 preferred-dark-theme = "dark"
 additional-css = ["theme/page-toc.css", "theme/plugins.css", "theme/highlight.css", "theme/consent-banner.css"]
@@ -35,9 +35,11 @@ enable = false
 # 1. Not start with `/docs`
 # 2. End in `.html`
 #
-# The destination URLs are interpreted relative to `https://zed.dev`.
+# The destination URLs are interpreted relative to the docs site root (this
+# table is inherited from upstream Zed's `zed.dev`; this fork does not
+# currently publish the book anywhere, so these redirects are dormant).
 # - Redirects to other docs pages should end in `.html`
-# - You can link to pages on the Zed site by omitting the `/docs` in front of it.
+# - You can link to other pages in the book by omitting the `/docs` in front of it.
 [output.zed-html.redirect]
 # AI
 "/ai.html" = "/docs/ai/overview.html"

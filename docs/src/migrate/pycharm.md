@@ -9,28 +9,33 @@ This guide covers how to set up V-Agent if you're coming from PyCharm, including
 
 ## Install V-Agent
 
-V-Agent is available on macOS, Windows, and Linux.
+V-Agent is available on Linux and Windows (macOS builds aren't published yet — see [Installation](../installation.md)).
 
-For macOS, you can download it from zed.dev/download, or install via Homebrew:
-
-```sh
-brew install --cask zed
-```
-
-For Windows, download the installer from zed.dev/download, or install via winget:
+For Arch-based distros:
 
 ```sh
-winget install Zed.Zed
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.pkg.tar.zst
+sudo pacman -U V-Agent-x86_64.pkg.tar.zst
 ```
 
-For most Linux users, the easiest way to install V-Agent is through our installation script:
+For Debian-based distros:
 
 ```sh
-curl -f https://zed.dev/install.sh | sh
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-amd64.deb
+sudo apt install ./V-Agent-amd64.deb
 ```
 
-After installation, you can launch V-Agent from your Applications folder (macOS), Start menu (Windows), or directly from the terminal using:
-`zed .`
+For Windows, download the `.msi` installer:
+
+```powershell
+irm https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x64.msi -OutFile V-Agent.msi
+msiexec /i V-Agent.msi
+```
+
+See [Installation](../installation.md) for the AppImage and portable tarball/`.zip` options too.
+
+After installation, you can launch V-Agent from your Start menu (Windows) or directly from the terminal using:
+`v-agent .`
 This opens the current directory in V-Agent.
 
 ## Set Up the JetBrains Keymap
@@ -49,7 +54,7 @@ You can configure most settings in the Settings Editor ({#kb zed::OpenSettings})
 
 Settings PyCharm users typically configure first:
 
-| V-Agent Setting             | What it does                                                                    |
+| V-Agent Setting         | What it does                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------- |
 | `format_on_save`        | Auto-format when saving. Set to `"on"` to enable.                               |
 | `soft_wrap`             | Wrap long lines. Options: `"none"`, `"editor_width"`, `"preferred_line_length"` |
@@ -68,7 +73,7 @@ After setup, press `Cmd+Shift+O` (with JetBrains keymap) to open a folder. This 
 To start a new project, create a directory using your terminal or file manager, then open it in V-Agent. The editor will treat that folder as the root of your project.
 
 You can also launch V-Agent from the terminal inside any folder with:
-`zed .`
+`v-agent .`
 
 Once inside a project:
 
@@ -107,13 +112,13 @@ If you chose the JetBrains keymap during onboarding, most of your shortcuts shou
 
 ### Different Keybindings (PyCharm → V-Agent)
 
-| Action                 | PyCharm     | V-Agent (JetBrains keymap)   |
-| ---------------------- | ----------- | ------------------------ |
-| File Structure         | `Cmd + F12` | `Cmd + F12` (outline)    |
-| Navigate to Next Error | `F2`        | `F2`                     |
-| Run                    | `Ctrl + R`  | `Ctrl + Alt + R` (tasks) |
-| Debug                  | `Ctrl + D`  | `Alt + Shift + F9`       |
-| Stop                   | `Cmd + F2`  | `Ctrl + F2`              |
+| Action                 | PyCharm     | V-Agent (JetBrains keymap) |
+| ---------------------- | ----------- | -------------------------- |
+| File Structure         | `Cmd + F12` | `Cmd + F12` (outline)      |
+| Navigate to Next Error | `F2`        | `F2`                       |
+| Run                    | `Ctrl + R`  | `Ctrl + Alt + R` (tasks)   |
+| Debug                  | `Ctrl + D`  | `Alt + Shift + F9`         |
+| Stop                   | `Cmd + F2`  | `Ctrl + F2`                |
 
 ### Unique to V-Agent
 
@@ -252,13 +257,13 @@ V-Agent has none of this. The language server sees Python code as Python code—
 PyCharm organizes auxiliary views into numbered tool windows (Project = 1, Python Console = 4, Terminal = Alt+F12, etc.). V-Agent uses a similar concept called "docks":
 
 | PyCharm Tool Window | V-Agent Equivalent | Shortcut (JetBrains keymap) |
-| ------------------- | -------------- | --------------------------- |
-| Project (1)         | Project Panel  | `Cmd + 1`                   |
-| Git (9 or Cmd+0)    | Git Panel      | `Cmd + 0`                   |
-| Terminal (Alt+F12)  | Terminal Panel | `Alt + F12`                 |
-| Structure (7)       | Outline Panel  | `Cmd + 7`                   |
-| Problems (6)        | Diagnostics    | `Cmd + 6`                   |
-| Debug (5)           | Debug Panel    | `Cmd + 5`                   |
+| ------------------- | ------------------ | --------------------------- |
+| Project (1)         | Project Panel      | `Cmd + 1`                   |
+| Git (9 or Cmd+0)    | Git Panel          | `Cmd + 0`                   |
+| Terminal (Alt+F12)  | Terminal Panel     | `Alt + F12`                 |
+| Structure (7)       | Outline Panel      | `Cmd + 7`                   |
+| Problems (6)        | Diagnostics        | `Cmd + 6`                   |
+| Debug (5)           | Debug Panel        | `Cmd + 5`                   |
 
 V-Agent has three dock positions: left, bottom, and right. Panels can be moved between docks by dragging or through settings.
 
@@ -346,8 +351,10 @@ To set expectations clearly, here's what PyCharm offers that V-Agent doesn't hav
 PyCharm offers Code With Me as a separate plugin for collaboration. V-Agent has collaboration built into the core experience.
 
 - Open the Collab Panel in the left dock
-- Create a channel and [invite your collaborators](https://zed.dev/docs/collaboration#inviting-a-collaborator) to join
-- [Share your screen or your codebase](https://zed.dev/docs/collaboration#share-a-project) directly
+- Create a channel and invite your collaborators to join
+- Share your screen or your codebase directly
+
+This connects through Zed Industries' collaboration servers (the same account system as [V-Agent-hosted models](../ai/privacy-and-security.md)) — V-Agent doesn't run its own. See [upstream's collaboration docs](https://zed.dev/docs/collaboration) for details; there's no local copy of that page in this fork.
 
 Once connected, you'll see each other's cursors, selections, and edits in real time. Voice chat is included. There's no need for separate tools or third-party logins.
 
@@ -368,9 +375,9 @@ Once signed in, just start typing. V-Agent will offer suggestions inline for you
 
 To use other AI models in V-Agent, you have several options:
 
-- Use V-Agent's hosted models, with higher rate limits. Requires [authentication](https://zed.dev/docs/authentication) and access through [Zed Pro](https://zed.dev/docs/account/zed-hosted-models.html).
-- Bring your own [API keys](https://zed.dev/docs/ai/use-api-access.html), no authentication needed
-- Use [External Agents like Claude Agent](https://zed.dev/docs/ai/external-agents.html)
+- Use [Zed Pro](https://zed.dev/pricing)'s [V-Agent-hosted models](../ai/privacy-and-security.md), with higher rate limits — Zed Industries' paid tier, not something V-Agent sells
+- Bring your own [API keys](../ai/use-api-access.md), no authentication needed
+- Use [External Agents like Claude Agent](../ai/external-agents.md)
 
 ## Advanced Config and Productivity Tweaks
 

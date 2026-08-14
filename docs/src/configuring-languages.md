@@ -101,8 +101,8 @@ V-Agent simplifies language server management for users:
 
 2. Storage Location:
 
-   - macOS: `~/Library/Application Support/Zed/languages`
-   - Linux: `$XDG_DATA_HOME/zed/languages`, `$FLATPAK_XDG_DATA_HOME/zed/languages`, or `$HOME/.local/share/zed/languages`
+   - macOS: `~/Library/Application Support/V-Agent/languages`
+   - Linux: `$XDG_DATA_HOME/v-agent/languages`, `$FLATPAK_XDG_DATA_HOME/v-agent/languages`, or `$HOME/.local/share/v-agent/languages`
 
 3. Automatic Updates: V-Agent keeps your language servers up-to-date, ensuring you always have the latest features and improvements.
 
@@ -281,7 +281,7 @@ You can toggle language server support globally or per-language:
   }
 ```
 
-This disables the language server for Markdown files, which can be useful for performance in large documentation projects. You can configure this globally in your `~/.config/zed/settings.json` or inside a `.zed/settings.json` in your project directory.
+This disables the language server for Markdown files, which can be useful for performance in large documentation projects. You can configure this globally in your `~/.config/v-agent/settings.json` or inside a `.zed/settings.json` in your project directory.
 
 ## Formatting and Linting
 
@@ -439,7 +439,7 @@ Change your theme:
 }
 ```
 
-Create custom themes by creating a JSON file in `~/.config/zed/themes/`. Zed will automatically detect and make available any themes in this directory.
+Create custom themes by creating a JSON file in `~/.config/v-agent/themes/`. V-Agent will automatically detect and make available any themes in this directory.
 
 ### Using Theme Extensions
 

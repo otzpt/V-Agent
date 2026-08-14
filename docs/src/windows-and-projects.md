@@ -13,12 +13,12 @@ Use **Panel Layout > Agentic** from the user menu in the title bar (or the {#act
 
 By default, when you open a folder in V-Agent, it opens as a new project in your current window's threads sidebar rather than creating a new window. This keeps related work together and preserves your agent threads and layout.
 
-| Action             | Result                                    |
-| ------------------ | ----------------------------------------- |
-| File > Open        | Opens in current window (threads sidebar) |
-| File > Open Recent | Opens in current window (threads sidebar) |
+| Action                 | Result                                    |
+| ---------------------- | ----------------------------------------- |
+| File > Open            | Opens in current window (threads sidebar) |
+| File > Open Recent     | Opens in current window (threads sidebar) |
 | Drag folder to V-Agent | Opens in current window (threads sidebar) |
-| `zed ~/project`    | Opens in current window (threads sidebar) |
+| `v-agent ~/project`    | Opens in current window (threads sidebar) |
 
 ## Working with Multiple Projects
 

@@ -18,11 +18,11 @@ V-Agent also handles the `notifications/tools/list_changed` notification from MC
 
 ## Agent Path Support {#agent-path-support}
 
-| Agent path                                | MCP behavior                                                                            |
-| ----------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Zed Agent](./zed-agent.md)               | Uses V-Agent-configured MCP servers directly                                                |
+| Agent path                                | MCP behavior                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [V-Agent Agent](./zed-agent.md)           | Uses V-Agent-configured MCP servers directly                                                |
 | [External Agents](./external-agents.md)   | V-Agent can forward configured MCP servers over ACP; agents may also read native MCP config |
-| [Terminal Threads](./terminal-threads.md) | Native CLIs/TUIs read their own MCP configuration                                       |
+| [Terminal Threads](./terminal-threads.md) | Native CLIs/TUIs read their own MCP configuration                                           |
 
 ## Installing MCP Servers
 
@@ -33,7 +33,7 @@ Check out the [MCP Server Extensions](../extensions/mcp-extensions.md) page to l
 
 Many MCP servers are available as extensions. Find them via:
 
-1. [the V-Agent website](https://zed.dev/extensions?filter=context-servers)
+1. [the extension marketplace](https://zed.dev/extensions?filter=context-servers) — V-Agent doesn't run its own, so this points at the same one upstream Zed uses
 2. in the app, open the Command Palette and run the {#action zed::Extensions} action
 3. in the app, open **Settings → AI → MCP Servers**, click `Add Server`, and choose `Install from Extensions`
 

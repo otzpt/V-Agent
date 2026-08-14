@@ -12,7 +12,7 @@ Open it with {#action agent::NewThread} from [the Command Palette](../command-pa
 
 ## Getting Started {#getting-started}
 
-If you're using the Agent Panel for the first time, configure either a model for the [Zed Agent](./zed-agent.md) or an [External Agent](./external-agents.md).
+If you're using the Agent Panel for the first time, configure either a model for the [V-Agent Agent](./zed-agent.md) or an [External Agent](./external-agents.md).
 
 - Use [LLM Providers](./llm-providers.md) for V-Agent-hosted models, API access, subscriptions, gateways, and local models.
 - Use [External Agents](./external-agents.md) for ACP-integrated agents.
@@ -162,7 +162,7 @@ Configure automatic compaction with `agent.auto_compact`. See [Agent Settings](.
 
 After you've configured your LLM providers—either via [API access](./use-api-access.md) or through V-Agent-hosted models—you can switch between their models by clicking on the model selector on the message editor or by using the {#kb agent::ToggleModelSelector} keybinding.
 
-> The same model can be offered via multiple providers - for example, Claude Sonnet 4.5 is available via V-Agent Pro, OpenRouter, Anthropic directly, and more.
+> The same model can be offered via multiple providers - for example, Claude Sonnet 4.5 is available via [Zed Pro](https://zed.dev/pricing) (through [V-Agent-hosted models](./privacy-and-security.md)), OpenRouter, Anthropic directly, and more.
 > Make sure you've selected the correct model **_provider_** for the model you'd like to use, delineated by the logo to the left of the model in the model selector.
 
 ### Favoriting Models

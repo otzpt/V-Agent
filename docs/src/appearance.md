@@ -55,8 +55,8 @@ Like color themes, icon themes support separate light and dark variants:
 {
   "icon_theme": {
     "mode": "system",
-    "light": "Zed (Default)",
-    "dark": "Zed (Default)"
+    "light": "V-Agent (Default)",
+    "dark": "V-Agent (Default)"
   }
 }
 ```

@@ -5,7 +5,7 @@ description: Choose how V-Agent gets language models: V-Agent-hosted models, API
 
 # LLM Providers
 
-Use this page to choose which models power [the Zed Agent](./zed-agent.md) and
+Use this page to choose which models power [the V-Agent Agent](./zed-agent.md) and
 other V-Agent-owned AI features, including [Inline Assistant](./inline-assistant.md),
 Git commit generation, thread summaries, and similar model-backed features.
 
@@ -15,13 +15,13 @@ usually own their own model access, auth, and configuration.
 
 ## Choose a Model Access Path {#choose-a-model-access-path}
 
-| Model access path                                                 | Best when                                                             | Source of truth                       |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------- |
-| Use V-Agent-Hosted Models          | You want models billed through V-Agent                                    | Account & Billing > V-Agent-Hosted Models |
-| [Use API Access](./use-api-access.md)                             | You have provider API access, credits, or usage billing               | Use API Access                        |
-| [Use an Existing Subscription](./use-an-existing-subscription.md) | You already pay for ChatGPT, Claude, Copilot, or another subscription | Use an Existing Subscription          |
-| [Use a Gateway](./use-a-gateway.md)                               | You route through OpenRouter, Bedrock, Vercel, or a similar platform  | Use a Gateway                         |
-| [Use a Local Model](./use-a-local-model.md)                       | You run models locally or self-hosted                                 | Use a Local Model                     |
+| Model access path                                                 | Best when                                                             | Source of truth                           |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| Use V-Agent-Hosted Models                                         | You want models billed through V-Agent                                | Account & Billing > V-Agent-Hosted Models |
+| [Use API Access](./use-api-access.md)                             | You have provider API access, credits, or usage billing               | Use API Access                            |
+| [Use an Existing Subscription](./use-an-existing-subscription.md) | You already pay for ChatGPT, Claude, Copilot, or another subscription | Use an Existing Subscription              |
+| [Use a Gateway](./use-a-gateway.md)                               | You route through OpenRouter, Bedrock, Vercel, or a similar platform  | Use a Gateway                             |
+| [Use a Local Model](./use-a-local-model.md)                       | You run models locally or self-hosted                                 | Use a Local Model                         |
 
 Use the setup pages for provider-specific details. See [Agents](./agents.md) for
 the difference between the V-Agent Agent, External Agents, and Terminal Threads.

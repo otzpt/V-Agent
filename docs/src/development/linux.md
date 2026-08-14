@@ -45,13 +45,13 @@ cargo run -p cli
 
 ## Installing a development build
 
-You can install a local build on your machine with:
+Upstream Zed installs a local build with:
 
 ```sh
 ./script/install-linux
 ```
 
-This builds `zed` and the `cli` in release mode, installs the binary at `~/.local/bin/zed`, and installs `.desktop` files to `~/.local/share`.
+This builds `zed` and the `cli` in release mode, installs the binary at `~/.local/bin/zed`, and installs `.desktop` files to `~/.local/share`. In this fork, `script/install-linux` chains into `script/bundle-linux` and `script/install.sh`, which still reference the pre-rename `zed` binary target and download from `cloud.zed.dev` — neither matches the current `crates/zed` `[[bin]] name = "v-agent"` or the GitHub-Releases-based install flow in `.github/workflows/release.yml`, so this script does not currently work for V-Agent. Build with `cargo build --release --bin v-agent` and run `./target/release/v-agent` directly instead (see the root [README](https://github.com/otzpt/V-Agent/blob/main/README.md#building-from-source)).
 
 ## Wayland & X11
 
@@ -59,7 +59,7 @@ V-Agent supports both X11 and Wayland. By default, we pick whichever we can find
 
 ## Notes for packaging V-Agent
 
-This section is for distribution maintainers packaging V-Agent.
+This section is for distribution maintainers packaging V-Agent — but describes upstream Zed's two-binary packaging architecture (`cli` + `zed-editor`), which predates this fork's binary rename. V-Agent's actual release packaging is a single `v-agent` binary with app ID `io.github.otzpt.VAgent`; see [`.github/workflows/release.yml`](https://github.com/otzpt/V-Agent/blob/main/.github/workflows/release.yml) for the authoritative, current build steps rather than the notes below.
 
 ### Technical requirements
 
@@ -136,11 +136,11 @@ Use this when V-Agent is using a lot of CPU. It is not useful for hangs.
 - Get build info:
   Run zed again and type {#action zed::About} in the command pallet to get the exact commit.
 
-The `perf.data` file can be sent to V-Agent together with the exact commit.
+Attach the `perf.data` file to your bug report together with the exact commit.
 
 ### Later
 
-This can be done by V-Agent staff.
+This step is for whoever is investigating the report.
 
 - Build V-Agent with symbols:
   Check out the commit found previously and modify `Cargo.toml`.

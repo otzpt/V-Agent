@@ -1,6 +1,6 @@
 ---
-title: AI Code Completion in V-Agent - Zeta, Copilot, Codestral, Mercury Coder
-description: Set up AI code completions in V-Agent with Zeta (built-in), GitHub Copilot, Codestral, or Mercury Coder. Multi-line predictions as you type.
+title: AI Code Completion in V-Agent - Copilot, Codestral, Mercury Coder, Ollama
+description: Set up AI code completions in V-Agent with GitHub Copilot, Codestral, Mercury Coder, or a local/self-hosted model. Multi-line predictions as you type.
 ---
 
 # Edit Prediction
@@ -8,34 +8,9 @@ description: Set up AI code completions in V-Agent with Zeta (built-in), GitHub 
 Edit Prediction is how V-Agent's AI code completions work: an LLM predicts the code you want to write.
 As you type, V-Agent requests predictions from the edit prediction provider, which returns individual or multi-line suggestions you accept by pressing `tab`.
 
-The default provider is [Zeta, an open source model developed by Zed](https://zed.dev/blog/zeta2), but you can also use [other providers](#other-providers) like GitHub Copilot, Mercury Coder, and Codestral.
+Upstream Zed's built-in provider is Zeta, a hosted model that requires a Zed account and Zed Industries' servers. V-Agent's edit-prediction UI deliberately excludes that provider (see `get_available_providers` in `crates/edit_prediction_ui`) since it needs infrastructure V-Agent doesn't have. There is no default provider — pick one from [Configuring Other Providers](#other-providers): GitHub Copilot, Mercury Coder, Codestral, or a [local/self-hosted model](#local-and-self-hosted-models) via Ollama or an OpenAI-compatible server.
 
-For privacy and training data details, see
-[AI Privacy](./privacy-and-security.md) and
-Feedback and Training Data.
-
-## Configuring Zeta
-
-To use Zeta, sign in.
-Once signed in, predictions appear as you type.
-
-You can confirm that Zeta is properly configured by opening the [Settings Editor](zed://settings/edit_predictions.providers) (`Cmd+,` on macOS or `Ctrl+,` on Linux/Windows) and searching for `edit_predictions`. The `provider` field should be set to `Zed AI`.
-
-Or verify this in your settings.json:
-
-```json [settings]
-{
-  "edit_predictions": {
-    "provider": "zed"
-  }
-}
-```
-
-The Z icon in the status bar also indicates Zeta is active.
-
-### Pricing and Plans
-
-The free plan includes 2,000 Zeta predictions per month. The Pro plan removes this limit. See [V-Agent's pricing page](https://zed.dev/pricing) for details.
+For privacy and training data details, see [AI Privacy](./privacy-and-security.md).
 
 ### Switching Modes {#switching-modes}
 
@@ -186,7 +161,7 @@ To disable edit predictions for specific directories or files, set this in your 
 ```json [settings]
 {
   "edit_predictions": {
-    "disabled_globs": ["~/.config/zed/settings.json"]
+    "disabled_globs": ["~/.config/v-agent/settings.json"]
   }
 }
 ```
@@ -205,7 +180,7 @@ To completely turn off edit prediction across all providers, explicitly set the 
 
 ## Configuring Other Providers {#other-providers}
 
-Edit Prediction also works with other providers.
+Edit Prediction works with any of the providers below. None is configured by default.
 
 ### GitHub Copilot {#github-copilot}
 

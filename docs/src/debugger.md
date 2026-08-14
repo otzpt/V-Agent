@@ -66,9 +66,9 @@ V-Agent will also load debug configurations from `.vscode/launch.json`, and show
 
 If you run the same launch profiles across multiple projects, you can store them once in your user configuration. Invoke {#action zed::OpenDebugTasks} from the command palette to open the global `debug.json` file; V-Agent creates it next to your user `settings.json` and keeps it in sync with the debugger UI. The file lives at:
 
-- **macOS:** `~/Library/Application Support/Zed/debug.json`
-- **Linux/BSD:** `$XDG_CONFIG_HOME/zed/debug.json` (falls back to `~/.config/zed/debug.json`)
-- **Windows:** `%APPDATA%\Zed\debug.json`
+- **macOS:** `~/.config/v-agent/debug.json`
+- **Linux/BSD:** `$XDG_CONFIG_HOME/v-agent/debug.json` (falls back to `~/.config/v-agent/debug.json`)
+- **Windows:** `%APPDATA%\V-Agent\debug.json`
 
 Populate this file with the same array of objects you would place in `.zed/debug.json`. Any scenarios defined there are merged into every workspace, so your favorite launch presets appear automatically in the "New Debug Session" dialog.
 
@@ -93,11 +93,11 @@ All other fields are provided by the debug adapter and can contain [task variabl
   {
     // The label for the debug configuration and used to identify the debug session inside the debug panel & new process modal
     "label": "Example Start debugger config",
-    // The debug adapter that Zed should use to debug the program
+    // The debug adapter that V-Agent should use to debug the program
     "adapter": "Example adapter name",
     // Request:
-    //  - launch: Zed will launch the program if specified, or show a debug terminal with the right configuration
-    //  - attach: Zed will attach to a running program to debug it, or when the process_id is not specified, will show a process picker (only supported for node currently)
+    //  - launch: V-Agent will launch the program if specified, or show a debug terminal with the right configuration
+    //  - attach: V-Agent will attach to a running program to debug it, or when the process_id is not specified, will show a process picker (only supported for node currently)
     "request": "launch",
     // The program to debug. This field supports path resolution with ~ or . symbols.
     "program": "path_to_program",

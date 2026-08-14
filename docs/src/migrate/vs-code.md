@@ -11,16 +11,10 @@ It covers which settings import automatically, which shortcuts map cleanly, and 
 
 ## Install V-Agent
 
-V-Agent is available on macOS, Windows, and Linux.
+V-Agent is available on Linux and Windows (macOS builds aren't published yet — see [Installation](../installation.md)). See [Installation](../installation.md) for the `pacman`/`apt`/AppImage/tarball commands on Linux and the `.msi`/`.zip` downloads on Windows.
 
-For macOS, you can download it from zed.dev/download, or install via Homebrew:
-`brew install --cask zed`
-
-For most Linux users, the easiest way to install V-Agent is through our installation script:
-`curl -f https://zed.dev/install.sh | sh`
-
-After installation, you can launch V-Agent from your Applications folder (macOS) or directly from the terminal (Linux) using:
-`zed .`
+After installation, you can launch V-Agent from your Start menu (Windows) or directly from the terminal (Linux) using:
+`v-agent .`
 This opens the current directory in V-Agent.
 
 ## Import Settings from VS Code
@@ -33,7 +27,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Editor**
 
-| VS Code Setting                             | V-Agent Setting                                    |
+| VS Code Setting                             | V-Agent Setting                                |
 | ------------------------------------------- | ---------------------------------------------- |
 | `editor.fontFamily`                         | `buffer_font_family`                           |
 | `editor.fontSize`                           | `buffer_font_size`                             |
@@ -81,7 +75,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Files & Workspace**
 
-| VS Code Setting             | V-Agent Setting                    |
+| VS Code Setting             | V-Agent Setting                |
 | --------------------------- | ------------------------------ |
 | `files.autoSave`            | `autosave`                     |
 | `files.autoSaveDelay`       | `autosave.milliseconds`        |
@@ -95,7 +89,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Terminal**
 
-| VS Code Setting                       | V-Agent Setting                         |
+| VS Code Setting                       | V-Agent Setting                     |
 | ------------------------------------- | ----------------------------------- |
 | `terminal.integrated.fontFamily`      | `terminal.font_family`              |
 | `terminal.integrated.fontSize`        | `terminal.font_size`                |
@@ -110,7 +104,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Tabs & Panels**
 
-| VS Code Setting                                    | V-Agent Setting                                        |
+| VS Code Setting                                    | V-Agent Setting                                    |
 | -------------------------------------------------- | -------------------------------------------------- |
 | `workbench.editor.showTabs`                        | `tab_bar.show`                                     |
 | `workbench.editor.showIcons`                       | `tabs.file_icons`                                  |
@@ -127,7 +121,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Project Panel (File Explorer)**
 
-| VS Code Setting                | V-Agent Setting                         |
+| VS Code Setting                | V-Agent Setting                     |
 | ------------------------------ | ----------------------------------- |
 | `explorer.compactFolders`      | `project_panel.auto_fold_dirs`      |
 | `explorer.autoReveal`          | `project_panel.auto_reveal_entries` |
@@ -137,7 +131,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Git**
 
-| VS Code Setting                      | V-Agent Setting                                    |
+| VS Code Setting                      | V-Agent Setting                                |
 | ------------------------------------ | ---------------------------------------------- |
 | `git.enabled`                        | `git_panel.button`                             |
 | `git.defaultBranchName`              | `git_panel.fallback_branch_name`               |
@@ -146,7 +140,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Window & Behavior**
 
-| VS Code Setting                                  | V-Agent Setting                              |
+| VS Code Setting                                  | V-Agent Setting                          |
 | ------------------------------------------------ | ---------------------------------------- |
 | `window.confirmBeforeClose`                      | `confirm_quit`                           |
 | `window.nativeTabs`                              | `use_system_window_tabs`                 |
@@ -155,7 +149,7 @@ The following VS Code settings are automatically imported when you use **Import 
 
 **Other**
 
-| VS Code Setting            | V-Agent Setting                                              |
+| VS Code Setting            | V-Agent Setting                                          |
 | -------------------------- | -------------------------------------------------------- |
 | `http.proxy`               | `proxy`                                                  |
 | `npm.packageManager`       | `node.npm_path`                                          |
@@ -191,7 +185,7 @@ After setup, press `Cmd+O` (`Ctrl+O` on Linux) to open a folder. By default, new
 To start a new project, create a directory using your terminal or file manager, then open it in V-Agent. The editor will treat that folder as the root of your project.
 
 You can also launch V-Agent from the terminal inside any folder with:
-`zed .`
+`v-agent .`
 
 Once inside a project, use `Cmd+P` to jump between files quickly. `Cmd+Shift+P` (`Ctrl+Shift+P` on Linux) opens the command palette for running actions / tasks, toggling settings, or starting a collaboration session.
 
@@ -225,7 +219,7 @@ Here’s a quick reference for where keybindings match and where they differ.
 
 ### Different Keybindings (V-Agent <> VS Code)
 
-| Action              | VS Code               | V-Agent                    |
+| Action              | VS Code               | V-Agent                |
 | ------------------- | --------------------- | ---------------------- |
 | Open recent project | `Ctrl + R`            | `Cmd + Opt + O`        |
 | Move lines up/down  | `Opt + Up/Down`       | `Cmd + Ctrl + Up/Down` |
@@ -305,16 +299,16 @@ You won’t find one-to-one replacements for every VS Code extension, especially
 Unlike VS Code, V-Agent doesn’t require an extension to collaborate. It’s built into the core experience.
 
 - Open the Collab Panel in the left dock.
-- Create a channel and [invite your collaborators](https://zed.dev/docs/collaboration#inviting-a-collaborator) to join.
-- [Share your screen or your codebase](https://zed.dev/docs/collaboration#share-a-project) directly.
+- Create a channel and invite your collaborators to join
+- Share your screen or your codebase directly
+
+This connects through Zed Industries' collaboration servers (the same account system as [V-Agent-hosted models](../ai/privacy-and-security.md)) — V-Agent doesn't run its own. See [upstream's collaboration docs](https://zed.dev/docs/collaboration) for details; there's no local copy of that page in this fork.
 
 Once connected, you’ll see each other's cursors, selections, and edits in real time. Voice chat is included, so you can talk as you work. There’s no need for separate tools or third-party logins.
 
-Learn how [V-Agent uses Zed](https://zed.dev/blog/zed-is-our-office) to plan work and collaborate.
-
 ### Using AI in V-Agent
 
-If you’re used to GitHub Copilot in VS Code, you can do the same in V-Agent. You can also explore other agents through V-Agent Pro, or bring your own keys and connect without authentication. You can disable AI features entirely if you prefer.
+If you’re used to GitHub Copilot in VS Code, you can do the same in V-Agent. You can also explore other agents through [Zed Pro](https://zed.dev/pricing), or bring your own keys and connect without authentication. You can disable AI features entirely if you prefer.
 
 #### Configuring GitHub Copilot
 
@@ -329,9 +323,9 @@ Once signed in, just start typing. V-Agent will offer suggestions inline for you
 
 To use other AI models in V-Agent, you have several options:
 
-- Use V-Agent’s hosted models, with higher rate limits. Requires [authentication](https://zed.dev/docs/authentication) and access through [Zed Pro](https://zed.dev/docs/account/zed-hosted-models.html).
-- Bring your own [API keys](https://zed.dev/docs/ai/use-api-access.html), no authentication needed
-- Use [External Agents like Claude Agent](https://zed.dev/docs/ai/external-agents.html).
+- Use [Zed Pro](https://zed.dev/pricing)'s [V-Agent-hosted models](../ai/privacy-and-security.md), with higher rate limits — Zed Industries' paid tier, not something V-Agent sells
+- Bring your own [API keys](../ai/use-api-access.md), no authentication needed
+- Use [External Agents like Claude Agent](../ai/external-agents.md)
 
 ### Advanced Config and Productivity Tweaks
 

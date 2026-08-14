@@ -13,7 +13,7 @@ See [this blog post](https://zed.dev/blog/user-themes-now-in-preview) for additi
 
 ## Theme JSON Structure
 
-The structure of a V-Agent theme is defined in the [V-Agent Theme JSON Schema](https://zed.dev/schema/themes/v0.2.0.json).
+The structure of a V-Agent theme is defined by the [Theme JSON Schema](https://zed.dev/schema/themes/v0.2.0.json) — V-Agent themes are compatible with this schema, hosted by Zed Industries, since V-Agent doesn't host its own.
 
 A V-Agent theme consists of a Theme Family object including:
 
@@ -57,7 +57,7 @@ The core components of a Theme object include:
 
 ## Designing Your Theme
 
-You can use [V-Agent's Theme Builder](https://zed.dev/theme-builder) to design your own custom theme based on an existing one.
+You can use [Zed's Theme Builder](https://zed.dev/theme-builder) to design your own custom theme based on an existing one — V-Agent has no Theme Builder of its own.
 
 This tool lets you fine-tune and preview how surfaces in V-Agent will look.
 You can then export the JSON and publish it in V-Agent's extension store.

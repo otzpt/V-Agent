@@ -9,14 +9,16 @@ Use this page when you already pay for an AI product and want to know how it fit
 
 Some subscriptions work as V-Agent model providers. Others are used through an External Agent or terminal CLI.
 
-| Subscription                  | V-Agent AI features                                      | External Agent via ACP                | Terminal Thread                | Notes                                                            |
-| ----------------------------- | ---------------------------------------------------- | ------------------------------------- | ------------------------------ | ---------------------------------------------------------------- |
-| V-Agent Pro, Business, or Student | V-Agent-hosted models | No                                    | No                             | Billed through V-Agent                                               |
-| ChatGPT Plus / Pro            | ChatGPT Subscription                                 | Codex where supported                 | Codex CLI                      | Sign in with OpenAI in V-Agent; separate from OpenAI API keys        |
-| Claude Pro / Max              | No direct V-Agent LLM provider path                      | Claude Agent                          | Claude Code                    | Separate from Anthropic API keys                                 |
-| GitHub Copilot                | GitHub Copilot Chat; Copilot edit prediction         | Copilot agent where available         | CLI where available            | Requires Copilot/Copilot Chat auth                               |
-| OpenCode Zen / Go             | OpenCode provider                                    | OpenCode agent where available        | `opencode` CLI                 | Requires OpenCode API key; subscription affects available models |
-| Cursor subscription           | No V-Agent LLM provider path                             | Cursor External Agent where available | Cursor CLI/TUI where available | Use agent/CLI paths instead of V-Agent LLM provider settings         |
+> **Note:** "Zed Pro/Business/Student" below is Zed Industries' paid subscription for [V-Agent-hosted models](./privacy-and-security.md), inherited as-is since V-Agent doesn't run separate hosted-model infrastructure or billing. It is not something V-Agent (the fork) sells.
+
+| Subscription                  | V-Agent AI features                          | External Agent via ACP                | Terminal Thread                | Notes                                                            |
+| ----------------------------- | -------------------------------------------- | ------------------------------------- | ------------------------------ | ---------------------------------------------------------------- |
+| Zed Pro, Business, or Student | V-Agent-hosted models                        | No                                    | No                             | Billed through Zed                                               |
+| ChatGPT Plus / Pro            | ChatGPT Subscription                         | Codex where supported                 | Codex CLI                      | Sign in with OpenAI in V-Agent; separate from OpenAI API keys    |
+| Claude Pro / Max              | No direct V-Agent LLM provider path          | Claude Agent                          | Claude Code                    | Separate from Anthropic API keys                                 |
+| GitHub Copilot                | GitHub Copilot Chat; Copilot edit prediction | Copilot agent where available         | CLI where available            | Requires Copilot/Copilot Chat auth                               |
+| OpenCode Zen / Go             | OpenCode provider                            | OpenCode agent where available        | `opencode` CLI                 | Requires OpenCode API key; subscription affects available models |
+| Cursor subscription           | No V-Agent LLM provider path                 | Cursor External Agent where available | Cursor CLI/TUI where available | Use agent/CLI paths instead of V-Agent LLM provider settings     |
 
 ## ChatGPT Plus / Pro {#chatgpt}
 
@@ -30,7 +32,7 @@ Claude Pro and Max subscriptions are separate from Anthropic API credits. Use Cl
 
 For Anthropic API access, use [Use API Access](./use-api-access.md#anthropic).
 
-See [What Anthropic's New Claude Billing Means for Zed Users](https://zed.dev/blog/anthropic-subscription-changes) for more context.
+See [What Anthropic's New Claude Billing Means for Zed Users](https://zed.dev/blog/anthropic-subscription-changes) for more context (applies equally to V-Agent, since it uses the same Anthropic integration).
 
 ## GitHub Copilot {#github-copilot}
 
