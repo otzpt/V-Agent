@@ -52,9 +52,15 @@
       <Component Id="OpenConsoleExe">
         <File Source="$(var.StageDir)\OpenConsole.exe" KeyPath="yes" />
       </Component>
+      <!-- Optional. build-msi.ps1 sets HaveAmdAgs=no when the DLL is not on
+           the build machine; without this guard WiX fails with WIX0103 on a
+           file the script had already decided to skip. Upstream's Inno Setup
+           script treats it the same way (`#ifexist` in zed.iss). -->
+      <?if $(var.HaveAmdAgs) = "yes" ?>
       <Component Id="AmdAgsDll">
         <File Source="$(var.StageDir)\amd_ags_x64.dll" KeyPath="yes" />
       </Component>
+      <?endif?>
     </ComponentGroup>
 
     <!-- Start Menu shortcut. Per-user shortcuts key off an HKCU value. -->

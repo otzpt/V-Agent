@@ -48,15 +48,17 @@ $amd = Join-Path $release "amd_ags_x64.dll"
 if (-not (Test-Path $amd)) {
     $amd = Join-Path $env:LOCALAPPDATA "Programs\Zed\amd_ags_x64.dll"
 }
+$haveAmdAgs = "no"
 if (Test-Path $amd) {
     Copy-Item $amd (Join-Path $stage "amd_ags_x64.dll")
+    $haveAmdAgs = "yes"
 } else {
-    Write-Warning "amd_ags_x64.dll not found; AMD GPUs may fail. Continuing without it."
+    Write-Warning "amd_ags_x64.dll not found; the About screen will report 'Unknown Driver' on AMD GPUs. Continuing without it."
 }
 
 $wxs = Join-Path $scriptDir "v-agent.wxs"
 Write-Host "Building MSI -> $OutFile"
-& wix build $wxs -arch x64 -d "StageDir=$stage" -o $OutFile -acceptEula wix7
+& wix build $wxs -arch x64 -d "StageDir=$stage" -d "HaveAmdAgs=$haveAmdAgs" -o $OutFile -acceptEula wix7
 
 if ($LASTEXITCODE -ne 0) { throw "wix build failed ($LASTEXITCODE)" }
 Write-Host ("Done: {0} ({1:N1} MB)" -f $OutFile, ((Get-Item $OutFile).Length / 1MB))
