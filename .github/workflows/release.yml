@@ -369,6 +369,17 @@ jobs:
         with:
           release: '14.2'
           usesh: true
+          # The v1.1.1-ci1 run got past gpui and fs, then lost merman-core and
+          # settings_content to `signal: 9, SIGKILL` -- the OOM killer, not a
+          # compile error. The action defaults to 6144MB of RAM but gives the VM
+          # every host core, so cargo starts one rustc per core and the release
+          # profile (codegen-units = 1, thin LTO, opt-level 3) makes each of them
+          # expensive. Four at once do not fit in 6GB.
+          #
+          # ubuntu-latest is 4 cores / 16GB, so 12GB leaves the host its share,
+          # and -j 2 below caps how many of these can run at once. Both are
+          # needed: more RAM alone still lets four large crates land together.
+          mem: 12288
           # script/freebsd is upstream's own dependency list, but its
           # finalize() falls back to `curl | sh` to fetch rustup, and curl is
           # neither in that list nor in the FreeBSD base system (base ships
@@ -396,7 +407,10 @@ jobs:
             rustc --version
             export ZED_BUNDLE=true
             export RELEASE_VERSION="$(script/get-crate-version zed)"
-            cargo build --release --package zed --bin v-agent
+            # -j 2: see the mem note above. Trading build time for not being
+            # OOM-killed, which is the right way round for a job that is
+            # already slow and non-blocking.
+            cargo build --release --package zed --bin v-agent -j 2
             out="V-Agent-freebsd-x86_64"
             mkdir -p "$out"
             cp target/release/v-agent "$out/"
