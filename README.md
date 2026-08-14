@@ -32,6 +32,13 @@ curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-amd64
 sudo apt install ./V-Agent-amd64.deb
 ```
 
+**Fedora, RHEL, openSUSE** — `.rpm`:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-x86_64.rpm
+sudo dnf install ./V-Agent-x86_64.rpm
+```
+
 **Any distro** — AppImage, no install needed:
 
 ```bash

@@ -180,6 +180,74 @@ jobs:
           EOF
           dpkg-deb --build --root-owner-group "$pkg" "V-Agent-amd64.deb"
 
+      # Fedora/RHEL package, built in a Fedora container for the same reason the
+      # Arch package below uses one: the runner is Ubuntu and has no rpmbuild.
+      # Requires: are not hand-listed. rpmbuild scans the ELF and generates the
+      # soname dependencies itself, which stays correct as the binary's linkage
+      # changes; a hand-written list would drift silently.
+      - name: Package Linux (.rpm)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          rel="$(pwd)/target/${{ matrix.target }}/release"
+          appid=io.github.otzpt.VAgent
+          pkgver="$(script/get-crate-version zed)"
+          mkdir -p rpmpkg && cd rpmpkg
+          cp "$rel/v-agent" v-agent
+          cp "$GITHUB_WORKSPACE/crates/zed/resources/app-icon.png" icon.png
+          cat > v-agent.desktop <<EOF
+          [Desktop Entry]
+          Name=V-Agent
+          GenericName=Code Editor
+          Comment=Native, GPU-accelerated code editor with local-first AI
+          Exec=/usr/bin/v-agent %U
+          Icon=$appid
+          Type=Application
+          Categories=Development;IDE;TextEditor;
+          MimeType=text/plain;inode/directory;
+          StartupNotify=true
+          StartupWMClass=$appid
+          Terminal=false
+          EOF
+          cat > v-agent.spec <<EOF
+          Name:           v-agent
+          Version:        $pkgver
+          Release:        1%{?dist}
+          Summary:        Native, GPU-accelerated code editor with local-first AI
+          License:        GPL-3.0-or-later
+          URL:            https://github.com/otzpt/V-Agent
+          ExclusiveArch:  x86_64
+
+          # This packages an already-built binary, so there is nothing to
+          # compile and no separate debuginfo to split out. Same reasoning as
+          # the Arch package's !strip/!debug options.
+          %global debug_package %{nil}
+          %global __os_install_post %{nil}
+
+          %description
+          V-Agent is a native, GPU-accelerated code editor with local-first AI,
+          derived from Zed.
+
+          %install
+          install -Dm755 %{_sourcedir}/v-agent %{buildroot}%{_bindir}/v-agent
+          install -Dm644 %{_sourcedir}/v-agent.desktop %{buildroot}%{_datadir}/applications/$appid.desktop
+          install -Dm644 %{_sourcedir}/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/$appid.png
+
+          %files
+          %{_bindir}/v-agent
+          %{_datadir}/applications/$appid.desktop
+          %{_datadir}/icons/hicolor/512x512/apps/$appid.png
+          EOF
+          # dist is blanked deliberately: one prebuilt binary is shipped for all
+          # Fedora versions, so tagging it .fc44 would claim a version-specific
+          # build that was never made.
+          docker run --rm -v "$(pwd)":/pkg -w /pkg fedora:latest bash -c '
+            dnf install -y rpm-build >/dev/null &&
+            rpmbuild -bb --define "_sourcedir /pkg" --define "_rpmdir /pkg/out" \
+                         --define "dist %{nil}" v-agent.spec'
+          cp out/x86_64/v-agent-*.x86_64.rpm "$GITHUB_WORKSPACE/V-Agent-x86_64.rpm"
+
       - name: Package Linux (AppImage)
         if: runner.os == 'Linux'
         continue-on-error: true
@@ -280,6 +348,7 @@ jobs:
             V-Agent-x64.msi
             V-Agent-linux-x86_64.tar.gz
             V-Agent-amd64.deb
+            V-Agent-x86_64.rpm
             V-Agent-x86_64.AppImage
             V-Agent-x86_64.pkg.tar.zst
           if-no-files-found: warn
@@ -365,10 +434,17 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: false
           body: |
-            V-Agent release — Windows and Linux builds.
+            V-Agent release — Windows, Linux, and FreeBSD builds.
 
             **Windows:** `.msi` installer, or the portable `.zip`.
-            **Linux:** `.deb`, `.AppImage`, or the portable `.tar.gz`.
+            **Debian / Ubuntu / Mint:** `.deb`
+            **Fedora / RHEL:** `.rpm`
+            **Arch:** `.pkg.tar.zst` (`pacman -U`)
+            **Any Linux:** `.AppImage`, or the portable `.tar.gz`.
+            **FreeBSD:** `V-Agent-freebsd-x86_64.tar.gz`
+
+            FreeBSD is built in a VM rather than on a native runner and is
+            non-blocking, so it may be absent from a given release.
 
             Unsigned: on first launch the OS may warn about an unknown
             publisher (Windows: *More info → Run anyway*).

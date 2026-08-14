@@ -24,8 +24,16 @@ mod visual_test;
 ))]
 pub mod scap_screen_capture;
 
+// Must list the same targets as the `scap_screen_capture` module above, which
+// already includes FreeBSD, and as gpui's own `scap` dependency in Cargo.toml,
+// which is declared for freebsd too. Omitting it here left the module compiling
+// on FreeBSD against a type that was never defined there (E0425).
 #[cfg(all(
-    any(target_os = "windows", target_os = "linux"),
+    any(
+        target_os = "windows",
+        target_os = "linux",
+        target_os = "freebsd"
+    ),
     feature = "screen-capture"
 ))]
 pub(crate) type PlatformScreenCaptureFrame = scap::frame::Frame;
