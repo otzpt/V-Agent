@@ -12,7 +12,7 @@
   <Package
       Name="V-Agent"
       Manufacturer="V-Agent"
-      Version="1.0.2.0"
+      Version="1.1.0.0"
       UpgradeCode="83E8D434-55B4-4A23-811D-231EE457B302"
       Scope="perUser"
       InstallerVersion="500"

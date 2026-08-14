@@ -18,11 +18,11 @@
   Usage:
     pwsh packaging/windows/build-msi.ps1 `
         -TargetDir C:\vagent-zed-target `
-        -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.0.2-x64.msi
+        -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.1.0-x64.msi
 #>
 param(
     [string]$TargetDir = "C:\vagent-zed-target",
-    [string]$OutFile   = "$env:USERPROFILE\Downloads\V-Agent-1.0.2-x64.msi"
+    [string]$OutFile   = "$env:USERPROFILE\Downloads\V-Agent-1.1.0-x64.msi"
 )
 
 $ErrorActionPreference = "Stop"

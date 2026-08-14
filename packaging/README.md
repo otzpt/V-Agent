@@ -51,7 +51,7 @@ dotnet tool install --global wix
 # 3. Build the MSI into Downloads
 pwsh packaging/windows/build-msi.ps1 `
     -TargetDir C:\path\to\target `
-    -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.0.2-x64.msi
+    -OutFile   $env:USERPROFILE\Downloads\V-Agent-1.1.0-x64.msi
 ```
 
 Step 2 currently installs WiX v7, which refuses to build anything until its

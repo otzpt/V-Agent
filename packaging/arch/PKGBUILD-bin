@@ -11,7 +11,7 @@
 
 pkgname=v-agent-bin
 _pkgname=v-agent
-pkgver=1.0.2
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Native, GPU-accelerated code editor with local-first AI (prebuilt binary)"
 arch=('x86_64')
