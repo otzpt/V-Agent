@@ -37,7 +37,21 @@ only the Windows build below is produced locally.
 `%LOCALAPPDATA%\Programs\V-Agent` (no administrator rights) and does not touch
 a separately installed Zed. It bundles the editor plus its runtime siblings:
 `conpty.dll` and `OpenConsole.exe` (terminal), and `amd_ags_x64.dll` (AMD's
-GPU-services redistributable — required on AMD GPUs, harmless otherwise).
+GPU-services redistributable, optional — without it the About screen reports
+"Unknown Driver" on AMD GPUs; GPU support itself is unaffected).
+
+What the installer sets up:
+
+- Start Menu and Desktop shortcuts.
+- **Explorer context menus** — "Open with V-Agent" on files, folders, folder
+  backgrounds and drives. Opening a project is how an editor actually gets
+  used, so this is the entry point that matters most.
+- **PATH**, so `v-agent .` works from a terminal.
+- An Add/Remove Programs entry, with all of the above removed on uninstall.
+
+It deliberately does **not** register file associations. Upstream's Inno Setup
+installer writes hundreds of them; claiming file types away from whatever
+editor the user already has should be their decision, not the installer's.
 
 ### Build it
 

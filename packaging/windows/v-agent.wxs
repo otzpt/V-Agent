@@ -41,6 +41,8 @@
       <Directory Id="AppShortcutFolder" Name="V-Agent" />
     </StandardDirectory>
 
+    <StandardDirectory Id="DesktopFolder" />
+
     <!-- Payload: the editor plus its terminal and GPU runtime siblings -->
     <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
       <Component Id="MainExe">
@@ -77,9 +79,91 @@
                      Name="installed" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
+    <Component Id="DesktopShortcut" Directory="DesktopFolder"
+               Guid="10B09658-5F34-4D62-A44F-0DF64E59FD4A">
+      <Shortcut Id="VAgentDesktopShortcut"
+                Name="V-Agent"
+                Description="A native, GPU-accelerated code editor with local-first AI"
+                Target="[INSTALLFOLDER]v-agent.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="VAgentIcon" />
+      <RegistryValue Root="HKCU" Key="Software\V-Agent"
+                     Name="desktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!--
+      Explorer context menus. Opening a project is the normal way to start an
+      editor, so without these the only entry points are the Start Menu and
+      dragging a folder onto the window.
+
+      %1 passes the clicked file; %V is the folder the menu was opened on,
+      which is what the directory and background entries need. Registry layout
+      and argument choices mirror upstream's Inno Setup installer
+      (crates/zed/resources/windows/zed.iss).
+
+      Deliberately not included: the per-extension file associations that
+      installer also writes. They run to hundreds of registry values and would
+      claim file types away from the user's existing editor, which is a choice
+      the user should make, not the installer.
+    -->
+    <Component Id="ExplorerContextMenu" Directory="INSTALLFOLDER"
+               Guid="FA9DFBE3-4D4E-427E-B531-CD487C7F82D8">
+      <RegistryValue Root="HKCU" Key="Software\V-Agent"
+                     Name="contextMenu" Type="integer" Value="1" KeyPath="yes" />
+
+      <RegistryKey Root="HKCU" Key="Software\Classes\*\shell\VAgent" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="expandable" Value="Open w&amp;ith V-Agent" />
+        <RegistryValue Name="Icon" Type="expandable" Value="[INSTALLFOLDER]v-agent.exe" />
+        <RegistryKey Key="command">
+          <RegistryValue Type="expandable" Value="&quot;[INSTALLFOLDER]v-agent.exe&quot; &quot;%1&quot;" />
+        </RegistryKey>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCU" Key="Software\Classes\Directory\shell\VAgent" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="expandable" Value="Open w&amp;ith V-Agent" />
+        <RegistryValue Name="Icon" Type="expandable" Value="[INSTALLFOLDER]v-agent.exe" />
+        <RegistryKey Key="command">
+          <RegistryValue Type="expandable" Value="&quot;[INSTALLFOLDER]v-agent.exe&quot; &quot;%V&quot;" />
+        </RegistryKey>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCU" Key="Software\Classes\Directory\Background\shell\VAgent" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="expandable" Value="Open w&amp;ith V-Agent" />
+        <RegistryValue Name="Icon" Type="expandable" Value="[INSTALLFOLDER]v-agent.exe" />
+        <RegistryKey Key="command">
+          <RegistryValue Type="expandable" Value="&quot;[INSTALLFOLDER]v-agent.exe&quot; &quot;%V&quot;" />
+        </RegistryKey>
+      </RegistryKey>
+
+      <RegistryKey Root="HKCU" Key="Software\Classes\Drive\shell\VAgent" ForceDeleteOnUninstall="yes">
+        <RegistryValue Type="expandable" Value="Open w&amp;ith V-Agent" />
+        <RegistryValue Name="Icon" Type="expandable" Value="[INSTALLFOLDER]v-agent.exe" />
+        <RegistryKey Key="command">
+          <RegistryValue Type="expandable" Value="&quot;[INSTALLFOLDER]v-agent.exe&quot; &quot;%V&quot;" />
+        </RegistryKey>
+      </RegistryKey>
+    </Component>
+
+    <!--
+      PATH entry, so `v-agent .` works from a terminal. Upstream adds {app}\bin
+      because its CLI wrapper lives there; this fork does not build crates/cli
+      (release.yml builds the v-agent binary only), so the install root itself
+      is what goes on PATH.
+    -->
+    <Component Id="PathEntry" Directory="INSTALLFOLDER"
+               Guid="D7235C1C-8C31-4AB4-87D8-4E5BD089D8AC">
+      <Environment Id="VAgentPath" Name="PATH" Value="[INSTALLFOLDER]"
+                   Part="last" Action="set" System="no" Permanent="no" />
+      <RegistryValue Root="HKCU" Key="Software\V-Agent"
+                     Name="pathEntry" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
     <Feature Id="Main" Title="V-Agent" Level="1">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+      <ComponentRef Id="ExplorerContextMenu" />
+      <ComponentRef Id="PathEntry" />
     </Feature>
   </Package>
 </Wix>
