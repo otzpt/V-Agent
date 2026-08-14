@@ -472,7 +472,16 @@ impl FileHandle for std::fs::File {
 
         let fd = self.as_fd();
         let mut kif = MaybeUninit::<libc::kinfo_file>::uninit();
-        kif.kf_structsize = libc::KINFO_FILE_SIZE;
+        // F_KINFO requires kf_structsize to be set on the way in, but the field
+        // cannot be assigned through MaybeUninit directly (E0609). Write it
+        // through the raw pointer instead and leave the rest uninitialized for
+        // fcntl to fill.
+        // SAFETY: as_mut_ptr is valid for writes, and initializing one field of
+        // an otherwise uninitialized struct is exactly what raw pointer field
+        // access is for.
+        unsafe {
+            (&raw mut (*kif.as_mut_ptr()).kf_structsize).write(libc::KINFO_FILE_SIZE);
+        }
 
         let result = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_KINFO, kif.as_mut_ptr()) };
         anyhow::ensure!(result != -1, "fcntl returned -1");
