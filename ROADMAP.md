@@ -87,8 +87,8 @@ What IS achievable without adoption:
   then `pacman -S` / `apt install` work. This is real infrastructure (hosting +
   GPG signing + a `repo-add` / `dpkg-scanpackages` pipeline).
 - **Direct install packages** (already the plan): `.pkg.tar.zst` (`pacman -U`),
-  `.deb` (`dpkg -i` / `apt install ./file.deb`), `.AppImage`, attached to the
-  GitHub release. No repo, no AUR.
+  `.deb` (`dpkg -i` / `apt install ./file.deb`), `.rpm` (`dnf install ./file.rpm`,
+  added in 1.1.0), `.AppImage`, attached to the GitHub release. No repo, no AUR.
 
 Recommended order: ship the direct packages now (done in the release workflow);
 consider a self-hosted repo later if demand warrants the hosting cost.
@@ -114,7 +114,7 @@ key; `updpkgsums` + `makepkg --printsrcinfo > .SRCINFO` before the first push).
 `sha256sums` are `SKIP` until then — the AUR expects real checksums for a
 versioned release.
 
-### FreeBSD — build job added in 1.0.1, unverified
+### FreeBSD — build job added in 1.0.1, one compile error fixed in 1.1.0
 
 `build-freebsd` in the release workflow builds inside a FreeBSD 14.2 VM via
 `vmactions/freebsd-vm` (GitHub has no native FreeBSD runner) and reuses
@@ -122,22 +122,46 @@ upstream's own `script/freebsd` for `pkg` dependencies rather than duplicating
 a package list that would drift.
 
 The job is `continue-on-error` and the release gates on `needs.build` only, so
-a FreeBSD failure cannot hold back a release. **It has not run against a real
-tag yet** — expect the first run to need iteration (rustup bootstrap inside the
-VM, build timeouts on a VM-hosted runner).
+a FreeBSD failure cannot hold back a release.
+
+It has now run against a real tag (v1.0.2) and failed, in gpui:
+`error[E0425]: cannot find type PlatformScreenCaptureFrame in this scope`. The
+`scap_screen_capture` module was gated on windows/linux/freebsd while the type
+alias it depends on listed only windows and linux, so the module compiled on
+FreeBSD against a type that did not exist there. Fixed in 1.1.0.
+
+Whether the build now completes is still unverified — the fix addresses the one
+error the log showed, and a target upstream does not test may have more behind
+it.
 
 Remaining:
 
-- Verify the first real run and drop `continue-on-error` once it is reliable.
+- Confirm the 1.1.0 run gets further, and drop `continue-on-error` once it is
+  reliably green.
 - Package as a native `.pkg` rather than only a portable `.tar.gz`.
 - `script/bundle-freebsd` still only builds `remote_server`; most of it is
   commented out. Either finish it or delete it in favour of the CI job.
+
+### Fedora/RHEL — `.rpm` added in 1.1.0
+
+Built in a `fedora:latest` container (the runner is Ubuntu and has no
+`rpmbuild`), matching how the Arch package is produced. `Requires:` are left to
+rpmbuild's own ELF scan rather than hand-listed, so they cannot drift from the
+binary's actual linkage. The `dist` tag is blanked because a single prebuilt
+binary ships for every Fedora version.
+
+Remaining: verify against a real Fedora install — the binary is built on
+Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
+which has not been tested on a real system yet.
 
 ## Other tracked items (not blocking use)
 
 - macOS builds in the release workflow (needs a Mac runner + signing).
 - Richer installer polish and code signing (removes the SmartScreen warning).
-- Config directory rename `%APPDATA%\Zed` → `V-Agent` with settings migration.
+- Settings migration for users coming from Zed. The directory rename itself is
+  already done — `config_dir()` in `crates/paths` resolves to `%APPDATA%\V-Agent`
+  and `~/.config/v-agent`, so a Zed user's existing settings are simply not
+  picked up rather than being converted.
 - `uvx` guidance for Python-based MCP servers.
 - `/model` listing configured external agents (Claude/Codex ACP) alongside
   local and BYO-key models.
