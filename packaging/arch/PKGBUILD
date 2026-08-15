@@ -8,7 +8,7 @@
 #   cd packaging/arch && makepkg -si
 
 pkgname=v-agent
-pkgver=1.1.0
+pkgver=1.1.1
 pkgrel=1
 pkgdesc="Native, GPU-accelerated code editor with local-first AI"
 arch=('x86_64')

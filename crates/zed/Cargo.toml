@@ -2,7 +2,7 @@
 description = "A native, GPU-accelerated code editor with local-first AI."
 edition.workspace = true
 name = "zed"
-version = "1.1.0"
+version = "1.1.1"
 publish.workspace = true
 license = "GPL-3.0-or-later"
 authors = ["V-Agent contributors"]
