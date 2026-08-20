@@ -55,6 +55,21 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
+**Void Linux (glibc)** — same tarball, no `xbps` package yet:
+
+```bash
+curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-linux-x86_64.tar.gz
+tar -xzf V-Agent-linux-x86_64.tar.gz
+./V-Agent-linux-x86_64/v-agent
+```
+
+**Not native support** — there is no `xbps` template and no Void CI job.
+This is the same generic tarball as any untested distro, gated on the same
+two requirements: glibc ≥ 2.31 (check with `ldd --version`; the **musl**
+Void variant has no system glibc and cannot run this at all) and a
+Vulkan-capable GPU driver (`vulkaninfo --summary`). See
+[ROADMAP.md](./ROADMAP.md) for what real Void support would take.
+
 **Build the Arch package yourself** — from a checkout, if you would rather not
 trust a prebuilt binary:
 
