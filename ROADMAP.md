@@ -68,51 +68,50 @@ with no telemetry. Concrete work, by impact:
 Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
 harness code, not new weights.
 
-## Local AI: first-party llama.cpp setup
+## Local AI: llama.cpp — already a first-party provider, corrected entry
 
-Directly extends the harness thesis above. Right now, wiring a local model
-into V-Agent means a user hand-writes an `openai_compatible` provider in
-`settings.json` and separately stands up their own inference server with no
-guidance on GPU backend, offload, or context sizing. That is real friction for
-exactly the audience section above targets (local-first, privacy-conscious).
+**This section previously claimed V-Agent had no first-party llama.cpp
+integration and proposed building one from scratch. That was wrong** — found
+while debugging a user's config on this machine: `crates/language_models/src/
+provider/llama_cpp.rs` (2100+ lines) is a dedicated provider, documented at
+`docs/src/ai/use-a-local-model.md`, that was missed before writing the
+original version of this section. Correcting rather than leaving it, per this
+file's own standard of tracking real state.
 
-What a real local box's setup looks like today (established by hand on one
-machine this session, as a proof of the shape, not yet productized):
+What already exists, confirmed by reading the provider source and the docs,
+not assumed:
 
-- `llama-server` in **router mode** (`--models-dir`) serving every GGUF in one
-  folder under a single `/v1/models` listing, instead of one model per
-  hand-edited config.
-- Per-model settings in an `.ini` (GPU layers, KV cache quantization, context
-  size, and **MTP** — `--spec-type draft-mtp` — auto-enabled only for GGUFs
-  that actually carry `nextn_predict_layers`/`blk.N.nextn.*` tensors).
-- GPU-layer counts computed from free VRAM and the model's own block count,
-  not a hardcoded guess — `-ngl auto` was tested and found to fail outright on
-  an 8 GB card (fit pass errors, then tries to allocate the full model and
-  OOMs), so this has to be arithmetic against real `nvidia-smi` output, not
-  llama.cpp's own `auto`.
-- Backend correctness is not a given: a stock Arch `llama-cpp` install can
-  silently fall back to Vulkan when its CUDA backend fails to load a missing
-  system library, with zero warning in normal use — a 60%+ throughput loss
-  that is easy to never notice without deliberately checking
-  `--list-devices`.
+- A native `"llama.cpp"` settings key (`language_models.llama.cpp` —
+  literal dot, not the generic `openai_compatible` map), with `api_url` and
+  an `auto_discover` flag that **defaults to true**.
+- Router-mode **auto-discovery via the server's `/models/sse` stream**:
+  models loading/unloading in `llama-server`'s router mode are picked up
+  live, with context length and tool/vision capabilities refined once each
+  model actually loads. No hand-written `available_models` list needed
+  unless `auto_discover` is turned off.
+- `available_models` still exists as a manual override path for
+  non-router setups or pinned capabilities, matching the shape the previous
+  version of this section proposed building.
 
-None of this is V-Agent-specific engineering — it is inference-server
-configuration a user currently has to discover and do entirely by hand.
-Concrete phases, each shippable independently:
+So the real gap is smaller than previously written:
 
-1. **A setup script** (`script/setup-local-llama` or similar), not app code:
-   detects GPU vendor/backend, checks the loaded backend actually matches the
-   hardware (catches the silent Vulkan-fallback case above), and generates a
-   router config + systemd user unit from a model folder the user points at.
-2. **Zero-config provider detection.** If a router server answers on
-   `127.0.0.1:8080` (or a configured port), offer it as a provider instead of
-   requiring a hand-written `settings.json` block.
-3. **MTP auto-detection surfaced in the UI.** The GGUF header already says
-   whether a model carries an MTP head; a model picker can show "speculative
-   decoding available" instead of the user needing to know to look.
-4. **Out of scope for now:** V-Agent managing the llama-server process
-   lifecycle itself (start/stop, a "Local Models" panel). Bigger surface, no
-   proof yet that phases 1-3 aren't enough.
+1. **Server-side setup is still all manual** — GPU backend detection, VRAM-
+   aware `-ngl`, KV cache quantization, and enabling MTP
+   (`--spec-type draft-mtp`) for GGUFs that carry `nextn_predict_layers`
+   tensors are all `llama-server`-side configuration with no V-Agent
+   involvement, and rightly so — this is inference-server tuning, not editor
+   scope. A `script/setup-local-llama`-style helper (detect backend, generate
+   a router config) is still a real, unclaimed idea, just not a V-Agent
+   *feature* — more a companion script or a doc walkthrough.
+2. **MTP is invisible in the UI.** The provider's auto-discovery reads
+   context/tool/vision capabilities from the server but has no concept of
+   speculative decoding — a model picker showing "speculative decoding
+   active" would need the server to expose that (llama-server's `/props` or
+   model listing does not currently carry it either, so this starts
+   upstream, not in V-Agent).
+3. Managing the `llama-server` process lifecycle from inside V-Agent
+   (start/stop, a "Local Models" panel) remains out of scope — no proof the
+   existing auto-discovery isn't sufficient.
 
 ## Distro package managers — the honest state
 
