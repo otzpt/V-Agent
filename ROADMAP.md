@@ -249,6 +249,35 @@ Remaining: verify against a real Fedora install — the binary is built on
 Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
 which has not been tested on a real system yet.
 
+## Upstream sync — 2 releases behind (checked 2026-08-19)
+
+Currently synced to `v1.15.0` (`e17dc4f9d50d`, see `CREDITS.md`). Upstream's
+latest stable is `v1.16.1` (`eb8e1c8b55`) — `v1.15.1` and `v1.16.1` both
+shipped since our last sync, and a `v1.17.0-pre` is already cut on top of
+that. 75 commits ahead of our sync point per
+`gh api repos/zed-industries/zed/compare/e17dc4f9d50d...eb8e1c8b55`.
+
+Nothing in the gap looks blocking — no CVE/security notice in either
+release's notes — but two items are worth pulling in deliberately rather than
+waiting for the next routine sync:
+
+- **`v1.16.1`: "Linux: Improved memory usage."** ([zed-industries/zed#62192](https://github.com/zed-industries/zed/pull/62192))
+  Directly relevant to this fork specifically, given the local-first/low-spec
+  audience `ROADMAP.md`'s "harness, not the model" section already targets.
+- **`v1.15.1`: GPG passphrase modal fix.** Was appearing on every commit for
+  users whose pinentry can already supply it without prompting — an actual
+  annoyance-class regression fix, not a feature.
+
+`v1.16.1`'s other headline items (Gemini 3.6 Flash, Git Panel grouping,
+Mermaid diagram zoom) are upstream cloud/model-list changes this fork's own
+system prompt and provider setup (see the Local AI section above) are
+independent of, and don't need to block a sync.
+
+Remaining: do the actual squashed sync to `v1.16.1` (same process as the
+`v1.15.0` sync already recorded in `CREDITS.md`), re-verify the native system
+prompt customizations in `crates/agent/src/templates/system_prompt.hbs`
+survive it, per the pattern already used for the v1.15.0 sync earlier.
+
 ## Other tracked items (not blocking use)
 
 - macOS builds in the release workflow (needs a Mac runner + signing).
