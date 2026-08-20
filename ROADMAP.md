@@ -252,10 +252,20 @@ which has not been tested on a real system yet.
 ## Upstream sync — 2 releases behind (checked 2026-08-19)
 
 Currently synced to `v1.15.0` (`e17dc4f9d50d`, see `CREDITS.md`). Upstream's
-latest stable is `v1.16.1` (`eb8e1c8b55`) — `v1.15.1` and `v1.16.1` both
-shipped since our last sync, and a `v1.17.0-pre` is already cut on top of
-that. 75 commits ahead of our sync point per
+latest **stable** is `v1.16.1` (`eb8e1c8b55`) — `v1.15.1` and `v1.16.1` both
+shipped since our last sync, 75 commits ahead per
 `gh api repos/zed-industries/zed/compare/e17dc4f9d50d...eb8e1c8b55`.
+
+A `v1.17.0-pre` is already cut past that (`605674a6cfb6`, 171 commits ahead of
+our sync point) — pre-release, not the sync target per this file's own
+convention of syncing to stable tags, but it already carries **Gemini 3.7
+Flash** superseding the 3.6 Flash added in `v1.16.1` (upstream PR
+[#62670](https://github.com/zed-industries/zed/pull/62670)), and a new
+`ask_user` agent tool (PR
+[#61497](https://github.com/zed-industries/zed/pull/61497)) letting the agent
+ask the user questions through forms — directly adjacent to this fork's own
+harness work above, worth reading before the next sync even though it isn't
+one yet.
 
 Nothing in the gap looks blocking — no CVE/security notice in either
 release's notes — but two items are worth pulling in deliberately rather than
@@ -271,7 +281,8 @@ waiting for the next routine sync:
 `v1.16.1`'s other headline items (Gemini 3.6 Flash, Git Panel grouping,
 Mermaid diagram zoom) are upstream cloud/model-list changes this fork's own
 system prompt and provider setup (see the Local AI section above) are
-independent of, and don't need to block a sync.
+independent of, and don't need to block a sync. Same reasoning applies to
+Gemini 3.7 Flash once `v1.17.0` actually ships stable.
 
 Remaining: do the actual squashed sync to `v1.16.1` (same process as the
 `v1.15.0` sync already recorded in `CREDITS.md`), re-verify the native system
