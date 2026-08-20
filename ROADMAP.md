@@ -68,6 +68,52 @@ with no telemetry. Concrete work, by impact:
 Fine-tuning model *weights* is explicitly out of scope: the leverage is in the
 harness code, not new weights.
 
+## Local AI: first-party llama.cpp setup
+
+Directly extends the harness thesis above. Right now, wiring a local model
+into V-Agent means a user hand-writes an `openai_compatible` provider in
+`settings.json` and separately stands up their own inference server with no
+guidance on GPU backend, offload, or context sizing. That is real friction for
+exactly the audience section above targets (local-first, privacy-conscious).
+
+What a real local box's setup looks like today (established by hand on one
+machine this session, as a proof of the shape, not yet productized):
+
+- `llama-server` in **router mode** (`--models-dir`) serving every GGUF in one
+  folder under a single `/v1/models` listing, instead of one model per
+  hand-edited config.
+- Per-model settings in an `.ini` (GPU layers, KV cache quantization, context
+  size, and **MTP** — `--spec-type draft-mtp` — auto-enabled only for GGUFs
+  that actually carry `nextn_predict_layers`/`blk.N.nextn.*` tensors).
+- GPU-layer counts computed from free VRAM and the model's own block count,
+  not a hardcoded guess — `-ngl auto` was tested and found to fail outright on
+  an 8 GB card (fit pass errors, then tries to allocate the full model and
+  OOMs), so this has to be arithmetic against real `nvidia-smi` output, not
+  llama.cpp's own `auto`.
+- Backend correctness is not a given: a stock Arch `llama-cpp` install can
+  silently fall back to Vulkan when its CUDA backend fails to load a missing
+  system library, with zero warning in normal use — a 60%+ throughput loss
+  that is easy to never notice without deliberately checking
+  `--list-devices`.
+
+None of this is V-Agent-specific engineering — it is inference-server
+configuration a user currently has to discover and do entirely by hand.
+Concrete phases, each shippable independently:
+
+1. **A setup script** (`script/setup-local-llama` or similar), not app code:
+   detects GPU vendor/backend, checks the loaded backend actually matches the
+   hardware (catches the silent Vulkan-fallback case above), and generates a
+   router config + systemd user unit from a model folder the user points at.
+2. **Zero-config provider detection.** If a router server answers on
+   `127.0.0.1:8080` (or a configured port), offer it as a provider instead of
+   requiring a hand-written `settings.json` block.
+3. **MTP auto-detection surfaced in the UI.** The GGUF header already says
+   whether a model carries an MTP head; a model picker can show "speculative
+   decoding available" instead of the user needing to know to look.
+4. **Out of scope for now:** V-Agent managing the llama-server process
+   lifecycle itself (start/stop, a "Local Models" panel). Bigger surface, no
+   proof yet that phases 1-3 aren't enough.
+
 ## Distro package managers — the honest state
 
 **`pacman -S v-agent` / `apt install v-agent` from official repos: not without
@@ -141,6 +187,55 @@ Remaining:
 - Package as a native `.pkg` rather than only a portable `.tar.gz`.
 - `script/bundle-freebsd` still only builds `remote_server`; most of it is
   commented out. Either finish it or delete it in favour of the CI job.
+
+### Void Linux — not started, generic-distro tier only
+
+No native package, no CI job, no distro-specific docs exist today. What
+currently applies to Void is only the same "any distro" fallback that applies
+to every untested Linux: the AppImage or the portable tarball, gated on
+V-Agent's two real requirements — glibc ≥ 2.31 and a Vulkan-capable GPU.
+
+One glibc-variant Void install was checked by hand this session:
+`ldd --version` reported glibc 2.41, comfortably above the floor. Vulkan
+support on that machine was not confirmed in the same session — do not treat
+glibc alone as "V-Agent works on Void," the GPU driver side is the other half
+of the requirement and remains unverified.
+
+Void ships **two libc variants**, glibc and musl, selected at install time by
+which ISO is downloaded (the musl one is explicitly named `-musl-` in the
+filename; the default is glibc). This matters more here than for other
+distros: musl systems have no system-wide glibc to fall back on at all, so the
+prebuilt binary cannot run there under any circumstance, only a from-source
+build against the musl target — and V-Agent already has one relevant asset for
+that: `remote_server` already builds against
+`x86_64-unknown-linux-musl` for remote-development's static server (see
+`docs/src/remote-development.md`). Whether the full GUI app builds against
+musl is untested; the existing musl build only covers the headless remote
+server, not gpui/Vulkan.
+
+Remaining, in order:
+
+1. Confirm Vulkan actually works on a real glibc-Void install end to end
+   (not just glibc version) — the missing half of the check done this
+   session.
+2. Void's package system is `xbps`, built from `void-packages` templates
+   (a `template` file, analogous to Arch's `PKGBUILD`) — not compatible with
+   the `.pkg.tar.zst`/`.deb`/`.rpm` already produced by the release workflow.
+   A native package needs its own template, following the same
+   prebuilt-binary pattern as `PKGBUILD-bin`.
+3. Upstream inclusion in `void-packages` needs Void maintainer review, the
+   same adoption problem already true for Arch official and Debian above — a
+   self-hosted `xbps` repo is the realistic path if that stalls, mirroring the
+   self-hosted-repo option already noted for pacman/apt.
+4. No native Void GitHub Actions runner exists, same problem FreeBSD solves
+   with a VM — but Void has an official Docker image
+   (`voidlinux/voidlinux`), so a container job is enough to compile in CI
+   (a real headless-GUI *run* is a separate, harder problem CI does not
+   currently attempt for any Linux target).
+5. A `docs/src/development/voidlinux.md` covering Void-specific quirks
+   (xbps commands, the musl/glibc distinction, driver package names) once any
+   of the above is real enough to document — not before, per this file's own
+   pattern of writing docs after the thing works, not ahead of it.
 
 ### Fedora/RHEL — `.rpm` added in 1.1.0
 
