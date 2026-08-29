@@ -2,7 +2,7 @@
 
 This document covers structural conventions for V-Agent documentation: what to document, how to organize it, and when to create new pages.
 
-For voice, tone, and writing style, see the [brand-voice/](./brand-voice/) directory, which contains:
+For voice, tone, and writing style, see the [brand-writer/](./brand-writer/) directory, which contains:
 
 - `SKILL.md` — Core voice principles and workflow
 - `rubric.md` — 8-point scoring criteria for quality
@@ -362,7 +362,7 @@ Before finalizing documentation:
 - [ ] No orphan pages (linked from somewhere)
 - [ ] Non-reference pages include at least 3 useful internal docs links
 - [ ] Passes Prettier formatting check
-- [ ] Passes brand voice rubric (see `brand-voice/rubric.md`)
+- [ ] Passes brand voice rubric (see `brand-writer/rubric.md`)
 
 ---
 

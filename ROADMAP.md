@@ -248,45 +248,34 @@ Remaining: verify against a real Fedora install — the binary is built on
 Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
 which has not been tested on a real system yet.
 
-## Upstream sync — 2 releases behind (checked 2026-08-19)
+## Upstream sync — synced to v1.16.1 (2026-08-29)
 
-Currently synced to `v1.15.0` (`e17dc4f9d50d`, see `CREDITS.md`). Upstream's
-latest **stable** is `v1.16.1` (`eb8e1c8b55`) — `v1.15.1` and `v1.16.1` both
-shipped since our last sync, 75 commits ahead per
-`gh api repos/zed-industries/zed/compare/e17dc4f9d50d...eb8e1c8b55`.
+Synced to `v1.16.1` (`eb8e1c8b5502`, see `CREDITS.md`), up from `v1.15.0`
+(`e17dc4f9d50d`), as a single squashed commit on top of the recorded base per
+`CREDITS.md`'s documented process. Both flagged items from the previous check
+landed: the Linux memory usage improvement
+([zed-industries/zed#62192](https://github.com/zed-industries/zed/pull/62192))
+and the `v1.15.1` GPG passphrase-modal fix. The native system prompt
+customizations in `crates/agent/src/templates/system_prompt.hbs` were
+untouched by upstream in this range and came through byte-identical.
 
-A `v1.17.0-pre` is already cut past that (`605674a6cfb6`, 171 commits ahead of
-our sync point) — pre-release, not the sync target per this file's own
-convention of syncing to stable tags, but it already carries **Gemini 3.7
-Flash** superseding the 3.6 Flash added in `v1.16.1` (upstream PR
-[#62670](https://github.com/zed-industries/zed/pull/62670)), and a new
-`ask_user` agent tool (PR
-[#61497](https://github.com/zed-industries/zed/pull/61497)) letting the agent
-ask the user questions through forms — directly adjacent to this fork's own
-harness work above, worth reading before the next sync even though it isn't
-one yet.
+Upstream's `v1.15.0`..`v1.16.1` range also included several commits that were
+cherry-picked onto the `v1.15.x` stable branch (not present in `v1.16.1`'s own
+ancestry by commit hash, only by equivalent content already merged via `main`)
+— the sync used `e17dc4f9d50d` as an explicit merge base
+(`git merge-tree --merge-base=`) rather than git's auto-detected common
+ancestor, so these showed up as no-op hunks instead of spurious conflicts.
 
-Nothing in the gap looks blocking — no CVE/security notice in either
-release's notes — but two items are worth pulling in deliberately rather than
-waiting for the next routine sync:
+Upstream has since moved on further: `v1.16.2`, `v1.16.3`, and a
+`v1.17.0-pre` are already cut past `v1.16.1`. Not pulled in this pass, per
+this file's convention of syncing to stable tags one release at a time.
 
-- **`v1.16.1`: "Linux: Improved memory usage."** ([zed-industries/zed#62192](https://github.com/zed-industries/zed/pull/62192))
-  Directly relevant to this fork specifically, given the local-first/low-spec
-  audience `ROADMAP.md`'s "harness, not the model" section already targets.
-- **`v1.15.1`: GPG passphrase modal fix.** Was appearing on every commit for
-  users whose pinentry can already supply it without prompting — an actual
-  annoyance-class regression fix, not a feature.
-
-`v1.16.1`'s other headline items (Gemini 3.6 Flash, Git Panel grouping,
-Mermaid diagram zoom) are upstream cloud/model-list changes this fork's own
-system prompt and provider setup (see the Local AI section above) are
-independent of, and don't need to block a sync. Same reasoning applies to
-Gemini 3.7 Flash once `v1.17.0` actually ships stable.
-
-Remaining: do the actual squashed sync to `v1.16.1` (same process as the
-`v1.15.0` sync already recorded in `CREDITS.md`), re-verify the native system
-prompt customizations in `crates/agent/src/templates/system_prompt.hbs`
-survive it, per the pattern already used for the v1.15.0 sync earlier.
+Remaining: none for this sync. Next sync should target whatever `v1.17.x` (or
+later) stable tag exists when picked up, re-checking
+`system_prompt.hbs` again since upstream's extension-docs restructure in this
+range (`docs/src/extensions/publishing/*.md` replacing part of
+`developing-extensions.md`) is a reminder that doc/template reorganizations
+can silently drop a rebrand if the merge isn't checked file-by-file.
 
 ## Other tracked items (not blocking use)
 

@@ -146,6 +146,7 @@ use util::{
     post_inc,
     redact::redact_command,
     rel_path::RelPath,
+    union_json_value_into,
 };
 
 pub use document_colors::DocumentColors;
@@ -3547,6 +3548,35 @@ impl LocalLspStore {
 
                     fs.rename(&source_abs_path, &target_abs_path, options)
                         .await?;
+
+                    // Preserve the entry id across the rename so an open buffer follows it
+                    // to the new path, instead of being stranded at the old path when the
+                    // filesystem watcher reports the deletion before the creation. Only a
+                    // rename within one worktree can do this; anything else falls back to
+                    // the watcher.
+                    let refresh = this.update(cx, |this, cx| {
+                        let (source_worktree, source_rel_path) = this
+                            .worktree_store()
+                            .read(cx)
+                            .find_worktree(&source_abs_path, cx)?;
+                        let (target_worktree, target_rel_path) = this
+                            .worktree_store()
+                            .read(cx)
+                            .find_worktree(&target_abs_path, cx)?;
+                        if source_worktree != target_worktree {
+                            return None;
+                        }
+                        target_worktree.update(cx, |worktree, cx| {
+                            Some(worktree.as_local()?.refresh_entry(
+                                target_rel_path,
+                                Some(source_rel_path),
+                                cx,
+                            ))
+                        })
+                    });
+                    if let Some(refresh) = refresh {
+                        refresh.await?;
+                    }
                 }
 
                 lsp::DocumentChangeOperation::Op(lsp::ResourceOp::Delete(op)) => {
@@ -4021,26 +4051,35 @@ impl LocalLspStore {
         delegate: &Arc<dyn LspAdapterDelegate>,
         cx: &mut AsyncApp,
     ) -> Result<Option<serde_json::Value>> {
-        let Some(mut initialization_config) =
-            adapter.clone().initialization_options(delegate, cx).await?
-        else {
-            return Ok(None);
-        };
+        let mut initialization_config =
+            adapter.clone().initialization_options(delegate, cx).await?;
 
         for other_adapter in delegate.registered_lsp_adapters() {
             if other_adapter.name() == adapter.name() {
                 continue;
             }
-            if let Ok(Some(target_config)) = other_adapter
+            if let Some(target_config) = other_adapter
                 .clone()
                 .additional_initialization_options(adapter.name(), delegate)
                 .await
+                .with_context(|| {
+                    format!(
+                        "getting additional initialization options for {} from {}",
+                        adapter.name(),
+                        other_adapter.name()
+                    )
+                })
+                .log_err()
+                .flatten()
             {
-                merge_json_value_into(target_config.clone(), &mut initialization_config);
+                union_json_value_into(
+                    target_config,
+                    initialization_config.get_or_insert_with(|| serde_json::json!({})),
+                );
             }
         }
 
-        Ok(Some(initialization_config))
+        Ok(initialization_config)
     }
 
     async fn workspace_configuration_for_adapter(
@@ -4059,12 +4098,21 @@ impl LocalLspStore {
             if other_adapter.name() == adapter.name() {
                 continue;
             }
-            if let Ok(Some(target_config)) = other_adapter
+            if let Some(target_config) = other_adapter
                 .clone()
                 .additional_workspace_configuration(adapter.name(), delegate, cx)
                 .await
+                .with_context(|| {
+                    format!(
+                        "getting additional workspace configuration for {} from {}",
+                        adapter.name(),
+                        other_adapter.name()
+                    )
+                })
+                .log_err()
+                .flatten()
             {
-                merge_json_value_into(target_config.clone(), &mut workspace_config);
+                union_json_value_into(target_config, &mut workspace_config);
             }
         }
 
@@ -14765,6 +14813,7 @@ impl LspAdapterDelegate for LocalLspAdapterDelegate {
             .all_lsp_adapters()
             .into_iter()
             .map(|adapter| adapter.adapter.clone() as Arc<dyn LspAdapter>)
+            .sorted_by_key(|adapter| adapter.name())
             .collect()
     }
 
