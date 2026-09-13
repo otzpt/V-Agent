@@ -1,0 +1,68 @@
+# Template file for 'v-agent-bin'
+#
+# Void Linux package installing the prebuilt x86_64 binary from the GitHub
+# release, so users do not need a multi-hour Rust build. This mirrors
+# packaging/arch/PKGBUILD-bin; there is no from-source Void template yet.
+#
+# To build it:
+#   git clone --depth 1 https://github.com/void-linux/void-packages
+#   cd void-packages && ./xbps-src binary-bootstrap
+#   cp -r /path/to/V-Agent/packaging/void srcpkgs/v-agent-bin
+#   ./xbps-src pkg v-agent-bin
+#   sudo xbps-install --repository hostdir/binpkgs v-agent-bin
+#
+# When bumping version, refresh both checksums:
+#   ./xbps-src update-check v-agent-bin   # upstream version
+#   xgensum -i srcpkgs/v-agent-bin/template
+#
+# glibc only. Void also ships a musl variant, where a glibc-linked binary
+# cannot run at all; that would need a from-source musl build of the whole
+# GUI, which has never been attempted (only remote_server builds for musl
+# today). Hence archs is x86_64 and xbps-src will refuse the musl masterdir.
+
+pkgname=v-agent-bin
+version=1.1.1
+revision=1
+archs="x86_64"
+# Libraries the ELF links directly (glib, libxcb, libxkbcommon, alsa-lib,
+# libstdc++, libX11) are resolved automatically from its NEEDED entries and
+# must not be listed here. These are the ones it dlopen()s or execs instead:
+#   vulkan-loader  libvulkan.so.1, the rendering backend gpui requires
+#   wayland        libwayland-client.so.0 / libwayland-egl.so.1
+#   libglvnd       libEGL.so.1 / libGL.so.1, wgpu's GL adapter enumeration
+#   fontconfig     libfontconfig.so.1, font discovery
+#   git            spawned as a process for version control
+depends="fontconfig git libglvnd vulkan-loader wayland"
+short_desc="GPU-accelerated code editor with local-first AI (prebuilt binary)"
+maintainer="otzpt <mrjs10375@gmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/otzpt/V-Agent"
+# The release tarball ships the bare binary only, so the icon comes from the
+# tagged tree. It is not an archive, so it must be excluded from extraction:
+# vsrcextract aborts with "unknown distfile suffix" on a .png.
+distfiles="${homepage}/releases/download/v${version}/V-Agent-linux-x86_64.tar.gz
+ ${homepage}/raw/v${version}/crates/zed/resources/app-icon.png>v-agent.png"
+checksum="9bf67cb66c0cf5ba1ffcfd20afeb626f43779baff261b8d60aa71a7841fa0217
+ 7440d457850047c98a85a691073ccdfb04cf3186d6eccc3f32baaa1111c878bd"
+skip_extraction="v-agent.png"
+# Upstream ships the binary unstripped so its own hang detector can symbolize
+# backtraces. Matches options=('!strip') in the Arch PKGBUILD.
+nostrip=yes
+
+# A Vulkan driver is required at runtime and cannot be expressed as a
+# dependency: Void has no vulkan-driver virtual package, and `mesa` alone
+# installs no ICD. Users must install the one for their GPU themselves:
+#   mesa-vulkan-radeon / mesa-vulkan-intel / mesa-vulkan-nouveau
+#   nvidia (nonfree) for the proprietary NVIDIA driver
+#   mesa-vulkan-lavapipe for software rendering
+# Optional: nodejs, for language servers distributed as npm packages.
+
+do_install() {
+	vbin v-agent
+
+	vinstall "${XBPS_SRCDISTDIR}/${pkgname}-${version}/v-agent.png" 644 \
+		usr/share/icons/hicolor/512x512/apps io.github.otzpt.VAgent.png
+
+	vinstall "${FILESDIR}/io.github.otzpt.VAgent.desktop" 644 \
+		usr/share/applications
+}

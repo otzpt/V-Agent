@@ -187,54 +187,83 @@ Remaining:
 - `script/bundle-freebsd` still only builds `remote_server`; most of it is
   commented out. Either finish it or delete it in favour of the CI job.
 
-### Void Linux — not started, generic-distro tier only
+### Void Linux: packaged, Vulkan confirmed
 
-No native package, no CI job, no distro-specific docs exist today. What
-currently applies to Void is only the same "any distro" fallback that applies
-to every untested Linux: the AppImage or the portable tarball, gated on
-V-Agent's two real requirements — glibc ≥ 2.31 and a Vulkan-capable GPU.
+Steps 1, 2, 4 and 5 of the previous plan are done; step 3 (upstream inclusion
+in `void-packages`) is the only one left, and it is an adoption problem rather
+than a technical one.
 
-One glibc-variant Void install was checked by hand this session:
-`ldd --version` reported glibc 2.41, comfortably above the floor. Vulkan
-support on that machine was not confirmed in the same session — do not treat
-glibc alone as "V-Agent works on Void," the GPU driver side is the other half
-of the requirement and remains unverified.
+**Vulkan is confirmed working** on a real glibc-Void install (the missing half
+of the earlier check, which had only verified glibc 2.41). OBSERVED on Void
+6.18.50_1, NVIDIA RTX 3050 Mobile, driver 595.91.07: the release binary
+enumerated the GPU through the Vulkan backend and reached
+`[workspace] Rendered first frame`, reporting
+`GpuSpecs { is_software_emulated: false, device_name: "NVIDIA GeForce RTX 3050
+Laptop GPU", driver_name: "NVIDIA" }`. `ldd` on the release binary resolves
+every `NEEDED` entry on a stock Void install with no extra packages.
 
-Void ships **two libc variants**, glibc and musl, selected at install time by
-which ISO is downloaded (the musl one is explicitly named `-musl-` in the
-filename; the default is glibc). This matters more here than for other
-distros: musl systems have no system-wide glibc to fall back on at all, so the
-prebuilt binary cannot run there under any circumstance, only a from-source
-build against the musl target — and V-Agent already has one relevant asset for
-that: `remote_server` already builds against
-`x86_64-unknown-linux-musl` for remote-development's static server (see
-`docs/src/remote-development.md`). Whether the full GUI app builds against
-musl is untested; the existing musl build only covers the headless remote
-server, not gpui/Vulkan.
+Two things worth recording from that check:
 
-Remaining, in order:
+- **CUDA being broken is not evidence Vulkan is.** On the same machine
+  `cuInit(0)` returns 999 through `libcuda.so.1`, and Vulkan works anyway.
+  They are separate driver entry points, and V-Agent uses only Vulkan.
+- **`mesa` installs no Vulkan ICD on Void.** The drivers are separate
+  packages (`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vulkan-nouveau`,
+  `mesa-vulkan-lavapipe`) and there is no `vulkan-driver` virtual package to
+  depend on, unlike Arch. On the machine tested only `nvidia_icd.json` was
+  present, so the integrated Radeon was visible to wgpu through the GL backend
+  only. A Void package therefore cannot guarantee a working GPU by its
+  dependencies alone; the driver has to be named in the docs and release
+  notes instead, and it is.
 
-1. Confirm Vulkan actually works on a real glibc-Void install end to end
-   (not just glibc version) — the missing half of the check done this
-   session.
-2. Void's package system is `xbps`, built from `void-packages` templates
-   (a `template` file, analogous to Arch's `PKGBUILD`) — not compatible with
-   the `.pkg.tar.zst`/`.deb`/`.rpm` already produced by the release workflow.
-   A native package needs its own template, following the same
-   prebuilt-binary pattern as `PKGBUILD-bin`.
-3. Upstream inclusion in `void-packages` needs Void maintainer review, the
-   same adoption problem already true for Arch official and Debian above — a
-   self-hosted `xbps` repo is the realistic path if that stalls, mirroring the
-   self-hosted-repo option already noted for pacman/apt.
-4. No native Void GitHub Actions runner exists, same problem FreeBSD solves
-   with a VM — but Void has an official Docker image
-   (`voidlinux/voidlinux`), so a container job is enough to compile in CI
-   (a real headless-GUI *run* is a separate, harder problem CI does not
-   currently attempt for any Linux target).
-5. A `docs/src/development/voidlinux.md` covering Void-specific quirks
-   (xbps commands, the musl/glibc distinction, driver package names) once any
-   of the above is real enough to document — not before, per this file's own
-   pattern of writing docs after the thing works, not ahead of it.
+Two packaging paths now exist, deliberately:
+
+- `packaging/void/template`, an `xbps-src` template (`v-agent-bin`), mirroring
+  `packaging/arch/PKGBUILD-bin`. This is the one to submit to `void-packages`.
+  xbps-src derives the library dependencies from the binary's `NEEDED` entries
+  against `common/shlibs`, so they cannot drift; only the dlopened ones
+  (`vulkan-loader`, `wayland`, `libglvnd`, `fontconfig`) and `git` are declared
+  by hand. VERIFIED by building it: `./xbps-src pkg v-agent-bin` produced
+  `v-agent-bin-1.1.1_1.x86_64.xbps` (405 MB, 2284 MB installed) with the
+  expected three files and fourteen runtime dependencies, no lint warnings.
+  `xbps-src binary-bootstrap` needs no root.
+- A `Package Linux (Void .xbps)` step in the release workflow, building the
+  same package with `xbps-create` in `ghcr.io/void-linux/void-glibc-full`.
+  It hand-lists dependencies because `xbps-create` does no ELF scanning (that
+  is an xbps-src hook), the same trade the Arch and `.deb` steps already make.
+  Bootstrapping xbps-src in CI just to re-wrap an already-built binary is not
+  worth the minutes.
+
+Notes for whoever touches this next:
+
+- **Do not rename the `.xbps` release asset.** xbps resolves a package file as
+  `<pkgver>.<arch>.xbps` from the repository index; renaming it to
+  `V-Agent-x86_64.xbps` for consistency with the other assets makes
+  `xbps-install` fail with `failed to checksum: No such file or directory`.
+  OBSERVED locally, which is why the asset keeps xbps-create's own filename.
+- Installing needs the directory indexed first (`xbps-rindex -a`); xbps has no
+  `pacman -U` equivalent.
+- The ROADMAP previously named `voidlinux/voidlinux` on Docker Hub as the CI
+  image. The official images are now under `ghcr.io/void-linux/`
+  (`void-glibc-full`, `void-glibc`); the workflow uses the former.
+- `script/linux` already had a Void branch, inherited from upstream. All
+  twenty-one package names in it still resolve against current Void repos
+  (checked with `xbps-query -R`). It installs `vulkan-loader` but no ICD, so
+  a from-source build still needs the driver package installed separately.
+- musl is still unsupported and untested, for the reason recorded before: the
+  prebuilt binary is glibc-linked, and only `remote_server` has ever been
+  built against `x86_64-unknown-linux-musl`.
+- Installed size is 2.3 GB against a 405 MB download, because the release
+  binary ships unstripped (`debug = "limited"` in `[profile.release]`, and the
+  workflow deliberately does not strip, matching Arch's `!strip`). That is a
+  release-profile question, not a packaging one, but it is a lot to ask of a
+  distro package and is worth revisiting.
+
+Docs live in `docs/src/development/voidlinux.md`, linked from `SUMMARY.md`.
+
+Remaining: submit `v-agent-bin` to `void-packages`, which needs Void maintainer
+review. The same adoption problem applies to Arch official and Debian, and the
+same fallback applies: a self-hosted xbps repository users add once.
 
 ### Fedora/RHEL — `.rpm` added in 1.1.0
 
