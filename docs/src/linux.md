@@ -13,7 +13,7 @@ V-Agent works best on systems that:
 
 - have a Vulkan compatible GPU available (for example Linux on an M-series MacBook)
 - have a system-wide glibc
-  - x86_64 (Intel/AMD): glibc version >= 2.31 (Ubuntu 20 and newer)
+  - x86_64 (Intel/AMD): glibc version >= 2.35 (Ubuntu 22 and newer)
   - aarch64 (ARM): glibc version >= 2.35 (Ubuntu 22 and newer)
 
 NixOS does not have a system-wide glibc by default. If you'd like to use our builds on NixOS, they may work if you install a glibc compatibility layer such as [nix-ld](https://github.com/Mic92/nix-ld).

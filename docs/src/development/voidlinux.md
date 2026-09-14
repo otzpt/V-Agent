@@ -76,6 +76,9 @@ xbps-rindex -a v-agent-*.x86_64.xbps
 sudo xbps-install -R ~/Downloads v-agent
 ```
 
+The release asset name carries the version, so `releases/latest/download/` does
+not resolve to it; take the filename from the releases page.
+
 Do not rename the file. xbps looks it up as `<pkgver>.<arch>.xbps` from the
 index it just wrote, and a renamed file fails with
 `failed to checksum: No such file or directory`.
