@@ -248,34 +248,64 @@ Remaining: verify against a real Fedora install — the binary is built on
 Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
 which has not been tested on a real system yet.
 
-## Upstream sync — synced to v1.16.1 (2026-08-29)
+## Upstream sync: synced to v1.16.2 (2026-09-14)
 
-Synced to `v1.16.1` (`eb8e1c8b5502`, see `CREDITS.md`), up from `v1.15.0`
-(`e17dc4f9d50d`), as a single squashed commit on top of the recorded base per
-`CREDITS.md`'s documented process. Both flagged items from the previous check
-landed: the Linux memory usage improvement
-([zed-industries/zed#62192](https://github.com/zed-industries/zed/pull/62192))
-and the `v1.15.1` GPG passphrase-modal fix. The native system prompt
-customizations in `crates/agent/src/templates/system_prompt.hbs` were
-untouched by upstream in this range and came through byte-identical.
+Synced to `v1.16.2` (`a5faebb646a0`, see `CREDITS.md`), up from `v1.16.1`
+(`eb8e1c8b5502`), one stable tag at a time per this file's convention, using
+`git merge-tree --merge-base=eb8e1c8b5502...` with the recorded base rather
+than git's auto-detected ancestor.
 
-Upstream's `v1.15.0`..`v1.16.1` range also included several commits that were
-cherry-picked onto the `v1.15.x` stable branch (not present in `v1.16.1`'s own
-ancestry by commit hash, only by equivalent content already merged via `main`)
-— the sync used `e17dc4f9d50d` as an explicit merge base
-(`git merge-tree --merge-base=`) rather than git's auto-detected common
-ancestor, so these showed up as no-op hunks instead of spurious conflicts.
+Eight upstream commits, twenty files. The one that matters is a **security
+fix**: Wasmtime WASI updated to close a filesystem sandbox escape
+([zed-industries/zed#63140](https://github.com/zed-industries/zed/pull/63140)),
+which is the extension sandbox, so it applies to this fork unchanged. VERIFIED
+in the merged tree: `wasmtime` moves 36.0.12 to 36.0.14 in `Cargo.lock`, and
+both `crates/extension_host/src/wasm_host/wit/since_v0_*.rs` files came through
+byte-identical to upstream. Also in the range: a Flatpak launcher argument
+ordering fix in `crates/cli`, GitHub Enterprise data residency support in
+`crates/copilot_chat`, and an extension-host fix restoring project LSP settings
+for older extension API versions.
 
-Upstream has since moved on further: `v1.16.2`, `v1.16.3`, and a
-`v1.17.0-pre` are already cut past `v1.16.1`. Not pulled in this pass, per
-this file's convention of syncing to stable tags one release at a time.
+`crates/agent/src/templates/system_prompt.hbs` came through byte-identical
+(sha256 `6633bf18...` before and after). Upstream did not touch
+`crates/agent/src/templates/` at all in this range.
 
-Remaining: none for this sync. Next sync should target whatever `v1.17.x` (or
-later) stable tag exists when picked up, re-checking
-`system_prompt.hbs` again since upstream's extension-docs restructure in this
-range (`docs/src/extensions/publishing/*.md` replacing part of
-`developing-extensions.md`) is a reminder that doc/template reorganizations
-can silently drop a rebrand if the merge isn't checked file-by-file.
+Five conflicts, all in the two categories the previous sync already recorded:
+
+- `Cargo.lock`, `crates/zed/Cargo.toml`: kept this fork's version number over
+  upstream's.
+- `docs/src/extensions/publishing/{overview,prerequisites,publishing-guide}.md`:
+  kept the V-Agent rebrand, took upstream's content. The warning in the
+  previous sync entry paid off. Upstream rewrote `prerequisites.md` almost
+  completely (a flat bullet list became per-extension-type sections), so the
+  fork's rebrand of the old text had nothing to attach to and was re-applied by
+  hand to the new prose. Upstream also renamed "Extension Gallery" to
+  "Extension Registry"; that rename was taken, which incidentally makes
+  `overview.md` consistent with the sibling pages that already said Registry.
+
+Two new upstream pages, `publishing/faq.md` and
+`publishing/updating-and-maintenance.md`, were deliberately left unbranded.
+Neither mentions the editor at all; their only "Zed" references are to Zed
+Industries staff and to the `zed-industries/extensions` repository, which this
+fork already keeps literal elsewhere in the same directory.
+
+A rebrand audit across all twenty changed files found no file that lost
+coverage. The only file whose count moved is `prerequisites.md`, from 6 to 8,
+because upstream's new text has more API references to rebrand. Separately,
+every file the fork had never modified came out byte-identical to `v1.16.2`,
+and every file that differs from upstream is one the fork had already forked.
+
+**Not build-verified.** The machine this sync was performed on has no Rust
+toolchain and no `protoc`, so the `cargo check --workspace --all-targets`
+standard the previous sync met was not repeated. The evidence above is
+structural (tree comparison against upstream and against the base), not a
+compile. This needs a build before the sync ships.
+
+`docs/src/SUMMARY.md` merged cleanly here, but note it is also touched by the
+Void packaging branch; merging both will conflict there trivially.
+
+Remaining: build-verify, then target `v1.16.3` and whatever `v1.17.x` stable
+tag exists when picked up. Re-check `system_prompt.hbs` every time.
 
 ## Other tracked items (not blocking use)
 
