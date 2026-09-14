@@ -2388,7 +2388,7 @@
         },
       },
       "debuggers": ["Debugpy"],
-      "language_servers": ["basedpyright", "ruff", "!ty", "!pyrefly", "!pyright", "!pylsp", "..."],
+      "language_servers": ["pyright", "ruff", "!ty", "!pyrefly", "!basedpyright", "!pylsp", "..."],
     },
     "Ruby": {
       "language_servers": [

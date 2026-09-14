@@ -9,10 +9,10 @@ Python support is available natively in V-Agent.
 
 - Tree-sitter: [tree-sitter-python](https://github.com/zed-industries/tree-sitter-python)
 - Language Servers:
-  - [DetachHead/basedpyright](https://github.com/DetachHead/basedpyright)
+  - [microsoft/pyright](https://github.com/microsoft/pyright)
   - [astral-sh/ruff](https://github.com/astral-sh/ruff)
   - [astral-sh/ty](https://github.com/astral-sh/ty)
-  - [microsoft/pyright](https://github.com/microsoft/pyright)
+  - [DetachHead/basedpyright](https://github.com/DetachHead/basedpyright)
   - [python-lsp/python-lsp-server](https://github.com/python-lsp/python-lsp-server) (PyLSP)
 - Debug Adapter: [debugpy](https://github.com/microsoft/debugpy)
 
@@ -72,12 +72,12 @@ V-Agent includes an integrated terminal, accessible from the bottom panel. If V-
 
 ## Configure Python Language Servers in V-Agent
 
-V-Agent provides several Python language servers out of the box. By default, [basedpyright](https://github.com/DetachHead/basedpyright) is the primary language server, and [Ruff](https://github.com/astral-sh/ruff) is used for formatting and linting.
+V-Agent provides several Python language servers out of the box. By default, [Pyright](https://github.com/microsoft/pyright) is the primary language server, and [Ruff](https://github.com/astral-sh/ruff) is used for formatting and linting.
 
 Other built-in language servers are:
 
 - [ty](https://docs.astral.sh/ty/)&mdash;Up-and-coming language server from Astral, built for speed.
-- [Pyright](https://github.com/microsoft/pyright)&mdash;The basis for basedpyright.
+- [basedpyright](https://github.com/DetachHead/basedpyright)&mdash;A fork of Pyright adding inlay hints and extra checking rules.
 - [PyLSP](https://github.com/python-lsp/python-lsp-server)&mdash;A plugin-based language server that integrates with tools like `pycodestyle`, `autopep8`, and `yapf`.
 
 These are disabled by default, but can be enabled in your settings.
@@ -89,10 +89,10 @@ Configure language servers in Settings ({#kb zed::OpenSettings}) under Languages
   "languages": {
     "Python": {
       "language_servers": [
-        // Enable ty, disable basedpyright, and enable all
-        // other registered language servers (ruff, pylsp, pyright).
+        // Enable ty, disable pyright, and enable all
+        // other registered language servers (ruff, pylsp, basedpyright).
         "ty",
-        "!basedpyright",
+        "!pyright",
         "..."
       ]
     }
@@ -104,9 +104,9 @@ See: [Working with Language Servers](../configuring-languages.md#working-with-la
 
 ### Basedpyright
 
-[basedpyright](https://docs.basedpyright.com/latest/) is the primary Python language server in V-Agent beginning with V-Agent v0.204.0. It provides core language server functionality like navigation (go to definition/find all references) and type checking. Compared to Pyright, it adds support for additional language server features (like inlay hints) and checking rules.
+[basedpyright](https://docs.basedpyright.com/latest/) is a fork of Pyright that adds extra language server features (like inlay hints) and checking rules. Upstream Zed makes it the primary Python language server; V-Agent uses plain Pyright instead and ships basedpyright disabled. Enable it with `"basedpyright"` (and `"!pyright"`) in your `language_servers` list.
 
-Note that while basedpyright in isolation defaults to the `recommended` [type-checking mode](https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/#typecheckingmode), V-Agent configures it to use the less-strict `standard` mode by default, which matches the behavior of Pyright. You can set the type-checking mode for your project using the `typeCheckingMode` setting in `pyrightconfig.json` or `pyproject.toml`, which will override V-Agent's default. Read on for more details about how to configure basedpyright.
+Note that while basedpyright in isolation defaults to the `recommended` [type-checking mode](https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/#typecheckingmode), V-Agent configures it to use the less-strict `standard` mode, which matches the behavior of Pyright. You can set the type-checking mode for your project using the `typeCheckingMode` setting in `pyrightconfig.json` or `pyproject.toml`, which will override V-Agent's default. Read on for more details about how to configure basedpyright.
 
 #### Basedpyright Configuration
 
