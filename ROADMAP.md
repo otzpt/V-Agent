@@ -202,6 +202,19 @@ enumerated the GPU through the Vulkan backend and reached
 Laptop GPU", driver_name: "NVIDIA" }`. `ldd` on the release binary resolves
 every `NEEDED` entry on a stock Void install with no extra packages.
 
+**The glibc floor in this repository is wrong.** README.md, docs/src/linux.md
+and docs/src/installation.md all state glibc >= 2.31, inherited from upstream
+Zed. MEASURED on the v1.1.1 release binary (sha256 verified against the release
+asset): `objdump -T` reports non-weak `__libc_start_main@GLIBC_2.34` and
+`hypot@GLIBC_2.35`, so it cannot start below 2.35. The release workflow builds
+on `ubuntu-22.04`, which ships glibc 2.35, so the floor tracks the runner.
+Upstream's 2.31 may well be correct for upstream's own binaries; it is not
+correct for ours. Only the Void package and its docs were corrected here,
+because the repository-wide fix is a decision rather than an edit: either
+restate the requirement as 2.35 everywhere, or move the Linux build to an older
+runner or a sysroot so 2.31 becomes true again. Ubuntu 20.04 runners are
+retired, so the second option means a container or `cargo-zigbuild`.
+
 Two things worth recording from that check:
 
 - **CUDA being broken is not evidence Vulkan is.** On the same machine

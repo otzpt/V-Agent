@@ -22,7 +22,14 @@ Building the GUI from source against `x86_64-unknown-linux-musl` has never
 been attempted; the only musl target the repository builds today is the
 headless `remote_server` (see [Remote Development](../remote-development.md)).
 
-Requirements: glibc 2.31 or newer, and a working Vulkan driver.
+Requirements: glibc 2.35 or newer, and a working Vulkan driver.
+
+The 2.35 floor is MEASURED from the shipped binary, not copied from upstream
+Zed's stated 2.31. `objdump -T` on the release binary shows non-weak
+`__libc_start_main@GLIBC_2.34` and `hypot@GLIBC_2.35`, so it cannot start below
+2.35. It tracks whatever runner the release workflow builds on, currently
+`ubuntu-22.04`. Void is a rolling distribution and is well past this, but the
+number matters for the dependency the package declares.
 
 ## Installing a Vulkan driver
 

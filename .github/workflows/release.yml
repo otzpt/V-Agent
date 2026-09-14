@@ -350,7 +350,7 @@ jobs:
       # them: xbps-create does no ELF scanning (that is an xbps-src hook). The
       # list is the one xbps-src derives from this binary's NEEDED entries,
       # plus what it dlopen()s: vulkan-loader, wayland, libglvnd, fontconfig.
-      # A Vulkan driver (mesa-vulkan-*, or nvidia) cannot be a dependency —
+      # A Vulkan driver (mesa-vulkan-*, or nvidia) cannot be a dependency:
       # Void has no vulkan-driver virtual package, so it is named in the
       # release notes instead.
       - name: Package Linux (Void .xbps)
@@ -374,7 +374,7 @@ jobs:
               -H "https://github.com/otzpt/V-Agent" \
               -l "GPL-3.0-or-later" \
               -m "otzpt <mrjs10375@gmail.com>" \
-              -D "alsa-lib>=0 fontconfig>=0 git>=0 glib>=0 glibc>=2.31_1 libX11>=0 libgcc>=0 libglvnd>=0 libstdc++>=0 libxcb>=0 libxkbcommon>=0 libxkbcommon-x11>=0 vulkan-loader>=0 wayland>=0" \
+              -D "alsa-lib>=0 fontconfig>=0 git>=0 glib>=0 glibc>=2.35_1 libX11>=0 libgcc>=0 libglvnd>=0 libstdc++>=0 libxcb>=0 libxkbcommon>=0 libxkbcommon-x11>=0 vulkan-loader>=0 wayland>=0" \
               destdir
           # Keep xbps-create's own filename. xbps resolves a package file as
           # <pkgver>.<arch>.xbps from the repository index, so renaming it to
