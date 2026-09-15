@@ -450,10 +450,23 @@ jobs:
           body: |
             V-Agent release — Windows, Linux, and FreeBSD builds.
 
+            **Linux, one command:**
+
+            ```
+            curl -fsSL https://raw.githubusercontent.com/otzpt/V-Agent/main/install.sh | sh
+            ```
+
+            Detects your package manager and installs the right asset below.
+
             **Windows:** `.msi` installer, or the portable `.zip`.
             **Debian / Ubuntu / Mint:** `.deb`
             **Fedora / RHEL:** `.rpm`
             **Arch:** `.pkg.tar.zst` (`pacman -U`)
+            **Void Linux:** no native package yet. Use the one-command
+            installer above, which puts it under `~/.local` with no root, or
+            see the Void section of the
+            [README](https://github.com/otzpt/V-Agent#linux). The **musl**
+            variant of Void is not supported.
             **Any Linux:** `.AppImage`, or the portable `.tar.gz`.
             **FreeBSD:** `V-Agent-freebsd-x86_64.tar.gz`
 

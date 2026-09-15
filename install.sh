@@ -11,6 +11,8 @@
 # Environment:
 #   VAGENT_VERSION=1.1.1   install a specific version instead of the latest
 #   VAGENT_METHOD=tarball  force the portable tarball
+#   VAGENT_METHOD=xbps     Void: install from the xbps repository, which has to
+#                          be published first. Not auto-detected.
 #   VAGENT_PREFIX=~/.local install prefix for the tarball method
 #   VAGENT_DRY_RUN=1       print what would happen, change nothing
 
@@ -107,10 +109,13 @@ fi
 
 method="$VAGENT_METHOD"
 if [ "$method" = "auto" ]; then
-    if   have xbps-install;                        then method=xbps
-    elif have apt-get     && [ -n "$(command -v dpkg)" ]; then method=deb
-    elif have dnf || have yum;                     then method=rpm
-    elif have pacman;                              then method=pacman
+    # Void deliberately falls through to the tarball. A native xbps template
+    # exists in packaging/void/, but installing from it needs an xbps
+    # repository published somewhere, and there is none yet. Once there is, set
+    # VAGENT_METHOD=xbps, or move this back into the chain.
+    if   have apt-get && have dpkg;  then method=deb
+    elif have dnf || have yum;       then method=rpm
+    elif have pacman;                then method=pacman
     else method=tarball
     fi
 fi
@@ -137,7 +142,8 @@ install_xbps() {
     need_root
     # A persistent repo config is the difference between an install that can be
     # updated with `xbps-install -Su` and one frozen at this version forever.
-    say "adding the V-Agent xbps repository"
+    [ -n "${VAGENT_VOID_REPO:-}" ] && VOID_REPO="$VAGENT_VOID_REPO"
+    say "adding the V-Agent xbps repository: ${VOID_REPO}"
     if [ "$VAGENT_DRY_RUN" = "1" ]; then
         printf '  \033[2m[dry-run]\033[0m write /etc/xbps.d/10-vagent.conf -> repository=%s\n' "$VOID_REPO"
     else

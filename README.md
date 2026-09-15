@@ -18,6 +18,19 @@ to download by hand.
 
 ### Linux
 
+**One command, any distro** — detects your package manager and installs the
+right thing, falling back to the portable tarball on anything untested:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/otzpt/V-Agent/main/install.sh | sh
+```
+
+Read [`install.sh`](./install.sh) first if you would rather see what it does.
+On a distro with no native package (**Void** included) it installs under
+`~/.local` and needs no root at all.
+
+The rest of this section is the same thing done by hand.
+
 **Arch, Manjaro, EndeavourOS, CachyOS** — native package:
 
 ```bash
@@ -55,7 +68,8 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
-**Void Linux (glibc)** — same tarball, no `xbps` package yet:
+**Void Linux (glibc)** — use the one-command installer above, or do the same
+thing by hand:
 
 ```bash
 curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-linux-x86_64.tar.gz
@@ -63,12 +77,16 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
-**Not native support** — there is no `xbps` template and no Void CI job.
-This is the same generic tarball as any untested distro, gated on the same
-two requirements: glibc ≥ 2.31 (check with `ldd --version`; the **musl**
-Void variant has no system glibc and cannot run this at all) and a
-Vulkan-capable GPU driver (`vulkaninfo --summary`). See
-[ROADMAP.md](./ROADMAP.md) for what real Void support would take.
+There is **no `xbps` package** to install from yet, so this is the same
+portable tarball any untested distro gets. Requirements are glibc ≥ 2.35
+(check with `ldd --version`) and a Vulkan driver. Note that `mesa` on Void
+ships no Vulkan driver of its own: install `mesa-vulkan-radeon`,
+`mesa-vulkan-intel`, `mesa-vulkan-nouveau`, or `nvidia` for your GPU, or
+V-Agent will install and then fail to start.
+
+The **musl** variant of Void cannot run these binaries under any
+circumstance; they are glibc-linked and the GUI has never been built against
+musl. See [ROADMAP.md](./ROADMAP.md) for what native Void support would take.
 
 **Build the Arch package yourself** — from a checkout, if you would rather not
 trust a prebuilt binary:
