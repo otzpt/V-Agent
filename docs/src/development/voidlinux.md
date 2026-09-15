@@ -108,8 +108,7 @@ distribution, subject to the same glibc and Vulkan requirements.
 
 ## Building from source
 
-`script/linux` already detects `xbps-install` and installs the Void build
-dependencies:
+`script/linux` detects `xbps-install` and installs the Void build dependencies:
 
 ```sh
 script/linux
@@ -119,9 +118,21 @@ cargo run
 See [Building V-Agent for Linux](./linux.md) for the rest, which is not
 Void-specific.
 
-Note that `script/linux` installs no Vulkan ICD, only `vulkan-loader`. Install
-the driver package for your GPU separately, as above, or the build will
-succeed and the editor will fail to start.
+Two Void-specific things that script does not do for you:
+
+- **It installs no Vulkan ICD**, only `vulkan-loader`. Install the driver
+  package for your GPU separately, as above, or the build will succeed and the
+  editor will fail to start.
+- **It does not install a Rust toolchain or `protoc`.** Use `rustup` (it reads
+  `rust-toolchain.toml` and picks the pinned version automatically) and install
+  `protobuf` from xbps, or drop a `protoc` release binary in `~/.local/bin`.
+
+The Void list in `script/linux` was missing `libX11-devel`, `libglvnd-devel`
+and `vulkan-loader-devel` until it was corrected. Without `libX11-devel` the
+build panics in the `x11` crate's build script with "The system library `x11`
+required by crate `x11` was not found", because `zed-scap` pulls `x11` in
+through `gpui`. If you are building against an older checkout, install those
+three by hand.
 
 ## Package size
 
