@@ -295,11 +295,20 @@ because upstream's new text has more API references to rebrand. Separately,
 every file the fork had never modified came out byte-identical to `v1.16.2`,
 and every file that differs from upstream is one the fork had already forked.
 
-**Not build-verified.** The machine this sync was performed on has no Rust
-toolchain and no `protoc`, so the `cargo check --workspace --all-targets`
-standard the previous sync met was not repeated. The evidence above is
-structural (tree comparison against upstream and against the base), not a
-compile. This needs a build before the sync ships.
+**Build-verified.** `cargo check --workspace --all-targets` passes:
+`CARGO_EXIT=0`, 0 errors, 10 warnings, on cargo 1.97.1 (the toolchain
+`rust-toolchain.toml` pins). `cargo fetch --locked` also exits 0, so the merged
+`Cargo.lock` needs no regeneration.
+
+All 10 warnings are pre-existing and untouched by this sync (neither file
+appears in `git diff --name-only main`). They are worth noting because they are
+Task 4b material rather than noise: five in `crates/title_bar/src/title_bar.rs`
+are dead sign-in state left behind by commit f588b55, which removed the
+"sign in to try Pro" upsell but not the variables and struct fields that fed
+it (`is_signing_in`, `is_signed_out_or_auth_error`, and the never-read
+`show_sign_in` / `show_user_menu` fields). The other is an unused `dest` in
+`crates/zed/src/vagent_hackatime.rs`. The compiler is pointing straight at the
+next chunk of the dead-feature cleanup.
 
 `docs/src/SUMMARY.md` merged cleanly here, but note it is also touched by the
 Void packaging branch; merging both will conflict there trivially.
