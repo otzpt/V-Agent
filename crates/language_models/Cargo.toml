@@ -48,6 +48,7 @@ lmstudio = { workspace = true, features = ["schemars"] }
 log.workspace = true
 menu.workspace = true
 mistral = { workspace = true, features = ["schemars"] }
+nvidia = { workspace = true, features = ["schemars"] }
 ollama = { workspace = true, features = ["schemars"] }
 open_ai = { workspace = true, features = ["schemars"] }
 openai_subscribed.workspace = true

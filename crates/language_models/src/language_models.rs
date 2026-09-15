@@ -31,6 +31,7 @@ use crate::provider::open_router::OpenRouterLanguageModelProvider;
 use crate::provider::openai_subscribed::OpenAiSubscribedProvider;
 use crate::provider::opencode::OpenCodeLanguageModelProvider;
 use crate::provider::vercel_ai_gateway::VercelAiGatewayLanguageModelProvider;
+use crate::provider::nvidia::NvidiaLanguageModelProvider;
 use crate::provider::x_ai::XAiLanguageModelProvider;
 pub use crate::settings::*;
 
@@ -308,6 +309,14 @@ fn register_language_model_providers(
     );
     registry.register_provider(
         Arc::new(VercelAiGatewayLanguageModelProvider::new(
+            client.http_client(),
+            credentials_provider.clone(),
+            cx,
+        )),
+        cx,
+    );
+    registry.register_provider(
+        Arc::new(NvidiaLanguageModelProvider::new(
             client.http_client(),
             credentials_provider.clone(),
             cx,

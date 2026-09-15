@@ -2506,6 +2506,9 @@
     "vercel_ai_gateway": {
       "api_url": "https://ai-gateway.vercel.sh/v1",
     },
+    "nvidia": {
+      "api_url": "https://integrate.api.nvidia.com/v1",
+    },
     "x_ai": {
       "api_url": "https://api.x.ai/v1",
     },
