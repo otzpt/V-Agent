@@ -25,6 +25,7 @@ pub struct AllLanguageModelSettingsContent {
     pub openai: Option<OpenAiSettingsContent>,
     pub openai_compatible: Option<HashMap<Arc<str>, OpenAiCompatibleSettingsContent>>,
     pub vercel_ai_gateway: Option<VercelAiGatewaySettingsContent>,
+    pub nvidia: Option<NvidiaSettingsContent>,
     pub x_ai: Option<XAiSettingsContent>,
     #[serde(rename = "zed.dev")]
     pub zed_dot_dev: Option<ZedDotDevSettingsContent>,
@@ -505,6 +506,35 @@ pub struct GoogleAvailableModel {
     pub display_name: Option<String>,
     pub max_tokens: u64,
     pub mode: Option<ModelMode>,
+}
+
+#[with_fallible_options]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema, MergeFrom)]
+pub struct NvidiaSettingsContent {
+    pub api_url: Option<String>,
+    /// Fetch the model list from the API instead of relying on
+    /// `available_models`. Defaults to true.
+    pub auto_discover: Option<bool>,
+    /// Models to add on top of discovery, or capability overrides for
+    /// discovered ones. The API reports no capabilities, so this is the only
+    /// way to correct a wrong guess.
+    pub available_models: Option<Vec<NvidiaAvailableModel>>,
+    pub custom_headers: Option<HashMap<String, String>>,
+}
+
+#[with_fallible_options]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema, MergeFrom)]
+pub struct NvidiaAvailableModel {
+    /// The model's id in the NIM API, e.g. `nvidia/nemotron-3-super-120b-a12b`.
+    pub name: String,
+    /// The name displayed in the UI, such as in the agent panel model dropdown menu.
+    pub display_name: Option<String>,
+    pub max_tokens: u64,
+    pub max_output_tokens: Option<u64>,
+    pub max_completion_tokens: Option<u64>,
+    pub supports_images: Option<bool>,
+    pub supports_tools: Option<bool>,
+    pub parallel_tool_calls: Option<bool>,
 }
 
 #[with_fallible_options]

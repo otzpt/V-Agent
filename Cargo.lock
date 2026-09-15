@@ -9935,6 +9935,7 @@ dependencies = [
  "log",
  "menu",
  "mistral",
+ "nvidia",
  "ollama",
  "open_ai",
  "open_router",
@@ -11959,6 +11960,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "nvidia"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures 0.3.32",
+ "http_client",
+ "schemars 1.0.4",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
