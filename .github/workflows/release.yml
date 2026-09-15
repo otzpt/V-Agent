@@ -13,7 +13,11 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      # v[0-9]*, not v*. A tag only has to start with "v" to match "v*", so a
+      # non-version tag fires a full release build: "void-repo" did exactly
+      # that once, and the publish step would have attached build artifacts to
+      # it. Version tags all start with a digit after the v.
+      - "v[0-9]*"
   workflow_dispatch:
 
 permissions:
