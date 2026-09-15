@@ -339,6 +339,49 @@ jobs:
             sudo -u builder makepkg -f --noconfirm --nodeps'
           cp v-agent-*.pkg.tar.zst "$GITHUB_WORKSPACE/V-Agent-x86_64.pkg.tar.zst"
 
+      # Native Void package (.xbps), installed with `xbps-install -R <dir> v-agent`
+      # Built in an official Void container because the runner is Ubuntu and has
+      # no xbps. This uses xbps-create directly rather than xbps-src: xbps-src
+      # would need a void-packages checkout and a chroot bootstrap just to
+      # re-wrap a binary that is already built. packaging/void/template is the
+      # xbps-src version, kept separately for submission to void-packages.
+      #
+      # Dependencies are hand-listed for the same reason the Arch step lists
+      # them: xbps-create does no ELF scanning (that is an xbps-src hook). The
+      # list is the one xbps-src derives from this binary's NEEDED entries,
+      # plus what it dlopen()s: vulkan-loader, wayland, libglvnd, fontconfig.
+      # A Vulkan driver (mesa-vulkan-*, or nvidia) cannot be a dependency:
+      # Void has no vulkan-driver virtual package, so it is named in the
+      # release notes instead.
+      - name: Package Linux (Void .xbps)
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          rel="$(pwd)/target/${{ matrix.target }}/release"
+          appid=io.github.otzpt.VAgent
+          pkgver="$(script/get-crate-version zed)"
+          dest="$(pwd)/voidpkg/destdir"
+          install -Dm755 "$rel/v-agent" "$dest/usr/bin/v-agent"
+          install -Dm644 crates/zed/resources/app-icon.png \
+            "$dest/usr/share/icons/hicolor/512x512/apps/$appid.png"
+          install -Dm644 packaging/void/files/$appid.desktop \
+            "$dest/usr/share/applications/$appid.desktop"
+          docker run --rm -v "$(pwd)/voidpkg":/pkg -w /pkg \
+            ghcr.io/void-linux/void-glibc-full:latest \
+            xbps-create -A x86_64 -n "v-agent-${pkgver}_1" \
+              -s "Native, GPU-accelerated code editor with local-first AI" \
+              -H "https://github.com/otzpt/V-Agent" \
+              -l "GPL-3.0-or-later" \
+              -m "otzpt <mrjs10375@gmail.com>" \
+              -D "alsa-lib>=0 fontconfig>=0 git>=0 glib>=0 glibc>=2.35_1 libX11>=0 libgcc>=0 libglvnd>=0 libstdc++>=0 libxcb>=0 libxkbcommon>=0 libxkbcommon-x11>=0 vulkan-loader>=0 wayland>=0" \
+              destdir
+          # Keep xbps-create's own filename. xbps resolves a package file as
+          # <pkgver>.<arch>.xbps from the repository index, so renaming it to
+          # match the other assets makes `xbps-install` fail with
+          # "failed to checksum: No such file or directory" (verified locally).
+          cp voidpkg/v-agent-*.x86_64.xbps "$GITHUB_WORKSPACE/"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -351,6 +394,7 @@ jobs:
             V-Agent-x86_64.rpm
             V-Agent-x86_64.AppImage
             V-Agent-x86_64.pkg.tar.zst
+            v-agent-*.x86_64.xbps
           if-no-files-found: warn
 
   # GitHub has no native FreeBSD runner, so the build runs inside a FreeBSD VM
@@ -454,6 +498,12 @@ jobs:
             **Debian / Ubuntu / Mint:** `.deb`
             **Fedora / RHEL:** `.rpm`
             **Arch:** `.pkg.tar.zst` (`pacman -U`)
+            **Void (glibc):** `v-agent-*.x86_64.xbps`. Index it first, then
+            install: `xbps-rindex -a <dir>/v-agent-*.xbps && xbps-install -R <dir> v-agent`.
+            Do not rename the file. Also install a Vulkan driver, which the
+            package cannot depend on: `mesa-vulkan-radeon` /
+            `mesa-vulkan-intel` / `mesa-vulkan-nouveau`, or `nvidia`.
+            Void's musl variant is not supported.
             **Any Linux:** `.AppImage`, or the portable `.tar.gz`.
             **FreeBSD:** `V-Agent-freebsd-x86_64.tar.gz`
 

@@ -55,20 +55,28 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
-**Void Linux (glibc)** — same tarball, no `xbps` package yet:
+**Void Linux (glibc)**: native `.xbps` package. xbps installs from
+repositories, so index the download directory first; there is no `pacman -U`
+equivalent. Do not rename the file:
 
 ```bash
-curl -LO https://github.com/otzpt/V-Agent/releases/latest/download/V-Agent-linux-x86_64.tar.gz
-tar -xzf V-Agent-linux-x86_64.tar.gz
-./V-Agent-linux-x86_64/v-agent
+# The asset name carries the version, so "latest/download" cannot be used here.
+ver=1.1.1
+curl -LO "https://github.com/otzpt/V-Agent/releases/download/v$ver/v-agent-${ver}_1.x86_64.xbps"
+xbps-rindex -a v-agent-*.x86_64.xbps
+sudo xbps-install -R "$PWD" v-agent
 ```
 
-**Not native support** — there is no `xbps` template and no Void CI job.
-This is the same generic tarball as any untested distro, gated on the same
-two requirements: glibc ≥ 2.31 (check with `ldd --version`; the **musl**
-Void variant has no system glibc and cannot run this at all) and a
-Vulkan-capable GPU driver (`vulkaninfo --summary`). See
-[ROADMAP.md](./ROADMAP.md) for what real Void support would take.
+Install a Vulkan driver too. The package cannot depend on one, because Void has
+no `vulkan-driver` virtual package and `mesa` ships no ICD: pick
+`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vulkan-nouveau`, or `nvidia`.
+
+Requirements are glibc ≥ 2.35 (check with `ldd --version`) and a Vulkan-capable
+GPU driver (`vulkaninfo --summary`). The **musl** Void variant has no system
+glibc and cannot run this at all. See
+[the Void Linux guide](./docs/src/development/voidlinux.md) for building the
+package yourself from `packaging/void/template`, and
+[ROADMAP.md](./ROADMAP.md) for what is still outstanding.
 
 **Build the Arch package yourself** — from a checkout, if you would rather not
 trust a prebuilt binary:

@@ -240,10 +240,13 @@ if [[ -n $xbps ]]; then
     libva-devel
     libxcb-devel
     libxkbcommon-devel
+    libX11-devel
+    libglvnd-devel
     libzstd-devel
     openssl-devel
     wayland-devel
     vulkan-loader
+    vulkan-loader-devel
     sqlite-devel
     pipewire
     xdg-desktop-portal

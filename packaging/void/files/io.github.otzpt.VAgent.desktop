@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=V-Agent
+GenericName=Code Editor
+Comment=Native, GPU-accelerated code editor with local-first AI
+Exec=/usr/bin/v-agent %U
+Icon=io.github.otzpt.VAgent
+Type=Application
+Categories=Development;IDE;TextEditor;
+MimeType=text/plain;inode/directory;
+StartupNotify=true
+StartupWMClass=io.github.otzpt.VAgent
+Terminal=false
