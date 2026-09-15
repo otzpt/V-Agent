@@ -1557,8 +1557,10 @@
   "word_diff_enabled": true,
   // Control what info is collected by V-Agent.
   "telemetry": {
-    // V-Agent: telemetry is OFF by default. Upstream V-Agent reports to V-Agent
-    // Industries' servers; a fork must not send its users' data there.
+    // V-Agent: telemetry is OFF by default and has no UI to turn it on.
+    // The upstream code posts to Zed Industries' servers, which V-Agent has no
+    // account with and no right to send its users' data to. Left in the schema
+    // rather than deleted so an existing settings file does not fail to parse.
     // Send debug info like crash reports.
     "diagnostics": false,
     // Send anonymized usage data like what languages you're using V-Agent with.
