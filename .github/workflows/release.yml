@@ -494,16 +494,27 @@ jobs:
           body: |
             V-Agent release — Windows, Linux, and FreeBSD builds.
 
+            **Linux, one command:**
+
+            ```
+            curl -fsSL https://raw.githubusercontent.com/otzpt/V-Agent/main/install.sh | sh
+            ```
+
+            Detects your package manager and installs the right asset below.
+
             **Windows:** `.msi` installer, or the portable `.zip`.
             **Debian / Ubuntu / Mint:** `.deb`
             **Fedora / RHEL:** `.rpm`
             **Arch:** `.pkg.tar.zst` (`pacman -U`)
-            **Void (glibc):** `v-agent-*.x86_64.xbps`. Index it first, then
-            install: `xbps-rindex -a <dir>/v-agent-*.xbps && xbps-install -R <dir> v-agent`.
-            Do not rename the file. Also install a Vulkan driver, which the
-            package cannot depend on: `mesa-vulkan-radeon` /
-            `mesa-vulkan-intel` / `mesa-vulkan-nouveau`, or `nvidia`.
-            Void's musl variant is not supported.
+            **Void (glibc):** easiest is the one-command installer above.
+            A native `v-agent-*.x86_64.xbps` is also attached: xbps installs
+            from repositories only, so index the directory first with
+            `xbps-rindex -a v-agent-*.xbps`, then
+            `xbps-install -R <dir> v-agent`. Do not rename the file.
+            Either way, install a Vulkan driver too, which the package cannot
+            depend on: `mesa-vulkan-radeon` / `mesa-vulkan-intel` /
+            `mesa-vulkan-nouveau`, or `nvidia`. Void's musl variant is not
+            supported.
             **Any Linux:** `.AppImage`, or the portable `.tar.gz`.
             **FreeBSD:** `V-Agent-freebsd-x86_64.tar.gz`
 

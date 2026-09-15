@@ -18,6 +18,19 @@ to download by hand.
 
 ### Linux
 
+**One command, any distro** — detects your package manager and installs the
+right thing, falling back to the portable tarball on anything untested:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/otzpt/V-Agent/main/install.sh | sh
+```
+
+Read [`install.sh`](./install.sh) first if you would rather see what it does.
+On a distro with no native package (**Void** included) it installs under
+`~/.local` and needs no root at all.
+
+The rest of this section is the same thing done by hand.
+
 **Arch, Manjaro, EndeavourOS, CachyOS** — native package:
 
 ```bash
@@ -55,9 +68,10 @@ tar -xzf V-Agent-linux-x86_64.tar.gz
 ./V-Agent-linux-x86_64/v-agent
 ```
 
-**Void Linux (glibc)**: native `.xbps` package. xbps installs from
-repositories, so index the download directory first; there is no `pacman -U`
-equivalent. Do not rename the file:
+**Void Linux (glibc)**: the one-command installer above is the easy path, and
+needs no root. A native `.xbps` is also published. There is no xbps
+*repository* to install it from, and xbps installs from repositories only, so
+index the download directory first. Do not rename the file:
 
 ```bash
 # The asset name carries the version, so "latest/download" cannot be used here.
@@ -67,15 +81,19 @@ xbps-rindex -a v-agent-*.x86_64.xbps
 sudo xbps-install -R "$PWD" v-agent
 ```
 
-Install a Vulkan driver too. The package cannot depend on one, because Void has
-no `vulkan-driver` virtual package and `mesa` ships no ICD: pick
-`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vulkan-nouveau`, or `nvidia`.
+**Install a Vulkan driver too**, whichever route you took. The package cannot
+depend on one: Void has no `vulkan-driver` virtual package and `mesa` ships no
+Vulkan driver of its own. Pick `mesa-vulkan-radeon`, `mesa-vulkan-intel`,
+`mesa-vulkan-nouveau`, or `nvidia` for your GPU. Without it V-Agent installs
+cleanly and then fails to start, which is a confusing way to find out.
 
-Requirements are glibc ≥ 2.35 (check with `ldd --version`) and a Vulkan-capable
-GPU driver (`vulkaninfo --summary`). The **musl** Void variant has no system
-glibc and cannot run this at all. See
-[the Void Linux guide](./docs/src/development/voidlinux.md) for building the
-package yourself from `packaging/void/template`, and
+Requirements are glibc >= 2.35 (check with `ldd --version`) and a working
+Vulkan driver (`vulkaninfo --summary`). The **musl** variant of Void cannot run
+these binaries under any circumstance: they are glibc-linked and the GUI has
+never been built against musl.
+
+See [the Void Linux guide](./docs/src/development/voidlinux.md) for building
+the package yourself from `packaging/void/template`, and
 [ROADMAP.md](./ROADMAP.md) for what is still outstanding.
 
 **Build the Arch package yourself** — from a checkout, if you would rather not
