@@ -37,6 +37,9 @@ pub struct HostedProvider {
     pub api_key_url: &'static str,
     /// Used when `/models` does not report a context length for a model.
     pub default_max_tokens: u64,
+    /// Send earlier turns' thinking back as `reasoning_content` on the assistant
+    /// message, rather than folding it into the visible text.
+    pub interleaved_reasoning: bool,
     pub settings: fn(&App) -> &HostedSettings,
 }
 
@@ -51,6 +54,13 @@ pub static NVIDIA: HostedProvider = HostedProvider {
     api_key_env_var: "NVIDIA_API_KEY",
     api_key_url: "https://build.nvidia.com/settings/api-keys",
     default_max_tokens: 128_000,
+    // DOCUMENTED on NVIDIA's Kimi K3 page: "Applications using multi-turn
+    // conversations or tool calls must return the complete prior assistant
+    // message to the model, including reasoning_content and tool_calls."
+    // With this off, earlier thinking was pasted into the visible reply
+    // instead, which reasoning models trained on preserved thinking do not
+    // expect. Models that produce no thinking send nothing extra either way.
+    interleaved_reasoning: true,
     settings: nvidia_settings,
 };
 
@@ -64,6 +74,9 @@ pub static GROQ: HostedProvider = HostedProvider {
     api_key_env_var: "GROQ_API_KEY",
     api_key_url: "https://console.groq.com/keys",
     default_max_tokens: 128_000,
+    // Off until tested: Groq exposes reasoning under its own `reasoning` field
+    // and may reject an unknown `reasoning_content` on input.
+    interleaved_reasoning: false,
     settings: groq_settings,
 };
 
@@ -566,7 +579,7 @@ impl LanguageModel for HostedLanguageModel {
             self.max_output_tokens(),
             crate::provider::open_ai::ChatCompletionMaxTokensParameter::MaxTokens,
             None,
-            false,
+            self.config.interleaved_reasoning,
         ) {
             Ok(request) => request,
             Err(error) => return async move { Err(error.into()) }.boxed(),
