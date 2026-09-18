@@ -525,14 +525,23 @@ pub enum Model {
         alias = "gemini-2.5-pro-preview-06-05"
     )]
     Gemini25Pro,
-    #[serde(rename = "gemini-3.1-flash-lite")]
-    Gemini31FlashLite,
+    // gemini-3.1-flash-lite is deprecated and shuts down 2027-05-07; Google
+    // names gemini-3.5-flash-lite as its replacement, so existing settings that
+    // still say 3.1 are carried across rather than left pointing at a model
+    // that is about to stop answering.
+    // Source: ai.google.dev/gemini-api/docs/deprecations, updated 2026-09-17.
+    #[serde(rename = "gemini-3.5-flash-lite", alias = "gemini-3.1-flash-lite")]
+    Gemini35FlashLite,
     #[serde(rename = "gemini-3-flash-preview")]
     Gemini3Flash,
     #[serde(rename = "gemini-3.5-flash")]
     Gemini35Flash,
     #[serde(rename = "gemini-3.6-flash")]
     Gemini36Flash,
+    #[serde(rename = "gemini-3.7-flash")]
+    Gemini37Flash,
+    #[serde(rename = "gemini-3.8-flash")]
+    Gemini38Flash,
     #[serde(rename = "gemini-3.1-pro-preview", alias = "gemini-3-pro-preview")]
     Gemini31Pro,
     #[serde(rename = "custom")]
@@ -548,7 +557,7 @@ pub enum Model {
 
 impl Model {
     pub fn default_fast() -> Self {
-        Self::Gemini31FlashLite
+        Self::Gemini35FlashLite
     }
 
     pub fn id(&self) -> &str {
@@ -556,10 +565,12 @@ impl Model {
             Self::Gemini25FlashLite => "gemini-2.5-flash-lite",
             Self::Gemini25Flash => "gemini-2.5-flash",
             Self::Gemini25Pro => "gemini-2.5-pro",
-            Self::Gemini31FlashLite => "gemini-3.1-flash-lite",
+            Self::Gemini35FlashLite => "gemini-3.5-flash-lite",
             Self::Gemini3Flash => "gemini-3-flash-preview",
             Self::Gemini35Flash => "gemini-3.5-flash",
             Self::Gemini36Flash => "gemini-3.6-flash",
+            Self::Gemini37Flash => "gemini-3.7-flash",
+            Self::Gemini38Flash => "gemini-3.8-flash",
             Self::Gemini31Pro => "gemini-3.1-pro-preview",
             Self::Custom { name, .. } => name,
         }
@@ -569,10 +580,12 @@ impl Model {
             Self::Gemini25FlashLite => "gemini-2.5-flash-lite",
             Self::Gemini25Flash => "gemini-2.5-flash",
             Self::Gemini25Pro => "gemini-2.5-pro",
-            Self::Gemini31FlashLite => "gemini-3.1-flash-lite",
+            Self::Gemini35FlashLite => "gemini-3.5-flash-lite",
             Self::Gemini3Flash => "gemini-3-flash-preview",
             Self::Gemini35Flash => "gemini-3.5-flash",
             Self::Gemini36Flash => "gemini-3.6-flash",
+            Self::Gemini37Flash => "gemini-3.7-flash",
+            Self::Gemini38Flash => "gemini-3.8-flash",
             Self::Gemini31Pro => "gemini-3.1-pro-preview",
             Self::Custom { name, .. } => name,
         }
@@ -583,10 +596,12 @@ impl Model {
             Self::Gemini25FlashLite => "Gemini 2.5 Flash-Lite",
             Self::Gemini25Flash => "Gemini 2.5 Flash",
             Self::Gemini25Pro => "Gemini 2.5 Pro",
-            Self::Gemini31FlashLite => "Gemini 3.1 Flash-Lite",
+            Self::Gemini35FlashLite => "Gemini 3.5 Flash-Lite",
             Self::Gemini3Flash => "Gemini 3 Flash",
             Self::Gemini35Flash => "Gemini 3.5 Flash",
             Self::Gemini36Flash => "Gemini 3.6 Flash",
+            Self::Gemini37Flash => "Gemini 3.7 Flash",
+            Self::Gemini38Flash => "Gemini 3.8 Flash",
             Self::Gemini31Pro => "Gemini 3.1 Pro",
             Self::Custom {
                 name, display_name, ..
@@ -599,10 +614,12 @@ impl Model {
             Self::Gemini25FlashLite
             | Self::Gemini25Flash
             | Self::Gemini25Pro
-            | Self::Gemini31FlashLite
+            | Self::Gemini35FlashLite
             | Self::Gemini3Flash
             | Self::Gemini35Flash
             | Self::Gemini36Flash
+            | Self::Gemini37Flash
+            | Self::Gemini38Flash
             | Self::Gemini31Pro => 1_048_576,
             Self::Custom { max_tokens, .. } => *max_tokens,
         }
@@ -613,10 +630,12 @@ impl Model {
             Model::Gemini25FlashLite
             | Model::Gemini25Flash
             | Model::Gemini25Pro
-            | Model::Gemini31FlashLite
+            | Model::Gemini35FlashLite
             | Model::Gemini3Flash
             | Model::Gemini35Flash
             | Model::Gemini36Flash
+            | Model::Gemini37Flash
+            | Model::Gemini38Flash
             | Model::Gemini31Pro => Some(65_536),
             Model::Custom { .. } => None,
         }
@@ -636,10 +655,12 @@ impl Model {
             Self::Gemini25FlashLite
                 | Self::Gemini25Flash
                 | Self::Gemini25Pro
-                | Self::Gemini31FlashLite
+                | Self::Gemini35FlashLite
                 | Self::Gemini3Flash
                 | Self::Gemini35Flash
                 | Self::Gemini36Flash
+                | Self::Gemini37Flash
+                | Self::Gemini38Flash
                 | Self::Gemini31Pro
                 | Self::Custom {
                     mode: GoogleModelMode::Thinking { .. },
@@ -650,7 +671,7 @@ impl Model {
 
     pub fn supported_thinking_levels(&self) -> &'static [ThinkingLevel] {
         match self {
-            Self::Gemini31FlashLite
+            Self::Gemini35FlashLite
             | Self::Gemini3Flash
             | Self::Gemini35Flash
             | Self::Gemini36Flash => &[
@@ -659,7 +680,9 @@ impl Model {
                 ThinkingLevel::Medium,
                 ThinkingLevel::High,
             ],
-            Self::Gemini31Pro => &[
+            // No Minimal on 3.7 and 3.8 Flash, per the thinking_level table at
+            // ai.google.dev/gemini-api/docs/thinking.
+            Self::Gemini37Flash | Self::Gemini38Flash | Self::Gemini31Pro => &[
                 ThinkingLevel::Low,
                 ThinkingLevel::Medium,
                 ThinkingLevel::High,
@@ -670,10 +693,12 @@ impl Model {
 
     pub fn default_thinking_level(&self) -> Option<ThinkingLevel> {
         match self {
-            Self::Gemini31FlashLite => Some(ThinkingLevel::Minimal),
+            Self::Gemini35FlashLite => Some(ThinkingLevel::Minimal),
             Self::Gemini3Flash => Some(ThinkingLevel::High),
             Self::Gemini35Flash => Some(ThinkingLevel::Medium),
             Self::Gemini36Flash => Some(ThinkingLevel::Medium),
+            Self::Gemini37Flash => Some(ThinkingLevel::Medium),
+            Self::Gemini38Flash => Some(ThinkingLevel::Medium),
             Self::Gemini31Pro => Some(ThinkingLevel::High),
             _ => None,
         }
@@ -688,10 +713,12 @@ impl Model {
                     budget_tokens: None,
                 }
             }
-            Self::Gemini31FlashLite
+            Self::Gemini35FlashLite
             | Self::Gemini3Flash
             | Self::Gemini35Flash
             | Self::Gemini36Flash
+            | Self::Gemini37Flash
+            | Self::Gemini38Flash
             | Self::Gemini31Pro => GoogleModelMode::Thinking {
                 budget_tokens: None,
             },
@@ -722,6 +749,43 @@ mod tests {
         assert_eq!(serialized, json!("gemini-3.6-flash"));
         let deserialized: Model = serde_json::from_value(json!("gemini-3.6-flash")).unwrap();
         assert_eq!(deserialized, Model::Gemini36Flash);
+    }
+
+    #[test]
+    fn test_deprecated_gemini_3_1_flash_lite_setting_moves_to_3_5() {
+        // A settings file written before the deprecation must still load, and
+        // land on Google's named replacement rather than a model being retired.
+        let deserialized: Model = serde_json::from_value(json!("gemini-3.1-flash-lite")).unwrap();
+        assert_eq!(deserialized, Model::Gemini35FlashLite);
+        assert_eq!(
+            serde_json::to_value(&deserialized).unwrap(),
+            json!("gemini-3.5-flash-lite")
+        );
+        assert_eq!(Model::default_fast(), Model::Gemini35FlashLite);
+    }
+
+    #[test]
+    fn test_gemini_3_7_and_3_8_flash_have_no_minimal_thinking_level() {
+        for (model, id) in [
+            (Model::Gemini37Flash, "gemini-3.7-flash"),
+            (Model::Gemini38Flash, "gemini-3.8-flash"),
+        ] {
+            assert_eq!(model.id(), id);
+            assert_eq!(model.request_id(), id);
+            assert_eq!(model.max_token_count(), 1_048_576);
+            assert_eq!(model.max_output_tokens(), Some(65_536));
+            assert_eq!(
+                model.supported_thinking_levels(),
+                &[
+                    ThinkingLevel::Low,
+                    ThinkingLevel::Medium,
+                    ThinkingLevel::High
+                ]
+            );
+            assert_eq!(model.default_thinking_level(), Some(ThinkingLevel::Medium));
+            let deserialized: Model = serde_json::from_value(json!(id)).unwrap();
+            assert_eq!(deserialized, model);
+        }
     }
 
     #[test]
