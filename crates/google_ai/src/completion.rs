@@ -249,7 +249,13 @@ fn is_google_thinking_model(model_id: &str) -> bool {
 
 fn disabled_thinking_level(model_id: &str) -> Option<ThinkingLevel> {
     match model_id {
-        model_id if model_id.starts_with("gemini-3") && model_id.contains("-pro") => {
+        // Gemini 3.7 and 3.8 Flash reject `MINIMAL` with a validation error, so
+        // `LOW` is the lowest level available to them.
+        model_id
+            if model_id.starts_with("gemini-3.7-flash")
+                || model_id.starts_with("gemini-3.8-flash")
+                || (model_id.starts_with("gemini-3") && model_id.contains("-pro")) =>
+        {
             Some(ThinkingLevel::Low)
         }
         model_id if model_id.starts_with("gemini-3") => Some(ThinkingLevel::Minimal),
@@ -535,6 +541,33 @@ mod tests {
         let thinking_config = request.generation_config.unwrap().thinking_config.unwrap();
         assert_eq!(thinking_config.thinking_budget, Some(0));
         assert_eq!(thinking_config.include_thoughts, None);
+    }
+
+    #[test]
+    fn disabled_thinking_never_sends_minimal_to_models_that_reject_it() {
+        // Sending MINIMAL here is a validation error from the API, which turns
+        // "thinking off" into "request fails".
+        assert_eq!(
+            disabled_thinking_level("gemini-3.7-flash"),
+            Some(ThinkingLevel::Low)
+        );
+        assert_eq!(
+            disabled_thinking_level("gemini-3.8-flash"),
+            Some(ThinkingLevel::Low)
+        );
+        assert_eq!(
+            disabled_thinking_level("gemini-3.1-pro-preview"),
+            Some(ThinkingLevel::Low)
+        );
+        assert_eq!(
+            disabled_thinking_level("gemini-3.6-flash"),
+            Some(ThinkingLevel::Minimal)
+        );
+        assert_eq!(
+            disabled_thinking_level("gemini-3.5-flash-lite"),
+            Some(ThinkingLevel::Minimal)
+        );
+        assert_eq!(disabled_thinking_level("gemini-2.5-flash"), None);
     }
 
     #[test]

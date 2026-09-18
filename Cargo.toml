@@ -143,7 +143,6 @@ members = [
     "crates/net",
     "crates/node_runtime",
     "crates/notifications",
-    "crates/nvidia",
     "crates/oauth_callback_server",
     "crates/ollama",
     "crates/onboarding",
@@ -411,7 +410,6 @@ miniprofiler_ui = { path = "crates/miniprofiler_ui" }
 net = { path = "crates/net" }
 node_runtime = { path = "crates/node_runtime" }
 notifications = { path = "crates/notifications" }
-nvidia = { path = "crates/nvidia" }
 oauth_callback_server = { path = "crates/oauth_callback_server" }
 ollama = { path = "crates/ollama" }
 onboarding = { path = "crates/onboarding" }
