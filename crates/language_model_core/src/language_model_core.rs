@@ -26,8 +26,8 @@ pub use crate::request::*;
 pub use crate::role::*;
 pub use crate::tool_schema::LanguageModelToolSchemaFormat;
 pub use crate::util::{
-    fix_streamed_json, is_context_window_exceeded_message, parse_prompt_too_long,
-    parse_tool_arguments,
+    fix_streamed_json, is_context_window_exceeded_message, is_per_minute_token_quota_message,
+    parse_prompt_too_long, parse_tool_arguments, provider_error_message,
 };
 pub use gpui_shared_string::SharedString;
 
@@ -262,6 +262,14 @@ impl LanguageModelCompletionError {
         message: String,
         retry_after: Option<Duration>,
     ) -> Self {
+        // PromptTooLarge renders as a fixed sentence and drops the provider's
+        // own explanation, so without this the reason never reaches the log.
+        if status_code == StatusCode::PAYLOAD_TOO_LARGE
+            || (status_code == StatusCode::BAD_REQUEST
+                && is_context_window_exceeded_message(&message))
+        {
+            log::warn!("{provider}: HTTP {status_code}: {message}");
+        }
         match status_code {
             StatusCode::BAD_REQUEST => {
                 if is_invalid_encrypted_content_message(&message) {
@@ -275,6 +283,19 @@ impl LanguageModelCompletionError {
             StatusCode::UNAUTHORIZED => Self::AuthenticationError { provider, message },
             StatusCode::FORBIDDEN => Self::PermissionError { provider, message },
             StatusCode::NOT_FOUND => Self::ApiEndpointNotFound { provider },
+            // A single request bigger than the per-minute token quota is not a
+            // context problem. Reporting it as PromptTooLarge showed "This
+            // conversation is too long for the model's context window" for a
+            // one-word message, and flagged the thread as over its token limit.
+            // HttpResponseError at 413 is already never retried, which is right:
+            // the same request can never fit that quota.
+            StatusCode::PAYLOAD_TOO_LARGE if is_per_minute_token_quota_message(&message) => {
+                Self::HttpResponseError {
+                    provider,
+                    status_code,
+                    message: provider_error_message(&message),
+                }
+            }
             StatusCode::PAYLOAD_TOO_LARGE => Self::PromptTooLarge {
                 tokens: parse_prompt_too_long(&message),
             },

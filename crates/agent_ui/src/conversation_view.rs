@@ -151,6 +151,7 @@ pub(crate) enum ThreadError {
     NoModelSelected,
     ApiError {
         provider: SharedString,
+        message: Option<SharedString>,
     },
     Other {
         message: SharedString,
@@ -199,10 +200,22 @@ impl From<anyhow::Error> for ThreadError {
                 },
                 UpstreamProviderError { .. } => Self::RequestFailed,
                 DataRetentionConsentRequired { .. } => Self::DataRetentionConsentRequired,
+                // A 413 carries the provider's reason (for example, a per-minute
+                // token quota and how far over it the request was), which is far
+                // more useful than a generic line.
+                HttpResponseError {
+                    provider,
+                    status_code: http_client::StatusCode::PAYLOAD_TOO_LARGE,
+                    message,
+                } => Self::ApiError {
+                    provider: provider.to_string().into(),
+                    message: Some(message.clone().into()),
+                },
                 BadRequestFormat { provider, .. }
                 | HttpResponseError { provider, .. }
                 | ApiEndpointNotFound { provider } => Self::ApiError {
                     provider: provider.to_string().into(),
+                    message: None,
                 },
                 _ => {
                     let message: SharedString = format!("{:#}", error).into();

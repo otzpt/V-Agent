@@ -48,6 +48,23 @@ pub fn parse_prompt_too_long(message: &str) -> Option<u64> {
         .ok()
 }
 
+/// Recognizes a request rejected for being larger than the account's per-minute
+/// token quota, which is a different problem from the model's context window.
+/// Groq's on-demand tier sends these as HTTP 413, naming either "tokens per
+/// minute (TPM)" or "input tokens per minute (ITPM)".
+pub fn is_per_minute_token_quota_message(message: &str) -> bool {
+    message.contains("tokens per minute")
+}
+
+/// Extracts the readable text from an OpenAI-style `{"error": {"message": ...}}`
+/// body, falling back to the body as it arrived.
+pub fn provider_error_message(body: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|value| value["error"]["message"].as_str().map(str::to_owned))
+        .unwrap_or_else(|| body.to_owned())
+}
+
 /// Recognizes OpenAI-style context window overflow errors, which arrive either
 /// with the `context_length_exceeded` error code or a "Your input exceeds the
 /// context window of this model" message.
@@ -58,6 +75,29 @@ pub fn is_context_window_exceeded_message(message: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Verbatim from Groq, 2026-09-18, organization id removed. A "hello" to the
+    // agent costs over 11K tokens once the system prompt and tool definitions
+    // are included, against an 8K-per-minute free-tier quota.
+    const GROQ_TPM_413: &str = r#"{"error":{"message":"Request too large for model `openai/gpt-oss-120b` in organization `org_x` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 11387, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}"#;
+    const GROQ_ITPM_413: &str = r#"{"error":{"message":"Request too large for model `qwen/qwen3.8-27b` in organization `org_x` service tier `on_demand` on input tokens per minute (ITPM): Limit 7000, Requested 12630, please reduce your message size and try again.","type":"tokens","code":"rate_limit_exceeded"}}"#;
+
+    #[test]
+    fn per_minute_quota_is_not_a_context_window_overflow() {
+        for body in [GROQ_TPM_413, GROQ_ITPM_413] {
+            assert!(is_per_minute_token_quota_message(body));
+            assert!(!is_context_window_exceeded_message(body));
+        }
+        assert!(!is_per_minute_token_quota_message(
+            "prompt is too long: 250000 tokens > 200000 maximum"
+        ));
+    }
+
+    #[test]
+    fn provider_error_message_unwraps_json_and_passes_plain_text_through() {
+        assert!(provider_error_message(GROQ_TPM_413).starts_with("Request too large for model"));
+        assert_eq!(provider_error_message("plain text"), "plain text");
+    }
 
     #[test]
     fn test_fix_streamed_json_strips_incomplete_escape() {
