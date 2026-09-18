@@ -10,7 +10,7 @@ use crate::provider::{
     mistral::MistralSettings, ollama::OllamaSettings, open_ai::OpenAiSettings,
     open_ai_compatible::OpenAiCompatibleSettings, open_router, open_router::OpenRouterSettings,
     opencode, opencode::OpenCodeSettings, resolve_custom_headers,
-    nvidia::NvidiaSettings, vercel_ai_gateway::VercelAiGatewaySettings, x_ai::XAiSettings,
+    hosted_openai::HostedSettings, vercel_ai_gateway::VercelAiGatewaySettings, x_ai::XAiSettings,
 };
 
 #[derive(Debug, RegisterSetting)]
@@ -29,7 +29,8 @@ pub struct AllLanguageModelSettings {
     pub openai: OpenAiSettings,
     pub openai_compatible: HashMap<Arc<str>, OpenAiCompatibleSettings>,
     pub vercel_ai_gateway: VercelAiGatewaySettings,
-    pub nvidia: NvidiaSettings,
+    pub groq: HostedSettings,
+    pub nvidia: HostedSettings,
     pub x_ai: XAiSettings,
     pub zed_dot_dev: ZedDotDevSettings,
 }
@@ -64,6 +65,7 @@ impl settings::Settings for AllLanguageModelSettings {
         let openai = language_models.openai.unwrap();
         let openai_compatible = language_models.openai_compatible.unwrap();
         let vercel_ai_gateway = language_models.vercel_ai_gateway.unwrap();
+        let groq = language_models.groq.unwrap();
         let nvidia = language_models.nvidia.unwrap();
         let x_ai = language_models.x_ai.unwrap();
         let zed_dot_dev = language_models.zed_dot_dev.unwrap();
@@ -202,7 +204,13 @@ impl settings::Settings for AllLanguageModelSettings {
                     &[],
                 ),
             },
-            nvidia: NvidiaSettings {
+            groq: HostedSettings {
+                api_url: groq.api_url.unwrap(),
+                auto_discover: groq.auto_discover.unwrap_or(true),
+                available_models: groq.available_models.unwrap_or_default(),
+                custom_headers: custom_headers_from("Groq", groq.custom_headers, &[]),
+            },
+            nvidia: HostedSettings {
                 api_url: nvidia.api_url.unwrap(),
                 auto_discover: nvidia.auto_discover.unwrap_or(true),
                 available_models: nvidia.available_models.unwrap_or_default(),
