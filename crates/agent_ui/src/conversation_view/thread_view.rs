@@ -1951,10 +1951,12 @@ impl ThreadView {
                 ThreadError::NoModelSelected => {
                     ("no_model_selected", None, "No model selected.".into())
                 }
-                ThreadError::ApiError { provider } => (
+                ThreadError::ApiError { provider, message } => (
                     "api_error",
                     None,
-                    format!("{provider}'s API returned an unexpected error.").into(),
+                    message.clone().unwrap_or_else(|| {
+                        format!("{provider}'s API returned an unexpected error.").into()
+                    }),
                 ),
                 ThreadError::Other {
                     acp_error_code,
@@ -7481,8 +7483,12 @@ impl ThreadView {
             Some(elapsed) => {
                 let secs = elapsed.as_secs_f64();
                 if secs >= 60.0 {
-                    format!("Thought for {}m {}s", (secs / 60.0) as u64, (secs % 60.0) as u64)
-                        .into()
+                    format!(
+                        "Thought for {}m {}s",
+                        (secs / 60.0) as u64,
+                        (secs % 60.0) as u64
+                    )
+                    .into()
                 } else if secs >= 1.0 {
                     format!("Thought for {secs:.0}s").into()
                 } else {
@@ -11162,13 +11168,15 @@ impl ThreadView {
                         cx,
                     )
                 }),
-            ThreadError::ApiError { provider } => self.render_error_callout(
+            ThreadError::ApiError { provider, message } => self.render_error_callout(
                 "API Error",
-                format!(
-                    "{provider}'s API returned an unexpected error. \
-                    If the problem persists, try switching models or restarting Zed."
-                )
-                .into(),
+                message.clone().unwrap_or_else(|| {
+                    format!(
+                        "{provider}'s API returned an unexpected error. \
+                        If the problem persists, try switching models or restarting V-Agent."
+                    )
+                    .into()
+                }),
                 true,
                 true,
                 cx,
@@ -11216,8 +11224,7 @@ impl ThreadView {
     }
 
     fn render_payment_required_error(&self, cx: &mut Context<Self>) -> Callout {
-        const ERROR_MESSAGE: &str =
-            "Your model provider reported a usage or billing limit. Check your plan \
+        const ERROR_MESSAGE: &str = "Your model provider reported a usage or billing limit. Check your plan \
              with that provider, or switch to a local model.";
 
         Callout::new()
