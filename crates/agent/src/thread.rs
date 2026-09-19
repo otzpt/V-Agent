@@ -2216,10 +2216,8 @@ impl Thread {
         project: &Entity<Project>,
         cx: &App,
     ) -> (AgentProfileId, bool) {
-        let is_write_or_ask = profile_id.as_str() == builtin_profiles::WRITE
-            || profile_id.as_str() == builtin_profiles::ASK;
         let minimal = AgentProfileId(builtin_profiles::MINIMAL.into());
-        if is_write_or_ask
+        if builtin_profiles::downgrades_in_restricted_workspace(&profile_id)
             && TrustedWorktrees::has_restricted_worktrees(&project.read(cx).worktree_store(), cx)
             && AgentProfileSettings::is_unmodified_default(&profile_id, cx)
             && AgentProfileSettings::is_unmodified_default(&minimal, cx)

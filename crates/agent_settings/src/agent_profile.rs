@@ -18,10 +18,23 @@ pub mod builtin_profiles {
 
     pub const WRITE: &str = "write";
     pub const ASK: &str = "ask";
+    /// A small toolset for models with tight context or per-minute token
+    /// limits: read, edit, write, list, find, grep, terminal and diagnostics.
+    /// MEASURED at about 6,200 tokens per request against about 11,300 for
+    /// Write, most of the difference being tool definitions.
+    pub const LEAN: &str = "lean";
     pub const MINIMAL: &str = "minimal";
 
     pub fn is_builtin(profile_id: &AgentProfileId) -> bool {
-        profile_id.as_str() == WRITE || profile_id.as_str() == ASK || profile_id.as_str() == MINIMAL
+        matches!(profile_id.as_str(), WRITE | ASK | LEAN | MINIMAL)
+    }
+
+    /// Built-in profiles that carry tools and so fall back to Minimal in a
+    /// restricted (untrusted) workspace. Every tool-carrying built-in must be
+    /// listed here, or it keeps its tools, including `terminal`, in folders
+    /// the user has not trusted.
+    pub fn downgrades_in_restricted_workspace(profile_id: &AgentProfileId) -> bool {
+        matches!(profile_id.as_str(), WRITE | ASK | LEAN)
     }
 }
 
@@ -229,6 +242,26 @@ impl From<settings::ContextServerPresetContent> for ContextServerPreset {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_tool_carrying_builtin_downgrades_in_restricted_workspaces() {
+        use builtin_profiles::*;
+        // Lean carries `terminal`, `edit_file` and `write_file`. If it were
+        // missing here it would keep them in folders the user has not trusted.
+        for id in [WRITE, ASK, LEAN] {
+            let id = AgentProfileId(id.into());
+            assert!(is_builtin(&id));
+            assert!(downgrades_in_restricted_workspace(&id), "{id:?}");
+        }
+        // Minimal is what they downgrade to, and has no tools to take away.
+        let minimal = AgentProfileId(MINIMAL.into());
+        assert!(is_builtin(&minimal));
+        assert!(!downgrades_in_restricted_workspace(&minimal));
+        // Custom profiles are the user's own choice and are left alone.
+        assert!(!downgrades_in_restricted_workspace(&AgentProfileId(
+            "mine".into()
+        )));
+    }
 
     fn profile(
         enable_all_context_servers: bool,
