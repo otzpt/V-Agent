@@ -9,7 +9,7 @@
 # before we know anything about the machine, including whether bash exists.
 #
 # Environment:
-#   VAGENT_VERSION=1.1.1   install a specific version instead of the latest
+#   VAGENT_VERSION=1.1.2   install a specific version instead of the latest
 #   VAGENT_METHOD=tarball  force the portable tarball
 #   VAGENT_METHOD=xbps     Void: install from the xbps repository, which has to
 #                          be published first. Not auto-detected.

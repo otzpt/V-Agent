@@ -54,7 +54,7 @@ equivalent. Do not rename the file:
 
 ```sh
 # The asset name carries the version, so "latest/download" cannot be used here.
-ver=1.1.1
+ver=1.1.2
 curl -LO "https://github.com/otzpt/V-Agent/releases/download/v$ver/v-agent-${ver}_1.x86_64.xbps"
 xbps-rindex -a v-agent-*.x86_64.xbps
 sudo xbps-install -R "$PWD" v-agent
