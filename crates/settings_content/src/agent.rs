@@ -633,7 +633,6 @@ impl JsonSchema for LanguageModelProviderSetting {
                         "google",
                         "lmstudio",
                         "mistral",
-                        "nvidia",
                         "ollama",
                         "openai",
                         "opencode",

@@ -10,7 +10,6 @@ pub mod cloud;
 pub mod copilot_chat;
 pub mod deepseek;
 pub mod google;
-pub mod hosted_openai;
 pub mod llama_cpp;
 pub mod lmstudio;
 pub mod mistral;

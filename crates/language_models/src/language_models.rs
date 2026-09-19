@@ -21,7 +21,6 @@ use crate::provider::bedrock::BedrockLanguageModelProvider;
 use crate::provider::cloud::CloudLanguageModelProvider;
 use crate::provider::copilot_chat::CopilotChatLanguageModelProvider;
 use crate::provider::google::GoogleLanguageModelProvider;
-use crate::provider::hosted_openai::{self, HostedLanguageModelProvider};
 use crate::provider::llama_cpp::LlamaCppLanguageModelProvider;
 use crate::provider::lmstudio::LmStudioLanguageModelProvider;
 pub use crate::provider::mistral::MistralLanguageModelProvider;
@@ -224,8 +223,9 @@ fn register_language_model_providers(
 ) {
     // V-Agent: Zed's hosted "Zed AI" cloud provider is intentionally not
     // registered; V-Agent has no account with it. Models come from the user's
-    // own keys, local servers (Ollama, LM Studio, llama.cpp), and first-party
-    // hosted providers such as NVIDIA. MCP / context servers are unaffected.
+    // own keys, local servers (Ollama, LM Studio, llama.cpp), and any
+    // OpenAI-compatible endpoint configured under `openai_compatible`, which
+    // is how NVIDIA is used. MCP / context servers are unaffected.
     let _ = (&user_store, &client);
     registry.register_provider(
         Arc::new(AnthropicLanguageModelProvider::new(
@@ -309,15 +309,6 @@ fn register_language_model_providers(
     );
     registry.register_provider(
         Arc::new(VercelAiGatewayLanguageModelProvider::new(
-            client.http_client(),
-            credentials_provider.clone(),
-            cx,
-        )),
-        cx,
-    );
-    registry.register_provider(
-        Arc::new(HostedLanguageModelProvider::new(
-            &hosted_openai::NVIDIA,
             client.http_client(),
             credentials_provider.clone(),
             cx,
