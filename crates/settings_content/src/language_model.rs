@@ -25,7 +25,6 @@ pub struct AllLanguageModelSettingsContent {
     pub openai: Option<OpenAiSettingsContent>,
     pub openai_compatible: Option<HashMap<Arc<str>, OpenAiCompatibleSettingsContent>>,
     pub vercel_ai_gateway: Option<VercelAiGatewaySettingsContent>,
-    pub groq: Option<HostedProviderSettingsContent>,
     pub nvidia: Option<HostedProviderSettingsContent>,
     pub x_ai: Option<XAiSettingsContent>,
     #[serde(rename = "zed.dev")]

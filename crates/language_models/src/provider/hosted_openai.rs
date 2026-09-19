@@ -1,10 +1,10 @@
 //! Hosted APIs that speak the OpenAI chat-completions protocol and list their
-//! own models at `/models`: NVIDIA and Groq.
+//! own models at `/models`. NVIDIA is the only one today.
 //!
-//! These differ from each other only in endpoint, key and a context-length
-//! fallback, so they share one implementation driven by [`HostedProvider`]
-//! rather than each carrying a copy of it. Adding another such vendor means
-//! adding a `static` config and a settings key, not another provider file.
+//! The provider is driven by a small [`HostedProvider`] config rather than
+//! written against NVIDIA directly, so another vendor of the same shape is a
+//! `static` config and a settings key, not a second copy of this file. Groq was
+//! the second one and was removed; see the git history for how it was wired.
 
 use anyhow::Result;
 use collections::BTreeMap;
@@ -64,28 +64,8 @@ pub static NVIDIA: HostedProvider = HostedProvider {
     settings: nvidia_settings,
 };
 
-// DOCUMENTED (console.groq.com/docs/api-reference): /models returns
-// `context_window` and `active` per model, so Groq models get a real context
-// length and inactive ones are dropped.
-pub static GROQ: HostedProvider = HostedProvider {
-    id: "groq",
-    name: "Groq",
-    default_api_url: "https://api.groq.com/openai/v1",
-    api_key_env_var: "GROQ_API_KEY",
-    api_key_url: "https://console.groq.com/keys",
-    default_max_tokens: 128_000,
-    // Off until tested: Groq exposes reasoning under its own `reasoning` field
-    // and may reject an unknown `reasoning_content` on input.
-    interleaved_reasoning: false,
-    settings: groq_settings,
-};
-
 fn nvidia_settings(cx: &App) -> &HostedSettings {
     &crate::AllLanguageModelSettings::get_global(cx).nvidia
-}
-
-fn groq_settings(cx: &App) -> &HostedSettings {
-    &crate::AllLanguageModelSettings::get_global(cx).groq
 }
 
 #[derive(Default, Clone, Debug, PartialEq)]
@@ -127,7 +107,7 @@ impl Model {
         self.display_name.as_deref().unwrap_or(&self.name)
     }
 
-    /// Neither API says which models take tools. Most instruction-tuned models
+    /// The API does not say which models take tools. Most instruction-tuned models
     /// they serve do, so this defaults on; it is still a guess.
     fn supports_tool(&self) -> bool {
         self.supports_tools.unwrap_or(true)
@@ -160,10 +140,11 @@ struct ModelEntry {
     active: Option<bool>,
 }
 
-// SIMPLIFICATION: substring match on the model id. Neither API says which
+// SIMPLIFICATION: substring match on the model id. The API does not say which
 // models are chat models, and an embedding or safety-classifier model in the
 // picker produces a request that can only fail. Every entry below matches a
-// real non-chat id seen in NVIDIA's list or documented by Groq. Replace with a
+// real non-chat id seen in NVIDIA's list, or a speech model class (whisper,
+// tts) that OpenAI-shaped vendors commonly list alongside chat models. Replace with a
 // capability field if either API ever adds one; the call site does not change.
 const NON_CHAT_MARKERS: &[&str] = &[
     "embed", "rerank", "guard", "safety", "reward", "clip", "parse", "detector", "whisper", "tts",
@@ -607,8 +588,9 @@ mod tests {
         {"id":"deepseek-ai/deepseek-v4-flash-0731","object":"model","created":735790403,"owned_by":"deepseek-ai"}
     ]}"#;
 
-    // Shape from Groq's API reference: context_window and active per model.
-    const GROQ_MODELS: &str = r#"{"object":"list","data":[
+    // OpenAI-list shape with the optional context_window and active fields
+    // some vendors add; the parser honours both when present.
+    const REPORTED_MODELS: &str = r#"{"object":"list","data":[
         {"id":"llama-3.3-70b-versatile","object":"model","created":1,"owned_by":"Meta","active":true,"context_window":131072},
         {"id":"whisper-large-v3","object":"model","created":1,"owned_by":"OpenAI","active":true,"context_window":448},
         {"id":"retired-model","object":"model","created":1,"owned_by":"x","active":false,"context_window":8192}
@@ -626,8 +608,8 @@ mod tests {
     }
 
     #[test]
-    fn groq_uses_reported_context_and_drops_inactive_and_speech_models() {
-        let models = parse_models(GROQ_MODELS, 128_000).unwrap();
+    fn reported_context_is_used_and_inactive_and_speech_models_are_dropped() {
+        let models = parse_models(REPORTED_MODELS, 128_000).unwrap();
         assert_eq!(models.len(), 1);
         assert_eq!(models[0].name, "llama-3.3-70b-versatile");
         assert_eq!(models[0].max_tokens, 131_072);
