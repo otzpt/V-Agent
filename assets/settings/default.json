@@ -1229,6 +1229,23 @@
           "search_web": true,
         },
       },
+      // Eight tools instead of Write's 23, for models with tight context or
+      // per-minute token limits. About 6,200 tokens per request instead of
+      // about 11,300. No MCP tools, which would add their own definitions.
+      "lean": {
+        "name": "Lean",
+        "enable_all_context_servers": false,
+        "tools": {
+          "diagnostics": true,
+          "edit_file": true,
+          "find_path": true,
+          "grep": true,
+          "list_directory": true,
+          "read_file": true,
+          "terminal": true,
+          "write_file": true,
+        },
+      },
       "minimal": {
         "name": "Minimal",
         "enable_all_context_servers": false,
