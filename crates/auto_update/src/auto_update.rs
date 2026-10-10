@@ -316,24 +316,96 @@ pub fn check(_: &Check, window: &mut Window, cx: &mut App) {
         return;
     }
 
-    if !ReleaseChannel::try_global(cx)
-        .map(|channel| channel.poll_for_updates())
-        .unwrap_or(false)
-    {
-        return;
-    }
+    // The upstream updater is disabled (see `AutoUpdater::poll`), so this does
+    // not use it. It asks GitHub for the latest V-Agent release, once, because
+    // the user clicked, and offers to open the release page. Nothing is
+    // downloaded or installed.
+    let current = release_channel::AppVersion::global(cx);
+    let http_client = cx.http_client();
+    window
+        .spawn(cx, async move |cx| {
+            let outcome = fetch_update_check(http_client, &current).await;
+            let (level, message, detail, answers): (_, _, _, &[&str]) = match &outcome {
+                Ok(UpdateCheck::Available { version }) => (
+                    gpui::PromptLevel::Info,
+                    format!("V-Agent {version} is available"),
+                    format!(
+                        "You are running {current}. V-Agent does not install updates by \
+                         itself: download the new version from its GitHub releases page, \
+                         or update through your package manager."
+                    ),
+                    &["View release", "Later"],
+                ),
+                Ok(UpdateCheck::UpToDate) => (
+                    gpui::PromptLevel::Info,
+                    "V-Agent is up to date".to_string(),
+                    format!("You are running {current}, the latest release."),
+                    &["OK"],
+                ),
+                Err(error) => (
+                    gpui::PromptLevel::Warning,
+                    "Could not check for updates".to_string(),
+                    format!("{error:#}"),
+                    &["OK"],
+                ),
+            };
+            let answer = cx.prompt(level, &message, Some(&detail), answers).await;
+            if matches!(outcome, Ok(UpdateCheck::Available { .. })) && answer == Ok(0) {
+                cx.update(|_, cx| cx.open_url(LATEST_RELEASE_PAGE)).ok();
+            }
+        })
+        .detach();
+}
 
-    if let Some(updater) = AutoUpdater::get(cx) {
-        updater.update(cx, |updater, cx| updater.poll(UpdateCheckType::Manual, cx));
+const LATEST_RELEASE_API: &str = "https://api.github.com/repos/otzpt/V-Agent/releases/latest";
+const LATEST_RELEASE_PAGE: &str = "https://github.com/otzpt/V-Agent/releases/latest";
+
+/// The one field of GitHub's "latest release" response the check reads.
+#[derive(Debug, Deserialize)]
+struct LatestRelease {
+    tag_name: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum UpdateCheck {
+    UpToDate,
+    Available { version: Version },
+}
+
+/// Compares GitHub's latest release against the running version. Release tags
+/// look like "v1.1.2", so a leading "v" is dropped before parsing. Build
+/// metadata is ignored on both sides, as the upstream updater also does.
+fn parse_latest_release(body: &[u8], current: &Version) -> Result<UpdateCheck> {
+    let release: LatestRelease =
+        serde_json::from_slice(body).context("unexpected response from GitHub")?;
+    let mut latest = Version::parse(release.tag_name.trim_start_matches('v'))
+        .with_context(|| format!("unrecognised release tag {:?}", release.tag_name))?;
+    let mut running = current.clone();
+    latest.build = semver::BuildMetadata::EMPTY;
+    running.build = semver::BuildMetadata::EMPTY;
+    Ok(if latest > running {
+        UpdateCheck::Available { version: latest }
     } else {
-        drop(window.prompt(
-            gpui::PromptLevel::Info,
-            "Could not check for updates",
-            Some("Auto-updates disabled for non-bundled app."),
-            &["OK"],
-            cx,
-        ));
-    }
+        UpdateCheck::UpToDate
+    })
+}
+
+async fn fetch_update_check(
+    http_client: Arc<dyn HttpClient>,
+    current: &Version,
+) -> Result<UpdateCheck> {
+    let mut response = http_client
+        .get(LATEST_RELEASE_API, Default::default(), true)
+        .await
+        .context("could not reach api.github.com")?;
+    let mut body = Vec::new();
+    response.body_mut().read_to_end(&mut body).await?;
+    anyhow::ensure!(
+        response.status().is_success(),
+        "GitHub answered with status {}",
+        response.status()
+    );
+    parse_latest_release(&body, current)
 }
 
 pub fn release_notes_url(cx: &mut App) -> Option<String> {
@@ -1599,6 +1671,186 @@ mod tests {
 
         let downloaded_len = std::fs::metadata(&target_path).unwrap().len();
         assert_eq!(downloaded_len, content_length as u64);
+    }
+
+    // Trimmed from a real `GET /repos/otzpt/V-Agent/releases/latest` response.
+    const RELEASE_JSON: &[u8] = br#"{"draft":false,"html_url":"https://github.com/otzpt/V-Agent/releases/tag/v1.1.2","name":"v1.1.2","prerelease":false,"tag_name":"v1.1.2"}"#;
+
+    #[test]
+    fn test_update_check_offers_a_newer_release() {
+        let current = Version::new(1, 1, 1);
+        assert_eq!(
+            parse_latest_release(RELEASE_JSON, &current).unwrap(),
+            UpdateCheck::Available {
+                version: Version::new(1, 1, 2)
+            }
+        );
+    }
+
+    #[test]
+    fn test_update_check_is_quiet_when_current_or_ahead() {
+        for current in [Version::new(1, 1, 2), Version::new(1, 2, 0)] {
+            assert_eq!(
+                parse_latest_release(RELEASE_JSON, &current).unwrap(),
+                UpdateCheck::UpToDate
+            );
+        }
+    }
+
+    #[test]
+    fn test_update_check_ignores_build_metadata_and_a_missing_v() {
+        let running_with_build = Version::parse("1.1.2+abc123").unwrap();
+        assert_eq!(
+            parse_latest_release(RELEASE_JSON, &running_with_build).unwrap(),
+            UpdateCheck::UpToDate
+        );
+        assert_eq!(
+            parse_latest_release(br#"{"tag_name":"1.3.0"}"#, &Version::new(1, 1, 2)).unwrap(),
+            UpdateCheck::Available {
+                version: Version::new(1, 3, 0)
+            }
+        );
+    }
+
+    #[test]
+    fn test_update_check_sends_one_plain_get_to_the_release_api() {
+        let seen = Arc::new(parking_lot::Mutex::new(Vec::new()));
+        let client = FakeHttpClient::create({
+            let seen = seen.clone();
+            move |req| {
+                let seen = seen.clone();
+                async move {
+                    seen.lock().push((
+                        req.method().to_string(),
+                        req.uri().to_string(),
+                        req.headers().len(),
+                    ));
+                    Ok(Response::builder()
+                        .status(200)
+                        .body(std::str::from_utf8(RELEASE_JSON).unwrap().into())
+                        .unwrap())
+                }
+            }
+        });
+
+        let outcome =
+            futures::executor::block_on(fetch_update_check(client, &Version::new(1, 1, 1)))
+                .unwrap();
+
+        assert_eq!(
+            outcome,
+            UpdateCheck::Available {
+                version: Version::new(1, 1, 2)
+            }
+        );
+        // One request, no headers added by the check itself (the real client
+        // adds only its User-Agent).
+        assert_eq!(
+            *seen.lock(),
+            vec![("GET".to_string(), LATEST_RELEASE_API.to_string(), 0)]
+        );
+    }
+
+    #[test]
+    fn test_update_check_reports_a_non_success_status() {
+        let client = FakeHttpClient::create(|_req| async move {
+            Ok(Response::builder()
+                .status(403)
+                .body("rate limited".into())
+                .unwrap())
+        });
+
+        let error =
+            futures::executor::block_on(fetch_update_check(client, &Version::new(1, 1, 1)))
+                .unwrap_err();
+
+        assert!(error.to_string().contains("403"), "{error:#}");
+    }
+
+    /// Runs the "Check for Updates" action in a test window against a fake
+    /// GitHub that answers with `status` and `body`, then lets it finish.
+    fn run_check_for_updates(
+        cx: &mut TestAppContext,
+        running: Version,
+        status: u16,
+        body: &'static str,
+    ) {
+        cx.update(|cx| {
+            release_channel::init_test(running, ReleaseChannel::Stable, cx);
+            cx.set_http_client(FakeHttpClient::create(move |_req| async move {
+                Ok(Response::builder().status(status).body(body.into()).unwrap())
+            }));
+        });
+        cx.add_empty_window()
+            .update(|window, cx| check(&Check, window, cx));
+        cx.run_until_parked();
+    }
+
+    #[gpui::test]
+    async fn test_check_for_updates_offers_the_release_page(cx: &mut TestAppContext) {
+        run_check_for_updates(
+            cx,
+            Version::new(1, 1, 1),
+            200,
+            std::str::from_utf8(RELEASE_JSON).unwrap(),
+        );
+
+        let (message, detail) = cx.pending_prompt().expect("a dialog is open");
+        assert_eq!(message, "V-Agent 1.1.2 is available");
+        assert!(detail.contains("You are running 1.1.1"), "{detail}");
+        assert_eq!(cx.opened_url(), None);
+
+        cx.simulate_prompt_answer("View release");
+        cx.run_until_parked();
+        assert_eq!(cx.opened_url().as_deref(), Some(LATEST_RELEASE_PAGE));
+    }
+
+    #[gpui::test]
+    async fn test_check_for_updates_later_opens_nothing(cx: &mut TestAppContext) {
+        run_check_for_updates(
+            cx,
+            Version::new(1, 1, 1),
+            200,
+            std::str::from_utf8(RELEASE_JSON).unwrap(),
+        );
+
+        cx.simulate_prompt_answer("Later");
+        cx.run_until_parked();
+        assert_eq!(cx.opened_url(), None);
+    }
+
+    #[gpui::test]
+    async fn test_check_for_updates_says_when_up_to_date(cx: &mut TestAppContext) {
+        run_check_for_updates(
+            cx,
+            Version::new(1, 1, 2),
+            200,
+            std::str::from_utf8(RELEASE_JSON).unwrap(),
+        );
+
+        let (message, detail) = cx.pending_prompt().expect("a dialog is open");
+        assert_eq!(message, "V-Agent is up to date");
+        assert!(detail.contains("1.1.2"), "{detail}");
+        cx.simulate_prompt_answer("OK");
+        cx.run_until_parked();
+        assert_eq!(cx.opened_url(), None);
+    }
+
+    #[gpui::test]
+    async fn test_check_for_updates_reports_a_failed_check(cx: &mut TestAppContext) {
+        run_check_for_updates(cx, Version::new(1, 1, 1), 403, "rate limited");
+
+        let (message, detail) = cx.pending_prompt().expect("a dialog is open");
+        assert_eq!(message, "Could not check for updates");
+        assert!(detail.contains("403"), "{detail}");
+    }
+
+    #[test]
+    fn test_update_check_rejects_bad_responses() {
+        let current = Version::new(1, 1, 2);
+        assert!(parse_latest_release(br#"{"tag_name":"nightly"}"#, &current).is_err());
+        assert!(parse_latest_release(br#"{"message":"Not Found"}"#, &current).is_err());
+        assert!(parse_latest_release(b"<html>rate limited</html>", &current).is_err());
     }
 
     #[test]
