@@ -1,6 +1,7 @@
 # V-Agent
 
-A native, GPU-accelerated code editor with local-first AI.
+A native, GPU-accelerated code editor with local-first AI and no telemetry.
+Releases for Windows and Linux.
 
 V-Agent is a **fork of [Zed](https://github.com/zed-industries/zed)** — it keeps
 Zed's Rust engine (LSP, tree-sitter, multi-cursor, vim mode, splits, git,
@@ -166,6 +167,14 @@ publisher" (*More info → Run anyway*), and macOS would require right-click →
 Open. This is the absence of a paid certificate, not a defect. Every file's
 checksum is on the release page if you want to verify it.
 
+### Updating
+
+V-Agent does not update itself. **V-Agent > Check for Updates** asks the
+GitHub releases API once, when you choose it, and tells you whether a newer
+release exists; **View release** opens the page. To update, install the new
+release the same way you installed the first one. Details, and exactly what
+the request sends, are in [docs/src/update.md](./docs/src/update.md).
+
 ### Distro repositories
 
 `pacman -S v-agent` and `apt install v-agent` from the *official* repositories
@@ -179,20 +188,35 @@ self-hosted repository would take.
 
 ## What V-Agent adds on top of Zed
 
-- **Activity bar** — a VS Code-style left icon rail (Explorer, Search, Git, AI,
+- **Activity bar**: a VS Code-style left icon rail (Explorer, Search, Git, AI,
   Terminal, Extensions, Settings) with true open/close toggling
-- **Colorful file icons** — Material-style language icons in the project tree
-- **One-click Build & Run** — press <kbd>F9</kbd> and V-Agent detects the
+- **Colorful file icons**: Material-style language icons in the project tree
+- **One-click Build & Run**: press <kbd>F9</kbd> and V-Agent detects the
   language, finds your compiler (gcc, python, node, go, rustc, …), builds and
   runs it. If the toolchain is missing, it offers to install it
-- **Local-first AI** — the agent panel defaults to a local
+- **Local-first AI**: the agent panel defaults to a local
   [Ollama](https://ollama.com) model (no API key, nothing leaves your machine).
-  Bring your own key (Groq, OpenAI, Anthropic) for a cloud model if you prefer.
-  MCP context servers are fully supported (see
+  [llama.cpp](https://github.com/ggml-org/llama.cpp) is a built-in provider
+  too (`http://localhost:8080`). Bring your own key (Gemini, OpenAI, Anthropic,
+  or any OpenAI-compatible endpoint such as Groq) for a cloud model if you
+  prefer. MCP context servers are fully supported (see
   [Choosing a local model](#choosing-a-local-model))
-- **Agent slash commands** — `/model`, `/effort`, `/clear`, alongside Zed's
+- **A Lean agent profile**: eight tools instead of 23, about 6,200 tokens per
+  request instead of about 11,300, for small local models and tight
+  per-minute token limits
+- **No telemetry**: the telemetry toggles that posted to Zed Industries'
+  servers were removed in 1.1.2, and Zed's updater, which would resolve
+  releases on their server, is disabled in the code
+- **Update check on request**: **V-Agent > Check for Updates** asks GitHub
+  once, when you click it, whether a newer release exists, and offers to open
+  the release page. It never installs anything. See
+  [Updating](#updating)
+- **Suggestions for embedded work**: opening an assembly (`.asm`, `.s`,
+  `.S`), Pico (`.pio`, `.mpy`) or Arduino (`.pde`) file offers the matching
+  extension and shows the icon of the language it is based on
+- **Agent slash commands**: `/model`, `/effort`, `/clear`, alongside Zed's
   `/compact` and `@` context (files, symbols, web fetch, threads, diagnostics)
-- **V-Agent branding** — app icon, menus, and a dark default theme
+- **V-Agent branding**: app icon, menus, and a dark default theme
 
 ## Choosing a local model
 
