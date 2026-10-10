@@ -76,7 +76,7 @@ index the download directory first. Do not rename the file:
 
 ```bash
 # The asset name carries the version, so "latest/download" cannot be used here.
-ver=1.2.0
+ver=1.2.1
 curl -LO "https://github.com/otzpt/V-Agent/releases/download/v$ver/v-agent-${ver}_1.x86_64.xbps"
 xbps-rindex -a v-agent-*.x86_64.xbps
 sudo xbps-install -R "$PWD" v-agent
