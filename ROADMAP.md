@@ -416,6 +416,16 @@ it (`is_signing_in`, `is_signed_out_or_auth_error`, and the never-read
 `crates/zed/src/vagent_hackatime.rs`. The compiler is pointing straight at the
 next chunk of the dead-feature cleanup.
 
+Cleared on 2026-10-10: the unused imports and variables are gone, the two
+never-read fields are removed from `TitleBarSettings`, and so are the "Show Sign
+In" and "Show User Menu" toggles in the Settings UI, which did nothing. The keys
+`title_bar.show_sign_in` and `title_bar.show_user_menu` are still accepted in
+`settings.json` (the settings schema is unchanged), so no user's file breaks.
+`cargo check` on `title_bar`, `settings_ui` and `zed` with all targets gives 0
+warnings; the Windows-only branch of `launch_cli_install` was moved inside its
+`cfg(windows)` block and is not compiled on Linux, so the Windows CI build is
+its check.
+
 `docs/src/SUMMARY.md` merged cleanly here, but note it is also touched by the
 Void packaging branch; merging both will conflict there trivially.
 

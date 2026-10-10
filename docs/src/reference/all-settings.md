@@ -5066,8 +5066,8 @@ Run the {#action theme_selector::Toggle} action in the command palette to see a 
 - `show_project_items`: Whether to show the project host and name in the titlebar
 - `show_onboarding_banner`: Whether to show onboarding banners in the titlebar
 - `show_user_picture`: Whether to show user picture in the titlebar
-- `show_user_menu`: Whether to show the user menu button in the titlebar (the one that displays your avatar by default and contains options like Settings, Keymap, Themes, etc.)
-- `show_sign_in`: Whether to show the sign in button in the titlebar
+- `show_user_menu`: No effect in V-Agent, which has no account UI. The key is still accepted so existing settings files stay valid.
+- `show_sign_in`: No effect in V-Agent, for the same reason.
 - `show_menus`: Whether to show the menus in the titlebar
 - `button_layout`: The layout of window control buttons in the title bar (Linux only). Can be set to `"platform_default"` to follow the system setting, `"standard"` to use V-Agent's built-in layout, or a custom format like `"close:minimize,maximize"`
 

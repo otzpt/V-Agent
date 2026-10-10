@@ -148,14 +148,13 @@ fn send_heartbeat(entity: String, is_write: bool) {
 /// `~/.wakatime/`. Deliberately runs in a **visible** console that prints the
 /// URL and destination first — the user sees exactly what is fetched and where.
 fn launch_cli_install() {
-    let Some(home) = dirs_home() else {
-        return;
-    };
-    let dest = home.join(".wakatime");
-    let dest = dest.to_string_lossy().to_string();
-
     #[cfg(windows)]
     {
+        let Some(home) = dirs_home() else {
+            return;
+        };
+        let dest = home.join(".wakatime");
+        let dest = dest.to_string_lossy().to_string();
         let script = format!(
             "$ErrorActionPreference = 'Stop'\r\n\
              Write-Host 'V-Agent - installing wakatime-cli' -ForegroundColor Cyan\r\n\
