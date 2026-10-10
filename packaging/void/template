@@ -21,7 +21,7 @@
 # today). Hence archs is x86_64 and xbps-src will refuse the musl masterdir.
 
 pkgname=v-agent-bin
-version=1.2.0
+version=1.2.1
 revision=1
 archs="x86_64"
 # Libraries the ELF links directly (glib, libxcb, libxkbcommon, alsa-lib,
@@ -42,7 +42,7 @@ homepage="https://github.com/otzpt/V-Agent"
 # vsrcextract aborts with "unknown distfile suffix" on a .png.
 distfiles="${homepage}/releases/download/v${version}/V-Agent-linux-x86_64.tar.gz
  ${homepage}/raw/v${version}/crates/zed/resources/app-icon.png>v-agent.png"
-checksum="f3055e8ea06886e8b374548e8bb17ce9bf202a1a8fb3e24da696699cef3b9bfc
+checksum="69194becea9c4d651fe02f1e3ad0bd86428057443eaa311fa82b16ffd641d6bf
  7440d457850047c98a85a691073ccdfb04cf3186d6eccc3f32baaa1111c878bd"
 skip_extraction="v-agent.png"
 # Upstream ships the binary unstripped so its own hang detector can symbolize
