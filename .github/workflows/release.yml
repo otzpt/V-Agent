@@ -449,6 +449,14 @@ jobs:
             # `fontconfig` required by crate ... was not found"), which is how
             # this job ended in the 1.1.2, 1.2.0 and 1.2.1 test runs.
             pkg install -y bash curl pkgconf jq fontconfig
+            # fontconfig's freetype2.pc requires a `bzip2` pkg-config module,
+            # and FreeBSD keeps bzip2 in the base system, which has the library
+            # but no bzip2.pc ("Package 'bzip2', required by 'freetype2', not
+            # found"); installing the bzip2 package does not add one either.
+            # A stub that points at the base library is enough: with it
+            # pkg-config resolves fontconfig, and a program compiled against it
+            # links and runs (probed in the same 14.2 VM).
+            printf 'Name: bzip2\nDescription: bzip2 from the FreeBSD base system\nVersion: 1.0.8\nLibs: -lbz2\n' > /usr/local/libdata/pkgconfig/bzip2.pc
           run: |
             set -eux
             # script/freebsd runs `pkg install` with no -y, so it blocks on
