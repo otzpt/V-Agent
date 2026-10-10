@@ -1061,7 +1061,13 @@ ui_input = { codegen-units = 1 }
 zed_actions = { codegen-units = 1 }
 
 [profile.release]
-debug = "limited"
+# No debug info in release builds. Upstream keeps "limited" so it can upload
+# symbols to its crash reporter and then strips the binary it ships
+# (script/bundle-linux). V-Agent has no crash reporter and packages the binary
+# as built, so "limited" only made the Linux binary several times larger: slower
+# linking, packaging (.deb/.rpm compression) and uploads, and bigger downloads.
+# Function names are kept; source line numbers in panics are not.
+debug = "none"
 lto = "thin"
 codegen-units = 1
 

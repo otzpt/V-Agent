@@ -55,10 +55,17 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      # Release runs are triggered by tags, and a tag run can only restore
+      # caches from its own ref or the default branch, so a cache saved by one
+      # tag is never found by the next (the 1.1.2 jobs both said "No cache
+      # found", then spent up to 12 minutes saving one). Save only from main:
+      # a manual run of this workflow on main warms the cache that later tag
+      # runs can restore.
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
