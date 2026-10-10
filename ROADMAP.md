@@ -354,7 +354,7 @@ Remaining: verify against a real Fedora install — the binary is built on
 Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
 which has not been tested on a real system yet.
 
-## Upstream sync: synced to v1.16.2 (2026-09-14)
+## Upstream sync: synced to v1.16.3 (2026-10-10; v1.16.2 was 2026-09-14)
 
 Synced to `v1.16.2` (`a5faebb646a0`, see `CREDITS.md`), up from `v1.16.1`
 (`eb8e1c8b5502`), one stable tag at a time per this file's convention, using
@@ -431,6 +431,29 @@ Void packaging branch; merging both will conflict there trivially.
 
 Remaining: build-verify, then target `v1.16.3` and whatever `v1.17.x` stable
 tag exists when picked up. Re-check `system_prompt.hbs` every time.
+
+### v1.16.3 (2026-10-10)
+
+Synced one stable tag further, from `v1.16.2` (`a5faebb646a0`) to `v1.16.3`
+(`03e2e21e3094`): two upstream commits, three files. The one code change is a
+crash fix in the Git panel, selecting the first entry when a section is
+collapsed (`crates/git_ui/src/git_panel.rs`, with a new test). The fork had never
+modified that file, so it is byte-identical to `v1.16.3` after the sync. The
+other two files are the version in `Cargo.lock` and `crates/zed/Cargo.toml`;
+the fork's version number was kept. `crates/agent/src/templates/` is untouched
+upstream in this range.
+
+Assessed but not taken, `v1.17.2` (118 upstream commits, 305 files). A dry-run
+`git merge-tree --merge-base=a5faebb646a0` gives 13 conflicted files: the two
+version files; `Cargo.toml`; `crates/google_ai/src/{completion,google_ai}.rs`,
+`crates/open_router/src/open_router.rs` and `crates/auto_update_helper/src/updater.rs`,
+which the fork changed; `docs/src/migrate/webstorm.md`, a rebrand; and five
+`.github/workflows/*.yml` files that the fork deleted and upstream edited
+(keep the deletion). Upstream did not touch `crates/agent/src/templates/`
+between `v1.16.2` and `v1.17.2`, and a subject search of that range finds only
+the Wasmtime sandbox fix the fork already has. That search is not a security
+review. Taking `v1.17.2` needs those conflicts resolved by hand and a full
+`cargo check --workspace --all-targets` plus tests; not started.
 
 ## Other tracked items (not blocking use)
 
