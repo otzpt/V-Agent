@@ -444,7 +444,11 @@ jobs:
             # pkgconf provides pkg-config, which the x11 crate's build script
             # shells out to; jq is used by script/get-crate-version. Neither is
             # in script/freebsd's list nor in the FreeBSD base system.
-            pkg install -y bash curl pkgconf jq
+            # fontconfig is missing from that list too: without it the build
+            # script of yeslogic-fontconfig-sys fails ("The system library
+            # `fontconfig` required by crate ... was not found"), which is how
+            # this job ended in the 1.1.2, 1.2.0 and 1.2.1 test runs.
+            pkg install -y bash curl pkgconf jq fontconfig
           run: |
             set -eux
             # script/freebsd runs `pkg install` with no -y, so it blocks on
