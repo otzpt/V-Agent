@@ -62,6 +62,49 @@ The play is not to bundle every language (that bloats the binary). It is:
 
 This pairs naturally with the batch/PowerShell grammar work above.
 
+## Discord Rich Presence (opt-in)
+
+Show the file, language and workspace being edited in the user's Discord
+status. Possible: yes, and it needs no editor-core change to start.
+
+How Discord does it (docs.discord.com, "RPC"): the editor talks to the local
+Discord client over an IPC socket, `discord-ipc-N` in `$XDG_RUNTIME_DIR`,
+`$TMPDIR` or `/tmp` on Linux and macOS, `\\?\pipe\discord-ipc-N` on Windows. It
+sends a handshake with a Discord application client ID, then `SET_ACTIVITY`
+frames (an opcode, a length and a JSON body). No bot and no OAuth flow are
+needed for local presence. The client ID comes from a free Discord application
+whose art assets supply the icons.
+
+What already exists: the community extension "Discord Presence"
+([xhyrom/zed-discord-presence](https://github.com/xhyrom/zed-discord-presence),
+GPL-3.0, 0.2.4, about 96,000 downloads on zed.dev). It is an LSP-based
+workaround: the extension starts a language server binary that writes to the
+Discord socket. It can show file name and line, workspace, language, git
+branch and file size, goes idle after a timeout, and has per-workspace
+blacklist/whitelist rules and per-language overrides.
+
+- **Step 1, nothing to build.** V-Agent's extension store asks
+  `api.zed.dev/extensions` (`build_zed_api_url` in
+  `crates/extension_host/src/extension_host.rs`), so that extension should be
+  installable from the Extensions page. Not tested in V-Agent yet. To do:
+  install it, confirm presence appears, document it in `docs/src/`, and add it
+  to the curated extension list from "Niche languages" above. Its presence is
+  branded as the extension's own Discord application, not as V-Agent.
+- **Step 2, optional first-party.** A small crate that speaks the IPC protocol
+  with a V-Agent Discord application ID, so presence says "V-Agent". Needs the
+  owner to register that application and upload art, a `discord_presence`
+  setting that is off by default, per-field switches (file name, workspace,
+  branch), and a Windows named-pipe path next to the Unix socket one. Whether
+  sandboxed Discord installs (Flatpak, Snap) expose a socket at the standard
+  paths is not checked. If code is taken from the extension rather than
+  rewritten, check its exact license first (GPL-3.0 against V-Agent's
+  GPL-3.0-or-later).
+
+Constraint: V-Agent's pitch is zero telemetry. Presence tells Discord, and the
+user's friends, what they are working on. It has to be opt-in, say what it
+shares, and let the user hide the file name and workspace. The IPC route means
+V-Agent itself makes no network request; the Discord client does.
+
 ## The harness, not the model (core thesis)
 
 Small local models are not the bottleneck — the tooling around them is. The
