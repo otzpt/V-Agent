@@ -2,42 +2,21 @@
 
 Post-1.0 work, in rough priority order.
 
-## Python default language server: revert basedpyright, too noisy on real projects (high priority)
+## Python default language server: plain Pyright (done in 1.1.2)
 
 Upstream Zed switched the default Python language server from `pyright` to
-`basedpyright` starting in v0.204.0 ([Zed blog: Making Python in Zed
-Fun](https://zed.dev/blog/making-python-in-zed-fun)). V-Agent's
-`assets/settings/default.json` inherited this via the v1.16.1 upstream sync
-(see "Upstream sync" below) without anyone specifically evaluating it —
-`"Python": { "language_servers": ["basedpyright", "ruff", "!ty", ...] }`.
+`basedpyright` in v0.204.0 ([Zed blog: Making Python in Zed
+Fun](https://zed.dev/blog/making-python-in-zed-fun)), and V-Agent inherited
+that through an upstream sync. A fresh install reported one existing Python
+file going from 0 to 23 warnings, purely from stricter import checks.
 
-**Observed**, reported from a fresh V-Agent install (school laptop, latest
-version): a single existing Python file went from 0 warnings to 23 after the
-upgrade, purely from import-statement formatting/ordering — code that
-previously had no complaints. `basedpyright` enables stricter checks than
-plain `pyright` by default (import ordering among them), which is a real
-regression in day-to-day noise for an existing codebase that wasn't written
-against those rules.
+Fixed in `8c127a14e1` (2026-09-14): `assets/settings/default.json` lists
+`["pyright", "ruff", "!ty", "!pyrefly", "!basedpyright", "!pylsp", "..."]`.
+Anyone who wants `basedpyright`'s extra strictness can opt in per project with
+`"languages": {"Python": {"language_servers": ["basedpyright"]}}`.
 
-Fix: change the default back to `pyright` in `assets/settings/default.json`
-(swap which server carries the `!`), keeping `ruff` for formatting/lint as
-today. Anyone who wants `basedpyright`'s extra strictness can still opt in
-per-project via `"languages": {"Python": {"language_servers":
-["basedpyright"]}}` in their own settings, same mechanism already documented
-in the commented `ty` example further down that file.
-
-Until this lands, the per-user workaround (same settings snippet, just
-pointed the other way) is:
-
-```json
-{
-  "languages": {
-    "Python": {
-      "language_servers": ["pyright", "ruff", "!basedpyright"]
-    }
-  }
-}
-```
+Watch for this on every upstream sync: a merge that restores upstream's
+`basedpyright` default would bring the noise back.
 
 ## Shells: batch, bash, PowerShell (post-release)
 
