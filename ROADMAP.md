@@ -251,6 +251,31 @@ Remaining:
 - `script/bundle-freebsd` still only builds `remote_server`; most of it is
   commented out. Either finish it or delete it in favour of the CI job.
 
+Status on 2026-10-11: the FreeBSD job has failed in every release and test run
+so far, and the release workflow tolerates that (the other platforms still
+publish). Two layers are now understood and fixed in `release.yml`'s prepare
+step, each confirmed by a probe workflow in the same FreeBSD 14.2 VM rather
+than guessed: `script/freebsd` has no `fontconfig`, and fontconfig's `freetype2`
+needs a `bzip2` pkg-config module that FreeBSD does not ship (the base system
+has the library, and the `bzip2` package adds no `.pc`), so a four-line stub
+`bzip2.pc` is written. With both, `pkg-config fontconfig` resolves and a program
+compiled against it links and runs.
+
+The build then gets about 30 minutes in and stops on real compile errors in
+`crates/gpui_linux` (5 errors in the `v1.2.1` release run): `gpui` exports
+`PriorityQueueReceiver` and `PriorityQueueSender` only for
+`any(windows, linux, wasm)` (`crates/gpui/src/gpui.rs`, the line above
+`pub use queue::...`) and gates `layer_shell` to `all(target_os = "linux",
+feature = "wayland")` (`crates/gpui/src/platform.rs`), while `gpui_linux`, which
+Cargo also builds for FreeBSD, imports them unconditionally
+(`src/linux/dispatcher.rs` line 11, and the `layer_shell` and `WindowKind::LayerShell`
+uses). The same gating is in upstream `v1.16.3` and `v1.17.2`, so this is
+upstream Zed not compiling for FreeBSD, not something the fork broke. The likely
+fix is adding `target_os = "freebsd"` to those `cfg`s in `gpui`; how many more
+errors sit behind these five is unknown, since rustc stops at the first failing
+crate, and each CI attempt costs about 45 minutes. Not started. Worth doing only
+if FreeBSD users matter: the Linux and Windows releases do not depend on it.
+
 ### Void Linux: packaged, Vulkan confirmed
 
 Steps 1, 2, 4 and 5 of the previous plan are done; step 3 (upstream inclusion
