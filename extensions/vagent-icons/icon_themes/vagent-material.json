@@ -100,7 +100,13 @@
         "csv": "table",
         "tsv": "table",
         "xls": "table",
-        "xlsx": "table"
+        "xlsx": "table",
+        "mpy": "python",
+        "pde": "cpp",
+        "asm": "c",
+        "s": "c",
+        "S": "c",
+        "pio": "c"
       },
       "file_icons": {
         "rust": {

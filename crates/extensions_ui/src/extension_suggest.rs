@@ -13,6 +13,7 @@ use workspace::notifications::simple_message_notification::MessageNotification;
 use workspace::{Workspace, notifications::NotificationId};
 
 const SUGGESTIONS_BY_EXTENSION_ID: &[(&str, &[&str])] = &[
+    ("assembly", &["asm", "s", "S"]),
     ("astro", &["astro"]),
     ("beancount", &["beancount"]),
     ("clojure", &["bb", "clj", "cljc", "cljs", "edn"]),
@@ -20,6 +21,7 @@ const SUGGESTIONS_BY_EXTENSION_ID: &[(&str, &[&str])] = &[
     ("csharp", &["cs"]),
     ("cython", &["pyx", "pxd", "pxi"]),
     ("dart", &["dart"]),
+    ("devicetree", &["dts", "dtsi", "dtso", "overlay"]),
     ("dockerfile", &["Dockerfile"]),
     ("elisp", &["el"]),
     ("elixir", &["eex", "ex", "exs", "heex", "leex", "neex"]),
@@ -45,8 +47,10 @@ const SUGGESTIONS_BY_EXTENSION_ID: &[(&str, &[&str])] = &[
     ("haskell", &["hs"]),
     ("html", &["htm", "html", "shtml"]),
     ("java", &["java"]),
+    ("kconfig", &["Kconfig"]),
     ("kotlin", &["kt"]),
     ("latex", &["tex"]),
+    ("linkerscript", &["ld"]),
     ("log", &["log"]),
     ("lua", &["lua"]),
     ("make", &["Makefile"]),
@@ -55,6 +59,8 @@ const SUGGESTIONS_BY_EXTENSION_ID: &[(&str, &[&str])] = &[
     ("nu", &["nu"]),
     ("ocaml", &["ml", "mli"]),
     ("php", &["php"]),
+    ("pioasm", &["pio"]),
+    ("platformio", &["platformio.ini"]),
     ("powershell", &["ps1", "psm1"]),
     ("prisma", &["prisma"]),
     ("proto", &["proto"]),
@@ -247,6 +253,20 @@ mod tests {
             Some(SuggestedExtension {
                 extension_id: "gleam".into(),
                 file_name_or_extension: "gleam".into()
+            })
+        );
+        assert_eq!(
+            suggested_extension(rel_path("src/boot.S")),
+            Some(SuggestedExtension {
+                extension_id: "assembly".into(),
+                file_name_or_extension: "S".into()
+            })
+        );
+        assert_eq!(
+            suggested_extension(rel_path("platformio.ini")),
+            Some(SuggestedExtension {
+                extension_id: "platformio".into(),
+                file_name_or_extension: "platformio.ini".into()
             })
         );
     }
