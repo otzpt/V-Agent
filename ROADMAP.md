@@ -88,8 +88,13 @@ blacklist/whitelist rules and per-language overrides.
   `crates/extension_host/src/extension_host.rs`), so that extension should be
   installable from the Extensions page. Not tested in V-Agent yet. To do:
   install it, confirm presence appears, document it in `docs/src/`, and add it
-  to the curated extension list from "Niche languages" above. Its presence is
-  branded as the extension's own Discord application, not as V-Agent.
+  to the curated extension list from "Niche languages" above. By default the
+  presence is the extension's own Discord application, so it reads "Zed". The
+  extension's README documents `application_id`, `base_icons_url` and the
+  text/image fields under `lsp.discord_presence.initialization_options`, so
+  pointing `application_id` at a Discord application named "V-Agent" rebrands
+  it with no code. The one thing that needs the owner is creating that
+  application in Discord's developer portal. Not tested in V-Agent.
 - **Step 2, optional first-party.** A small crate that speaks the IPC protocol
   with a V-Agent Discord application ID, so presence says "V-Agent". Needs the
   owner to register that application and upload art, a `discord_presence`
