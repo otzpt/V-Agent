@@ -156,6 +156,7 @@ jobs:
           # icon, so the icon travels with the binary.
           cp crates/zed/resources/app-icon.png "$out/"
           tar -czf "$out.tar.gz" "$out"
+          tar -tzf "$out.tar.gz" | grep -qx "$out/app-icon.png" || { echo "::error::the tarball has no app-icon.png"; exit 1; }
 
       # Icon + .desktop use the app id (io.github.otzpt.VAgent), which is also
       # the window WM_CLASS. That is what makes the desktop show V-Agent's icon
