@@ -76,8 +76,15 @@ fetch_stdout() {
 }
 
 # musl cannot run these glibc-linked binaries at all, and saying so now is
-# kinder than a confusing dynamic-loader error later.
-if [ -e /lib/ld-musl-x86_64.so.1 ]; then
+# kinder than a confusing dynamic-loader error later. The musl loader file alone
+# is not the test: a glibc machine with musl-tools installed (script/linux asks
+# for it, for the musl Rust target) has /lib/ld-musl-x86_64.so.1 too. A musl
+# system is one whose own ldd names musl, or that has the musl loader and no
+# glibc loader.
+if { ldd --version 2>&1 || true; } | grep -qi musl \
+   || { [ -e /lib/ld-musl-x86_64.so.1 ] \
+        && [ ! -e /lib64/ld-linux-x86-64.so.2 ] \
+        && [ ! -e /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 ]; }; then
     die "this is a musl system. V-Agent's binaries are glibc-linked and its GUI has never been built against musl."
 fi
 
@@ -215,6 +222,21 @@ StartupNotify=true
 StartupWMClass=io.github.otzpt.VAgent
 Terminal=false
 DESKTOP
+        # The entry above names an icon, so the icon has to exist. Up to and
+        # including 1.2.1 the release tarball carried only the binary, so
+        # without this GNOME showed a generic icon (issue #6, Void with GNOME).
+        # Newer tarballs include app-icon.png; for the older ones it comes from
+        # the repository.
+        icon="${VAGENT_PREFIX}/share/icons/hicolor/512x512/apps/io.github.otzpt.VAgent.png"
+        if [ -f "${tmp}/V-Agent-linux-x86_64/app-icon.png" ]; then
+            install -Dm644 "${tmp}/V-Agent-linux-x86_64/app-icon.png" "$icon"
+        elif ! fetch "https://raw.githubusercontent.com/${REPO}/main/crates/zed/resources/app-icon.png" "$icon"; then
+            rm -f "$icon"
+            warn "could not download the icon; the launcher will show a generic one"
+        fi
+        # Best effort: let the desktop notice the new entry and icon.
+        have gtk-update-icon-cache && gtk-update-icon-cache -q -f -t "${VAGENT_PREFIX}/share/icons/hicolor" 2>/dev/null || true
+        have update-desktop-database && update-desktop-database -q "${VAGENT_PREFIX}/share/applications" 2>/dev/null || true
     fi
     rm -rf "$tmp"
     case ":${PATH}:" in

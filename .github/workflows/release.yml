@@ -152,6 +152,9 @@ jobs:
           out="V-Agent-linux-x86_64"
           mkdir -p "$out"
           cp "$rel/v-agent" "$out/"
+          # install.sh's tarball install writes a desktop entry that names an
+          # icon, so the icon travels with the binary.
+          cp crates/zed/resources/app-icon.png "$out/"
           tar -czf "$out.tar.gz" "$out"
 
       # Icon + .desktop use the app id (io.github.otzpt.VAgent), which is also
