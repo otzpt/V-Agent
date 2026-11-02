@@ -101,6 +101,7 @@ pub fn init(languages: Arc<LanguageRegistry>, fs: Arc<dyn Fs>, node: NodeRuntime
         LanguageInfo {
             name: "cpp",
             adapters: vec![c_lsp_adapter],
+            context: Some(Arc::new(cpp::ArduinoContextProvider)),
             semantic_token_rules: Some(cpp::semantic_token_rules()),
             ..Default::default()
         },

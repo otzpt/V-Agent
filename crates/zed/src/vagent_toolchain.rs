@@ -31,7 +31,13 @@ fn toolchain_for_ext(ext: &str) -> Option<Toolchain> {
     let ext = ext.to_ascii_lowercase();
     let tc = |key, binaries, name, install| Some(Toolchain { key, binaries, name, install });
     match ext.as_str() {
-        "c" | "h" | "cpp" | "cc" | "cxx" | "c++" | "hpp" | "hh" | "hxx" | "ino" => tc(
+        "ino" => tc(
+            "arduino-cli",
+            &["arduino-cli"],
+            "arduino-cli (Arduino's build and upload tool)",
+            "winget install -e --id ArduinoSA.CLI",
+        ),
+        "c" | "h" | "cpp" | "cc" | "cxx" | "c++" | "hpp" | "hh" | "hxx" => tc(
             "gcc",
             &["gcc", "g++", "clang", "clang++", "cl"],
             "A C/C++ compiler (gcc)",
