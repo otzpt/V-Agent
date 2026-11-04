@@ -15,7 +15,7 @@ use util::{ResultExt, fs::remove_matching, maybe, merge_json_value_into};
 pub struct CLspAdapter;
 
 impl CLspAdapter {
-    const SERVER_NAME: LanguageServerName = LanguageServerName::new_static("clangd");
+    pub(crate) const SERVER_NAME: LanguageServerName = LanguageServerName::new_static("clangd");
 }
 
 impl LspInstaller for CLspAdapter {
@@ -27,29 +27,7 @@ impl LspInstaller for CLspAdapter {
         pre_release: bool,
         _: &mut AsyncApp,
     ) -> Result<GitHubLspBinaryVersion> {
-        ensure_arch_compatibility()?;
-
-        let release =
-            latest_github_release("clangd/clangd", true, pre_release, delegate.http_client())
-                .await?;
-        let os_suffix = match consts::OS {
-            "macos" => "mac",
-            "linux" => "linux",
-            "windows" => "windows",
-            other => bail!("Running on unsupported os: {other}"),
-        };
-        let asset_name = format!("clangd-{}-{}.zip", os_suffix, release.tag_name);
-        let asset = release
-            .assets
-            .iter()
-            .find(|asset| asset.name == asset_name)
-            .with_context(|| format!("no asset found matching {asset_name:?}"))?;
-        let version = GitHubLspBinaryVersion {
-            name: release.tag_name,
-            url: asset.browser_download_url.clone(),
-            digest: asset.digest.clone(),
-        };
-        Ok(version)
+        latest_clangd_version(delegate, pre_release).await
     }
 
     async fn check_if_user_installed(
@@ -157,6 +135,36 @@ impl LspInstaller for CLspAdapter {
     ) -> Option<LanguageServerBinary> {
         get_cached_server_binary(container_dir).await
     }
+}
+
+/// The newest clangd release on GitHub. Also used by the Arduino language
+/// server, which runs clangd underneath.
+pub(crate) async fn latest_clangd_version(
+    delegate: &Arc<dyn LspAdapterDelegate>,
+    pre_release: bool,
+) -> Result<GitHubLspBinaryVersion> {
+    ensure_arch_compatibility()?;
+
+    let release =
+        latest_github_release("clangd/clangd", true, pre_release, delegate.http_client()).await?;
+    let os_suffix = match consts::OS {
+        "macos" => "mac",
+        "linux" => "linux",
+        "windows" => "windows",
+        other => bail!("Running on unsupported os: {other}"),
+    };
+    let asset_name = format!("clangd-{}-{}.zip", os_suffix, release.tag_name);
+    let asset = release
+        .assets
+        .iter()
+        .find(|asset| asset.name == asset_name)
+        .with_context(|| format!("no asset found matching {asset_name:?}"))?;
+    let version = GitHubLspBinaryVersion {
+        name: release.tag_name,
+        url: asset.browser_download_url.clone(),
+        digest: asset.digest.clone(),
+    };
+    Ok(version)
 }
 
 fn ensure_arch_compatibility() -> Result<()> {
@@ -385,7 +393,9 @@ impl super::LspAdapter for CLspAdapter {
     }
 }
 
-async fn get_cached_server_binary(container_dir: PathBuf) -> Option<LanguageServerBinary> {
+pub(crate) async fn get_cached_server_binary(
+    container_dir: PathBuf,
+) -> Option<LanguageServerBinary> {
     maybe!(async {
         let mut last_clangd_dir = None;
         let mut entries = fs::read_dir(&container_dir).await?;

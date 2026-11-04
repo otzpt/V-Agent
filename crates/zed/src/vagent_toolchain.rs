@@ -35,7 +35,14 @@ fn toolchain_for_ext(ext: &str) -> Option<Toolchain> {
             "arduino-cli",
             &["arduino-cli"],
             "arduino-cli (Arduino's build and upload tool)",
-            "winget install -e --id ArduinoSA.CLI",
+            // The script is arduino-cli's documented Linux and macOS install
+            // method. It refuses a BINDIR that does not exist yet. ~/.local/bin
+            // is on PATH on most Linux distributions.
+            if cfg!(windows) {
+                "winget install -e --id ArduinoSA.CLI"
+            } else {
+                "mkdir -p \"$HOME/.local/bin\" && curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=\"$HOME/.local/bin\" sh"
+            },
         ),
         "c" | "h" | "cpp" | "cc" | "cxx" | "c++" | "hpp" | "hh" | "hxx" => tc(
             "gcc",
@@ -91,7 +98,7 @@ fn toolchain_for_ext(ext: &str) -> Option<Toolchain> {
 }
 
 /// True if any of `binaries` is found on PATH.
-fn any_on_path(binaries: &[&str]) -> bool {
+pub(crate) fn any_on_path(binaries: &[&str]) -> bool {
     let Some(paths) = std::env::var_os("PATH") else {
         return false;
     };
@@ -165,27 +172,38 @@ fn maybe_prompt(workspace: Entity<Workspace>, ext: &str, cx: &mut App) {
         return;
     }
 
+    workspace.update(cx, |workspace, cx| show_install_toast(workspace, &tc, cx));
+}
+
+/// Offers to install the toolchain for `ext`, for when running a file found
+/// none of its binaries. Unlike the open-file prompt this is not de-duplicated:
+/// the user just asked to run the file.
+pub(crate) fn offer_install(workspace: &mut Workspace, ext: &str, cx: &mut App) {
+    if let Some(tc) = toolchain_for_ext(ext) {
+        show_install_toast(workspace, &tc, cx);
+    }
+}
+
+fn show_install_toast(workspace: &mut Workspace, tc: &Toolchain, cx: &mut App) {
     let name = tc.name;
     let install = tc.install;
-    workspace.update(cx, |workspace, cx| {
-        let toast = StatusToast::new(
-            format!("{name} isn't installed — install it to build & run this file?"),
-            cx,
-            move |this, _cx| {
-                this.icon(
-                    Icon::new(IconName::Warning)
-                        .size(IconSize::Small)
-                        .color(Color::Warning),
-                )
-                // Persist until the user acts — an install prompt shouldn't
-                // vanish on its own before they can click it.
-                .auto_dismiss(false)
-                .action("Install", move |_window, _cx| launch_install(install))
-                .dismiss_button(true)
-            },
-        );
-        workspace.toggle_status_toast(toast, cx);
-    });
+    let toast = StatusToast::new(
+        format!("{name} isn't installed — install it to build & run this file?"),
+        cx,
+        move |this, _cx| {
+            this.icon(
+                Icon::new(IconName::Warning)
+                    .size(IconSize::Small)
+                    .color(Color::Warning),
+            )
+            // Persist until the user acts — an install prompt shouldn't
+            // vanish on its own before they can click it.
+            .auto_dismiss(false)
+            .action("Install", move |_window, _cx| launch_install(install))
+            .dismiss_button(true)
+        },
+    );
+    workspace.toggle_status_toast(toast, cx);
 }
 
 /// Watch a workspace for newly opened files and prompt to install any missing

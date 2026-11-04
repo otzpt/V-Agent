@@ -191,9 +191,11 @@ self-hosted repository would take.
 - **Activity bar**: a VS Code-style left icon rail (Explorer, Search, Git, AI,
   Terminal, Extensions, Settings) with true open/close toggling
 - **Colorful file icons**: Material-style language icons in the project tree
-- **One-click Build & Run**: press <kbd>F9</kbd> and V-Agent detects the
-  language, finds your compiler (gcc, python, node, go, rustc, …), builds and
-  runs it. If the toolchain is missing, it offers to install it
+- **One-click Build & Run**: click **▶** in the editor toolbar (or
+  **Run > ▶ Build & Run**) and V-Agent picks the compiler or interpreter from
+  the file's extension (gcc, g++, python, node, go, rustc/cargo, java, …),
+  builds and runs it in a terminal. Nothing to configure. If the toolchain is
+  missing, it offers to install it
 - **Local-first AI**: the agent panel defaults to a local
   [Ollama](https://ollama.com) model (no API key, nothing leaves your machine).
   [llama.cpp](https://github.com/ggml-org/llama.cpp) is a built-in provider
@@ -214,6 +216,9 @@ self-hosted repository would take.
 - **Suggestions for embedded work**: opening an assembly (`.asm`, `.s`,
   `.S`), Pico (`.pio`, `.mpy`) or Arduino (`.pde`) file offers the matching
   extension and shows the icon of the language it is based on
+- **Arduino**: `.ino` sketches get Arduino IDE 2's toolbar (Verify, Upload, a
+  board selector, Serial Monitor), a **Tools** menu, Arduino-aware
+  completions, and extra colours for the Arduino API (see [Arduino](#arduino))
 - **Agent slash commands**: `/model`, `/effort`, `/clear`, alongside Zed's
   `/compact` and `@` context (files, symbols, web fetch, threads, diagnostics)
 - **V-Agent branding**: app icon, menus, and a dark default theme
@@ -252,6 +257,85 @@ model's real context length and sends it explicitly, so you don't have to set
 practical split is a local model for completion and inline edits, with a
 bring-your-own-key provider (Groq's free tier is fast and runs 32B-class models)
 for agent mode. Local-first doesn't have to mean local-only.
+
+## Arduino
+
+Open a sketch (`Blink/Blink.ino`). The editor toolbar shows the same controls
+as Arduino IDE 2:
+
+| Control | Does |
+|---|---|
+| **✓ Verify** | Compiles the sketch (`arduino-cli compile`) |
+| **→ Upload** | Compiles and uploads it to the board (`arduino-cli compile --upload`) |
+| **Board selector** | Lists the boards plugged in; pick one, or **Select Other Board…** to search every board arduino-cli knows |
+| **Serial Monitor** | Opens `arduino-cli monitor` on the board's port |
+
+The same actions are in the **Tools** menu (Verify, Upload, Serial Monitor,
+Board…). **Run > ▶ Build & Run** on a sketch uploads it.
+
+V-Agent uses [arduino-cli](https://github.com/arduino/arduino-cli), the
+backend Arduino IDE 2 is built on. If it is missing, opening a `.ino` file
+offers to install it.
+
+**Choosing the board.** Opening the board selector rescans the USB ports:
+
+- A board arduino-cli recognises (official Arduino boards, for example) shows
+  by name with its port. Click it to use it.
+- A USB serial adapter it cannot identify (most CH340 clones) shows as
+  *Unknown board*. Clicking it asks which board it is.
+- The choice is saved in the sketch's `sketch.yaml` with
+  `arduino-cli board attach`, the file Arduino IDE 2 and arduino-cli also
+  read, so it is remembered next time.
+- With nothing chosen, Verify and Upload ask for the board instead of failing.
+
+**Boards whose core is not installed.** **Select Other Board…** also lists
+boards from cores that are not installed yet, marked *installs arduino:samd*
+(for example). Picking one installs the core in a terminal (about a minute for
+`arduino:avr`), then selects the board.
+
+**Serial monitor baud rate.** The monitor opens at the rate in the sketch's
+first `Serial.begin(...)`, so `Serial.begin(115200)` gets 115200 instead of
+arduino-cli's 9600 default. A rate given through a constant or macro is not
+read; the monitor then uses 9600.
+
+**Completions and errors.** `.ino` files use
+[arduino-language-server](https://github.com/arduino/arduino-language-server),
+the language server Arduino IDE 2 uses. V-Agent downloads it (and clangd, which
+it runs underneath) the first time a sketch is opened. It turns the sketch into
+the C++ arduino-cli builds, so `Serial.`, `pinMode` and the rest complete, and
+they are not flagged as errors the way plain clangd flags them. It starts for
+the chosen board, or the Uno when none is chosen, and that board's core must be
+installed. Open the sketch folder itself (the folder holding `Blink.ino`) as
+the project, as Arduino IDE 2 does; the server treats the project folder as
+the sketch.
+
+**Colours.** On top of the C++ colours, the Arduino API is highlighted the way
+Arduino IDE groups it: `Serial`, `Keyboard` and `Mouse` as types, `setup` and
+`loop` as keywords, core functions such as `pinMode`, `digitalWrite` and
+`delay` as built-in functions, and constants such as `HIGH`, `OUTPUT` and
+`LED_BUILTIN` as constants. How each group looks depends on the theme.
+
+**Plain C/C++ files.** Check **Tools > Arduino Upload for C/C++ Files** to get
+the Arduino controls on `.c` and `.cpp` files too. arduino-cli only builds a
+folder that holds an `.ino` named after it, so V-Agent copies the file's folder
+(its top-level `.c`, `.cpp` and `.h` files) into a generated sketch in V-Agent's
+data folder and builds that. Your folder is not changed. As with PlatformIO,
+the code needs `#include <Arduino.h>` and its own `setup()` and `loop()`. While
+the option is checked, the ▶ Run button is replaced by the Arduino controls for
+those files.
+
+**Tasks.** The same commands are also tasks (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd>,
+**task: spawn**): **Arduino: Upload**, **Arduino: Compile**,
+**Arduino: Serial Monitor** and **Arduino: Install Board Core**.
+
+**Errors you may hit:**
+
+| Message | Fix |
+|---|---|
+| `platform not installed` | Pick the board in **Select Other Board…**, which installs its core, or run **Arduino: Install Board Core** |
+| `main file missing from sketch` | The `.ino` must be named after its folder: `Blink/Blink.ino` |
+| `Permission denied` on the port | Your user is not in the group that owns it. Find the group with `stat -c %G /dev/ttyACM0` (`dialout` on Void), add yourself with `sudo usermod -aG <group> $USER`, then log out and back in |
+| `No board port found` | Plug the board in, then open the board selector so it rescans |
 
 ## Coding-time tracking (Hackatime / WakaTime) — optional
 
@@ -393,5 +477,5 @@ V-Agent is a derivative work of Zed, which is licensed under
 GPL-3.0-or-later** — see [LICENSE-GPL](./LICENSE-GPL). Portions of the codebase
 (GPUI and other libraries) are Apache-2.0 — see [LICENSE-APACHE](./LICENSE-APACHE).
 
-Third-party attribution — Zed, One Dark, Nightfox/Carbonfox, and the Material
-Icon Theme — is documented in [CREDITS.md](./CREDITS.md).
+Third-party attribution (Zed, One Dark, Nightfox/Carbonfox, the Material Icon
+Theme, and the Arduino tools) is documented in [CREDITS.md](./CREDITS.md).

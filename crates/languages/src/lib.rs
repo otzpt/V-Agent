@@ -15,6 +15,7 @@ use crate::{
     python::{BasedPyrightLspAdapter, RuffLspAdapter},
 };
 
+pub mod arduino;
 mod bash;
 mod c;
 mod cpp;
@@ -88,6 +89,13 @@ pub fn init(languages: Arc<LanguageRegistry>, fs: Arc<dyn Fs>, node: NodeRuntime
 
     let built_in_languages = [
         LanguageInfo {
+            name: "arduino",
+            adapters: vec![Arc::new(arduino::ArduinoLspAdapter)],
+            context: Some(Arc::new(arduino::ArduinoContextProvider)),
+            semantic_token_rules: Some(cpp::semantic_token_rules()),
+            ..Default::default()
+        },
+        LanguageInfo {
             name: "bash",
             context: Some(Arc::new(bash::bash_task_context())),
             adapters: vec![bash_lsp_adapter],
@@ -101,7 +109,6 @@ pub fn init(languages: Arc<LanguageRegistry>, fs: Arc<dyn Fs>, node: NodeRuntime
         LanguageInfo {
             name: "cpp",
             adapters: vec![c_lsp_adapter],
-            context: Some(Arc::new(cpp::ArduinoContextProvider)),
             semantic_token_rules: Some(cpp::semantic_token_rules()),
             ..Default::default()
         },

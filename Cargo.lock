@@ -23304,6 +23304,7 @@ dependencies = [
  "file_finder",
  "fs",
  "futures 0.3.32",
+ "fuzzy",
  "git",
  "git_hosting_providers",
  "git_ui",

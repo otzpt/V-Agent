@@ -254,14 +254,9 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             name: "Run".into(),
             disabled: false,
             items: vec![
-                // V-Agent one-click Build & Run of the active file (also F9 / Ctrl-F5).
-                MenuItem::action(
-                    "▶ Build & Run",
-                    zed_actions::Spawn::ByName {
-                        task_name: "▶ Build & Run".to_string(),
-                        reveal_target: None,
-                    },
-                ),
+                // V-Agent one-click Build & Run of the active file. On an Arduino
+                // sketch it uploads instead.
+                MenuItem::action("▶ Build & Run", crate::vagent_run::BuildAndRun),
                 MenuItem::separator(),
                 MenuItem::action(
                     "Spawn Task",
@@ -282,6 +277,27 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
                 MenuItem::action("Toggle Breakpoint", editor::actions::ToggleBreakpoint),
                 MenuItem::action("Edit Breakpoint", editor::actions::EditLogBreakpoint),
                 MenuItem::action("Clear All Breakpoints", debugger_ui::ClearAllBreakpoints),
+            ],
+        },
+        // V-Agent: Arduino IDE-style tools for sketches.
+        Menu {
+            name: "Tools".into(),
+            disabled: false,
+            items: vec![
+                MenuItem::action("Verify", crate::vagent_arduino::ArduinoVerify),
+                MenuItem::action("Upload", crate::vagent_arduino::ArduinoUpload),
+                MenuItem::action(
+                    "Serial Monitor",
+                    crate::vagent_arduino::ArduinoSerialMonitor,
+                ),
+                MenuItem::separator(),
+                MenuItem::action("Board…", crate::vagent_arduino::ArduinoSelectBoard),
+                MenuItem::separator(),
+                MenuItem::action(
+                    "Arduino Upload for C/C++ Files",
+                    crate::vagent_arduino::ToggleArduinoForCFiles,
+                )
+                .checked(crate::vagent_arduino::c_files_enabled(cx)),
             ],
         },
         Menu {

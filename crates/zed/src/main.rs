@@ -2,7 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod reliability;
+mod vagent_arduino;
 mod vagent_hackatime;
+mod vagent_run;
 mod vagent_toolchain;
 mod zed;
 
@@ -763,6 +765,8 @@ fn main() {
         journal::init(app_state.clone(), cx);
         encoding_selector::init(cx);
         language_selector::init(cx);
+        // V-Agent: Build & Run, and the Arduino board/Verify/Upload controls.
+        vagent_run::init(cx);
         line_ending_selector::init(cx);
         toolchain_selector::init(cx);
         theme_selector::init(cx);

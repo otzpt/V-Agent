@@ -40,6 +40,9 @@ logo, and branding are separate and are not Zed's.
 - Added a VS Code-style **activity bar** (left icon rail) to the workspace
 - Added **one-click Build & Run** with compiler auto-detection and an
   install prompt when a toolchain is missing
+- Added Arduino support: an Arduino language for `.ino`, an Arduino IDE
+  2-style toolbar and Tools menu driven by arduino-cli, and
+  arduino-language-server for completions
 - Added a **colorful file icon theme** (see Material Icon Theme below)
 - Made panel toggling a true open/close toggle
 - Added `/model`, `/effort`, and `/clear` agent slash commands
@@ -78,6 +81,69 @@ the Material Icon Theme.
 - Upstream: https://github.com/material-extensions/vscode-material-icon-theme
 - Copyright © Philipp Kief
 - License: MIT (see `extensions/vagent-icons/LICENSE`)
+
+---
+
+## Arduino
+
+### arduino-cli
+The Arduino toolbar, Tools menu and tasks (`crates/zed/src/vagent_arduino.rs`,
+`crates/languages/src/arduino.rs`) run arduino-cli as an external program for
+board detection, the board list, `board attach`, compiling, uploading, the
+serial monitor and core installs.
+
+- Upstream: https://github.com/arduino/arduino-cli
+- Copyright © Arduino SA
+- License: GPL-3.0
+- What V-Agent takes from it: the JSON layout of `board list --format json`
+  and `board search --format json`, the `sketch.yaml` keys written by
+  `board attach` (`default_port`, `default_fqbn`), the FQBN format
+  (`vendor:architecture:board[:options]`), the sketch rule that a folder needs
+  an `.ino` named after it, and the serial monitor's `baudrate` setting. No
+  arduino-cli source code is copied, and arduino-cli is not redistributed;
+  users install it themselves. The Linux install prompt runs arduino-cli's
+  official `install.sh`.
+
+### arduino-language-server
+`.ino` files use it for completions and diagnostics
+(`ArduinoLspAdapter` in `crates/languages/src/arduino.rs`).
+
+- Upstream: https://github.com/arduino/arduino-language-server
+- Copyright © Arduino SA
+- License: AGPL-3.0
+- It runs as a separate program. V-Agent downloads the official release from
+  GitHub into its own data folder on first use and starts it with the
+  `-clangd`, `-cli`, `-cli-config` and `-fqbn` flags its README documents. It
+  is not linked into V-Agent and no source code is copied.
+
+### Arduino IDE 2
+The toolbar layout (Verify, Upload, board selector, Serial Monitor) and the
+behaviour of asking for a board instead of failing follow Arduino IDE 2.
+Installing a missing core when its board is chosen follows IDE 2's
+`BoardsAutoInstaller`
+(`arduino-ide-extension/src/browser/boards/boards-auto-installer.ts`).
+Starting arduino-language-server for the selected board follows
+`arduino-ide-extension/src/browser/contributions/ino-language.ts`. Reading
+the monitor's baud rate from `Serial.begin(...)` is V-Agent's own; Arduino
+IDE 2 has the user pick it.
+
+- Upstream: https://github.com/arduino/arduino-ide
+- Copyright © Arduino SA
+- License: AGPL-3.0
+- No Arduino IDE source code is copied.
+
+### Arduino IDE 1.x keyword list
+The extra Arduino colours (`crates/grammars/src/arduino/highlights.scm`) use
+the identifier names and their KEYWORD1/KEYWORD2/KEYWORD3 categories from
+`build/shared/lib/keywords.txt`, shipped as `lib/keywords.txt` in Arduino IDE
+1.8.19.
+
+- Upstream: https://github.com/arduino/Arduino
+- Copyright © Arduino SA and the Arduino contributors
+- License: the repository's `license.txt` places the IDE under the GNU GPL
+  and the core libraries under the GNU LGPL; it does not name
+  `keywords.txt` separately.
+- Only the API names are used. The file itself is not copied.
 
 ---
 

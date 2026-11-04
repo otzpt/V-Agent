@@ -1479,6 +1479,8 @@ fn initialize_pane(
                 )
             });
             toolbar.add_item(buffer_search_bar.clone(), window, cx);
+            let run_bar = cx.new(crate::vagent_run::RunBar::new);
+            toolbar.add_item(run_bar, window, cx);
             let quick_action_bar =
                 cx.new(|cx| QuickActionBar::new(buffer_search_bar, workspace, cx));
             toolbar.add_item(quick_action_bar, window, cx);
