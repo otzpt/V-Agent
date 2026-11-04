@@ -2,22 +2,6 @@
 
 Post-1.0 work, in rough priority order.
 
-## Python default language server: plain Pyright (done in 1.1.2)
-
-Upstream Zed switched the default Python language server from `pyright` to
-`basedpyright` in v0.204.0 ([Zed blog: Making Python in Zed
-Fun](https://zed.dev/blog/making-python-in-zed-fun)), and V-Agent inherited
-that through an upstream sync. A fresh install reported one existing Python
-file going from 0 to 23 warnings, purely from stricter import checks.
-
-Fixed in `8c127a14e1` (2026-09-14): `assets/settings/default.json` lists
-`["pyright", "ruff", "!ty", "!pyrefly", "!basedpyright", "!pylsp", "..."]`.
-Anyone who wants `basedpyright`'s extra strictness can opt in per project with
-`"languages": {"Python": {"language_servers": ["basedpyright"]}}`.
-
-Watch for this on every upstream sync: a merge that restores upstream's
-`basedpyright` default would bring the noise back.
-
 ## Shells: batch, bash, PowerShell (post-release)
 
 Goal: first-class support for running batch (`.bat`/`.cmd`), bash (`.sh`) and
@@ -38,9 +22,9 @@ even highlighting:
   extensions.
 - Optional: PowerShell LSP (PowerShellEditorServices) for `.ps1` IDE features.
 - Quick shell switching from the terminal UI (a dropdown), not just settings.
-- **Build & Run** detecting script type by extension and invoking the right
-  interpreter automatically (`.bat`/`.cmd` → cmd, `.ps1` → PowerShell,
-  `.sh` → bash — bash already covered).
+- **Build & Run** for `.bat`/`.cmd` (cmd) and `.ps1` (PowerShell). Build & Run
+  already picks the interpreter by extension and runs `.sh` with bash (see
+  CHANGELOG.md, Unreleased); these two are not in its table yet.
 
 ## Niche languages as a differentiator (positioning)
 
@@ -204,64 +188,30 @@ consider a self-hosted repo later if demand warrants the hosting cost.
 
 ## FreeBSD & Arch Linux packaging
 
-### Arch — done in 1.0.1
+### Arch: publish to the AUR
 
-`packaging/arch/` holds two maintained PKGBUILDs:
-
-- `PKGBUILD-bin` — the AUR package (`v-agent-bin`), installing the prebuilt
-  binary from the GitHub release. This is the one to publish to the AUR.
-- `PKGBUILD` — from-source build for people who prefer compiling.
-
-Both declare a real `depends=()` mirroring the official Arch `zed` package.
-The release workflow's `.pkg.tar.zst` previously shipped with **no** `depends`
-at all, so it installed but the binary could not start on a clean system; it
-now carries the same set and derives `pkgver` from `script/get-crate-version`
-instead of a hardcoded literal.
-
-Remaining: publish `v-agent-bin` to the AUR (needs an AUR account and an SSH
-key; `updpkgsums` + `makepkg --printsrcinfo > .SRCINFO` before the first push).
+The PKGBUILDs are in `packaging/arch/` (1.0.1, see CHANGELOG.md). Remaining:
+publish `v-agent-bin` to the AUR (needs an AUR account and an SSH key;
+`updpkgsums` + `makepkg --printsrcinfo > .SRCINFO` before the first push).
 `sha256sums` are `SKIP` until then — the AUR expects real checksums for a
 versioned release.
 
-### FreeBSD — build job added in 1.0.1, one compile error fixed in 1.1.0
+### FreeBSD: the build still fails
 
-`build-freebsd` in the release workflow builds inside a FreeBSD 14.2 VM via
-`vmactions/freebsd-vm` (GitHub has no native FreeBSD runner) and reuses
-upstream's own `script/freebsd` for `pkg` dependencies rather than duplicating
-a package list that would drift.
-
-The job is `continue-on-error` and the release gates on `needs.build` only, so
-a FreeBSD failure cannot hold back a release.
-
-It has now run against a real tag (v1.0.2) and failed, in gpui:
-`error[E0425]: cannot find type PlatformScreenCaptureFrame in this scope`. The
-`scap_screen_capture` module was gated on windows/linux/freebsd while the type
-alias it depends on listed only windows and linux, so the module compiled on
-FreeBSD against a type that did not exist there. Fixed in 1.1.0.
-
-Whether the build now completes is still unverified — the fix addresses the one
-error the log showed, and a target upstream does not test may have more behind
-it.
+The release workflow has a FreeBSD job (1.0.1), and the fixes so far are in
+CHANGELOG.md (1.1.0, 1.2.1).
 
 Remaining:
 
-- Confirm the 1.1.0 run gets further, and drop `continue-on-error` once it is
-  reliably green.
+- Get the build green (see the status below), then drop `continue-on-error`.
 - Package as a native `.pkg` rather than only a portable `.tar.gz`.
 - `script/bundle-freebsd` still only builds `remote_server`; most of it is
   commented out. Either finish it or delete it in favour of the CI job.
 
 Status on 2026-10-11: the FreeBSD job has failed in every release and test run
 so far, and the release workflow tolerates that (the other platforms still
-publish). Two layers are now understood and fixed in `release.yml`'s prepare
-step, each confirmed by a probe workflow in the same FreeBSD 14.2 VM rather
-than guessed: `script/freebsd` has no `fontconfig`, and fontconfig's `freetype2`
-needs a `bzip2` pkg-config module that FreeBSD does not ship (the base system
-has the library, and the `bzip2` package adds no `.pc`), so a four-line stub
-`bzip2.pc` is written. With both, `pkg-config fontconfig` resolves and a program
-compiled against it links and runs.
-
-The build then gets about 30 minutes in and stops on real compile errors in
+publish). With the `fontconfig` and `bzip2.pc` fixes from 1.2.1, the build
+gets about 30 minutes in and stops on real compile errors in
 `crates/gpui_linux` (5 errors in the `v1.2.1` release run): `gpui` exports
 `PriorityQueueReceiver` and `PriorityQueueSender` only for
 `any(windows, linux, wasm)` (`crates/gpui/src/gpui.rs`, the line above
@@ -276,20 +226,11 @@ errors sit behind these five is unknown, since rustc stops at the first failing
 crate, and each CI attempt costs about 45 minutes. Not started. Worth doing only
 if FreeBSD users matter: the Linux and Windows releases do not depend on it.
 
-### Void Linux: packaged, Vulkan confirmed
+### Void Linux: submit to void-packages
 
-Steps 1, 2, 4 and 5 of the previous plan are done; step 3 (upstream inclusion
-in `void-packages`) is the only one left, and it is an adoption problem rather
-than a technical one.
-
-**Vulkan is confirmed working** on a real glibc-Void install (the missing half
-of the earlier check, which had only verified glibc 2.41). OBSERVED on Void
-6.18.50_1, NVIDIA RTX 3050 Mobile, driver 595.91.07: the release binary
-enumerated the GPU through the Vulkan backend and reached
-`[workspace] Rendered first frame`, reporting
-`GpuSpecs { is_software_emulated: false, device_name: "NVIDIA GeForce RTX 3050
-Laptop GPU", driver_name: "NVIDIA" }`. `ldd` on the release binary resolves
-every `NEEDED` entry on a stock Void install with no extra packages.
+Packaged and Vulkan-verified in 1.1.2 (see CHANGELOG.md). Upstream inclusion
+in `void-packages` is the step left, and it is an adoption problem rather than
+a technical one.
 
 **The glibc floor in this repository is wrong.** README.md, docs/src/linux.md
 and docs/src/installation.md all state glibc >= 2.31, inherited from upstream
@@ -303,38 +244,6 @@ because the repository-wide fix is a decision rather than an edit: either
 restate the requirement as 2.35 everywhere, or move the Linux build to an older
 runner or a sysroot so 2.31 becomes true again. Ubuntu 20.04 runners are
 retired, so the second option means a container or `cargo-zigbuild`.
-
-Two things worth recording from that check:
-
-- **CUDA being broken is not evidence Vulkan is.** On the same machine
-  `cuInit(0)` returns 999 through `libcuda.so.1`, and Vulkan works anyway.
-  They are separate driver entry points, and V-Agent uses only Vulkan.
-- **`mesa` installs no Vulkan ICD on Void.** The drivers are separate
-  packages (`mesa-vulkan-radeon`, `mesa-vulkan-intel`, `mesa-vulkan-nouveau`,
-  `mesa-vulkan-lavapipe`) and there is no `vulkan-driver` virtual package to
-  depend on, unlike Arch. On the machine tested only `nvidia_icd.json` was
-  present, so the integrated Radeon was visible to wgpu through the GL backend
-  only. A Void package therefore cannot guarantee a working GPU by its
-  dependencies alone; the driver has to be named in the docs and release
-  notes instead, and it is.
-
-Two packaging paths now exist, deliberately:
-
-- `packaging/void/template`, an `xbps-src` template (`v-agent-bin`), mirroring
-  `packaging/arch/PKGBUILD-bin`. This is the one to submit to `void-packages`.
-  xbps-src derives the library dependencies from the binary's `NEEDED` entries
-  against `common/shlibs`, so they cannot drift; only the dlopened ones
-  (`vulkan-loader`, `wayland`, `libglvnd`, `fontconfig`) and `git` are declared
-  by hand. VERIFIED by building it: `./xbps-src pkg v-agent-bin` produced
-  `v-agent-bin-1.1.1_1.x86_64.xbps` (405 MB, 2284 MB installed) with the
-  expected three files and fourteen runtime dependencies, no lint warnings.
-  `xbps-src binary-bootstrap` needs no root.
-- A `Package Linux (Void .xbps)` step in the release workflow, building the
-  same package with `xbps-create` in `ghcr.io/void-linux/void-glibc-full`.
-  It hand-lists dependencies because `xbps-create` does no ELF scanning (that
-  is an xbps-src hook), the same trade the Arch and `.deb` steps already make.
-  Bootstrapping xbps-src in CI just to re-wrap an already-built binary is not
-  worth the minutes.
 
 Notes for whoever touches this next:
 
@@ -367,106 +276,28 @@ Remaining: submit `v-agent-bin` to `void-packages`, which needs Void maintainer
 review. The same adoption problem applies to Arch official and Debian, and the
 same fallback applies: a self-hosted xbps repository users add once.
 
-### Fedora/RHEL — `.rpm` added in 1.1.0
+### Fedora/RHEL: verify the `.rpm`
 
-Built in a `fedora:latest` container (the runner is Ubuntu and has no
-`rpmbuild`), matching how the Arch package is produced. `Requires:` are left to
-rpmbuild's own ELF scan rather than hand-listed, so they cannot drift from the
-binary's actual linkage. The `dist` tag is blanked because a single prebuilt
-binary ships for every Fedora version.
+The `.rpm` ships since 1.1.0 (see CHANGELOG.md). The `dist` tag is blanked
+because a single prebuilt binary ships for every Fedora version.
 
 Remaining: verify against a real Fedora install — the binary is built on
 Ubuntu 22.04, so the generated glibc/soname requires must resolve on Fedora,
 which has not been tested on a real system yet.
 
-## Upstream sync: synced to v1.16.3 (2026-10-10; v1.16.2 was 2026-09-14)
+## Upstream sync: next is v1.17.2
 
-Synced to `v1.16.2` (`a5faebb646a0`, see `CREDITS.md`), up from `v1.16.1`
-(`eb8e1c8b5502`), one stable tag at a time per this file's convention, using
-`git merge-tree --merge-base=eb8e1c8b5502...` with the recorded base rather
-than git's auto-detected ancestor.
+Synced to `v1.16.3` (`03e2e21e3094`, see `CREDITS.md`); the v1.16.2 and v1.16.3
+syncs are in CHANGELOG.md. Sync one stable tag at a time, using
+`git merge-tree --merge-base=<recorded base>` with the base recorded in
+`CREDITS.md` rather than git's auto-detected ancestor. On every sync:
 
-Eight upstream commits, twenty files. The one that matters is a **security
-fix**: Wasmtime WASI updated to close a filesystem sandbox escape
-([zed-industries/zed#63140](https://github.com/zed-industries/zed/pull/63140)),
-which is the extension sandbox, so it applies to this fork unchanged. VERIFIED
-in the merged tree: `wasmtime` moves 36.0.12 to 36.0.14 in `Cargo.lock`, and
-both `crates/extension_host/src/wasm_host/wit/since_v0_*.rs` files came through
-byte-identical to upstream. Also in the range: a Flatpak launcher argument
-ordering fix in `crates/cli`, GitHub Enterprise data residency support in
-`crates/copilot_chat`, and an extension-host fix restoring project LSP settings
-for older extension API versions.
-
-`crates/agent/src/templates/system_prompt.hbs` came through byte-identical
-(sha256 `6633bf18...` before and after). Upstream did not touch
-`crates/agent/src/templates/` at all in this range.
-
-Five conflicts, all in the two categories the previous sync already recorded:
-
-- `Cargo.lock`, `crates/zed/Cargo.toml`: kept this fork's version number over
-  upstream's.
-- `docs/src/extensions/publishing/{overview,prerequisites,publishing-guide}.md`:
-  kept the V-Agent rebrand, took upstream's content. The warning in the
-  previous sync entry paid off. Upstream rewrote `prerequisites.md` almost
-  completely (a flat bullet list became per-extension-type sections), so the
-  fork's rebrand of the old text had nothing to attach to and was re-applied by
-  hand to the new prose. Upstream also renamed "Extension Gallery" to
-  "Extension Registry"; that rename was taken, which incidentally makes
-  `overview.md` consistent with the sibling pages that already said Registry.
-
-Two new upstream pages, `publishing/faq.md` and
-`publishing/updating-and-maintenance.md`, were deliberately left unbranded.
-Neither mentions the editor at all; their only "Zed" references are to Zed
-Industries staff and to the `zed-industries/extensions` repository, which this
-fork already keeps literal elsewhere in the same directory.
-
-A rebrand audit across all twenty changed files found no file that lost
-coverage. The only file whose count moved is `prerequisites.md`, from 6 to 8,
-because upstream's new text has more API references to rebrand. Separately,
-every file the fork had never modified came out byte-identical to `v1.16.2`,
-and every file that differs from upstream is one the fork had already forked.
-
-**Build-verified.** `cargo check --workspace --all-targets` passes:
-`CARGO_EXIT=0`, 0 errors, 10 warnings, on cargo 1.97.1 (the toolchain
-`rust-toolchain.toml` pins). `cargo fetch --locked` also exits 0, so the merged
-`Cargo.lock` needs no regeneration.
-
-All 10 warnings are pre-existing and untouched by this sync (neither file
-appears in `git diff --name-only main`). They are worth noting because they are
-Task 4b material rather than noise: five in `crates/title_bar/src/title_bar.rs`
-are dead sign-in state left behind by commit f588b55, which removed the
-"sign in to try Pro" upsell but not the variables and struct fields that fed
-it (`is_signing_in`, `is_signed_out_or_auth_error`, and the never-read
-`show_sign_in` / `show_user_menu` fields). The other is an unused `dest` in
-`crates/zed/src/vagent_hackatime.rs`. The compiler is pointing straight at the
-next chunk of the dead-feature cleanup.
-
-Cleared on 2026-10-10: the unused imports and variables are gone, the two
-never-read fields are removed from `TitleBarSettings`, and so are the "Show Sign
-In" and "Show User Menu" toggles in the Settings UI, which did nothing. The keys
-`title_bar.show_sign_in` and `title_bar.show_user_menu` are still accepted in
-`settings.json` (the settings schema is unchanged), so no user's file breaks.
-`cargo check` on `title_bar`, `settings_ui` and `zed` with all targets gives 0
-warnings; the Windows-only branch of `launch_cli_install` was moved inside its
-`cfg(windows)` block and is not compiled on Linux, so the Windows CI build is
-its check.
-
-`docs/src/SUMMARY.md` merged cleanly here, but note it is also touched by the
-Void packaging branch; merging both will conflict there trivially.
-
-Remaining: build-verify, then target `v1.16.3` and whatever `v1.17.x` stable
-tag exists when picked up. Re-check `system_prompt.hbs` every time.
-
-### v1.16.3 (2026-10-10)
-
-Synced one stable tag further, from `v1.16.2` (`a5faebb646a0`) to `v1.16.3`
-(`03e2e21e3094`): two upstream commits, three files. The one code change is a
-crash fix in the Git panel, selecting the first entry when a section is
-collapsed (`crates/git_ui/src/git_panel.rs`, with a new test). The fork had never
-modified that file, so it is byte-identical to `v1.16.3` after the sync. The
-other two files are the version in `Cargo.lock` and `crates/zed/Cargo.toml`;
-the fork's version number was kept. `crates/agent/src/templates/` is untouched
-upstream in this range.
+- Re-check `crates/agent/src/templates/system_prompt.hbs`.
+- Check the Python default in `assets/settings/default.json` is still plain
+  Pyright; a merge that restores upstream's `basedpyright` default brings back
+  the extra warnings fixed in 1.1.2.
+- `docs/src/SUMMARY.md` is also touched by the Void packaging docs, so merges
+  there conflict trivially.
 
 Assessed but not taken, `v1.17.2` (118 upstream commits, 305 files). A dry-run
 `git merge-tree --merge-base=a5faebb646a0` gives 13 conflicted files: the two

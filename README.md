@@ -173,7 +173,8 @@ V-Agent does not update itself. **V-Agent > Check for Updates** asks the
 GitHub releases API once, when you choose it, and tells you whether a newer
 release exists; **View release** opens the page. To update, install the new
 release the same way you installed the first one. Details, and exactly what
-the request sends, are in [docs/src/update.md](./docs/src/update.md).
+the request sends, are in [docs/src/update.md](./docs/src/update.md). What
+changed in each release is in [CHANGELOG.md](./CHANGELOG.md).
 
 ### Distro repositories
 
