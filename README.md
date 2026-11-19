@@ -11,6 +11,13 @@ terminal, extensions) and layers on its own identity and workflow.
 > "Zed" is a trademark of Zed Industries, Inc. and is used here only to identify
 > the upstream project this is derived from. See [CREDITS.md](./CREDITS.md).
 
+## About this project
+
+The changes on top of Zed are vibecoded and made for my own personal use. The
+project is on GitHub so that anyone looking for something like it can use it,
+and because GitHub gives me version control and a backup of the code. Treat it
+as a personal project shared as is.
+
 ## Install
 
 All commands below pull the **latest release** — they never go stale.
